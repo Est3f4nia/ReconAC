@@ -58,6 +58,7 @@ ENV/
 . env/
 .env
 
+
 # IDEs and editors
 .vscode/
 .idea/
