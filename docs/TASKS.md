@@ -56,7 +56,7 @@ Notas:
 
 ### T1 — Migración SQL del esquema completo
 
-Status: REVIEW
+Status: REVIEW (terminada, pero falta testeo de DB con el back en funcionamiento, se queda en REVIEW por prevención)
 
 Título:
 Migración Flyway del esquema relacional completo
@@ -135,6 +135,74 @@ Restricciones:
 Componentes afectados:
 - `recon_back`
 
+#### T3.1 — API REST: JWT, buenas prácticas, evaluación de implementación
+
+*Insertada manualmente por el PO, por conveniencia, la estructura es distinta en este tipo de inserciones*
+
+Status: APPROVED
+
+Título:
+Review de implementación de T3
+
+Meta:
+Enriquecer y corregir funcionalidades
+
+> Contexto: API compila en el estado actual, aún así, existe deuda técnica y problemas graves de implentación.
+
+**Bugs y problemas:**
+
+1. `ActivoUpdateService` no persiste (`ActivoUpdateService.java:24-29`)
+
+```java
+ActivoMapper.updateEntity(activo, req);
+return ActivoMapper.toResponse(activo);
+// Falta repo.save(activo)
+```
+
+Solo funciona por dirty checking de JPA en `@Transactional`, pero es frágil e implícito. Si alguien saca `@Transactional` o cambia el isolation level, los updates se pierden silenciosamente.
+
+2. `AuditoriaRequestDto` — pide ID de usuario (`AuditoriaRequestDto.java:12`)
+
+El campo no es necesario con la implementación de JWT, la auditoría debe crearse "sobre" una sesión válida.
+
+2-2. `AuditoriaCreateService` ignora el usuario autenticado (`AuditoriaCreateService.java:15`)
+
+```java
+// Usuario usuario = validateUser.getAuthenticatedUserSession();
+```
+
+El `usuarioId` viene en el request DTO. Cualquier usuario autenticado puede crear auditorías a nombre de cualquier otro usuario. Esto es un problema de seguridad serio.
+
+3. `ActivoGetService` — sin paginación (`ActivoGetService.java:20`)
+
+```java
+return repo.findAll().stream()...
+```
+
+El repo declara `findByAuditoriaId(UUID, Pageable)` pero el service usa `findAll()`. Con muchos activos esto es un problema de rendimiento y de memoria.
+
+**Deuda técnica y malas prácticas:**
+
+1. No hay paginación en endpoints — Requisito de T3: "Paginación en listados". No está implementada en ningún controller. Los repos la tienen pero nada la usa.
+
+2. Roles hardcodeados — Usuario.getAuthorities() devuelve siempre `ROLE_USER`. El JWT extrae roles pero el claim se ignora al reconstruir la sesión. No hay escalabilidad para roles futuros. Se planea agregar `ROLE_ADMIN`, con privilegios **no destructivos** de administrador.
+
+3. Refresh token sin rotación — Cada `/refresh` valida el token viejo y devuelve uno nuevo, pero el viejo sigue siendo válido hasta expirar. Un token robado puede refrescarse indefinidamente. Fallo de seguridad (saltear y luego discutir con el PO, la solución a esto implica desición sobre la arquitectura).
+
+4. CORS hardcodeado — `localhost:3000` no es configurable por profile. En producción o Docker habrá que cambiar el código.
+
+5. BaseResponse sin error body — BaseResponse solo tiene errors: `List<String>` pero `ok()` siempre setea `errors=null`. No hay un factory method para errores. El handler usa ProblemDetail directamente, lo cual es correcto, pero la Response DTO no refleja eso.
+
+6. `so_probab` sin validación en DTO — La DB tiene `CHECK (so_probab BETWEEN 0 AND 100)` pero el DTO no valida esto. Un request con `soProbab: 200` llega hasta la DB y falla con un error genérico en vez de un 400 claro.
+
+**Errores de seguridad (deuda técnica T7):**
+
+1. Sin rate limiting — T7 pide Bucket4j. Los endpoints de auth son públicos sin protección contra brute force.
+
+2. CSRF deshabilitado sin alternativa — T7 pide CSRF (Double Submit Cookie). Se deshabilitó pero no se implementó la alternativa. Cookies `HttpOnly` con `SameSite=Strict` mitiga parcialmente, pero no está completo.
+
+3. Headers de seguridad ausentes — T7 pide `HSTS`, `X-Content-Type-Options`, `X-Frame-Options`, `CSP`, `Referrer-Policy`. Ninguno está configurado.
+
 ---
 
 ### T4 — Refactor de recon_modules: de CLI a servicio
@@ -142,7 +210,7 @@ Componentes afectados:
 Status: APPROVED
 
 Título:
-Adaptar recon_modules para ejecución como subproceso del backend
+Adaptar `recon_modules/` para ejecución como subproceso del backend
 
 Meta:
 Transformar la CLI actual en un servicio que acepte input del backend y devuelva resultados estructurados.
@@ -152,7 +220,8 @@ Requerimientos:
 - Devolver resultados como JSON por stdout (ScanResult serializado)
 - Eliminar generación de reportes (MD/CSV) del módulo — responsabilidad del backend
 - Mantener la lógica de Nmap, CPEs y consulta NVD/KEV/EPSS
-- Manejo de errores estructurado (exit codes + JSON de error)
+- Manejo de errores estructurado (exit codes, JSON de error, RFC 9457)
+- Aplicar refactorización interna para mejorar rendimiento, procesamiento o buenas prácticas (implementación en general). Cada tarea derivada de este requerimiento deberá ser consultada con el PO.
 
 Restricciones:
 - Python 3.10+
