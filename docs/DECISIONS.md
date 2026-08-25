@@ -160,3 +160,125 @@ Incluir Nmap en el contenedor elimina la dependencia de instalación
 manual en el host. En Windows, Nmap no está presente por defecto
 y su instalación manual agrega fricción. El contenedor garantiza
 que el entorno de ejecución sea reproducible y consistente.
+
+---
+
+## ADR-011 — Comunicación backend ↔ recon_modules
+
+Status: Accepted
+
+Decisión:
+Comunicación HTTP/REST asíncrona entre Spring Boot y Flask (Python).
+
+Patrón:
+Async con job ID + polling + callback.
+
+Flujo:
+1. Backend recibe request del frontend → crea ScanJob en DB (`status=PENDING`)
+2. Backend → `POST http://modules:5000/scan` {target, config, nvdApiKey}
+3. Flask genera jobId, lanza pipeline en hilo separado, retorna 202
+4. Backend guarda jobId en ScanJob, retorna 202 al frontend
+5. Frontend polls `GET /api/auditorias/{id}/scan/status`
+6. Flask ejecuta: port_scan → service_scan → NVD/KEV/EPSS lookup
+7. Al terminar, Flask → `POST http://back:8080/api/internal/scans/{jobId}/result`
+8. Backend persiste en PostgreSQL, invalida caché Redis
+
+Contrato de datos:
+
+Request (backend → Flask):
+```json
+{
+  "target": "192.168.1.0/24",
+  "nvdApiKey": "user-owned-key",
+  "config": {
+    "timeout": 300,
+    "icmpTimeout": 5,
+    "maxCveYears": 5,
+    "minCvssScore": 5.0
+  }
+}
+```
+
+Response (Flask → backend, en callback):
+```json
+{
+  "hosts": [{ "ip", "mac", "hostname", "os", "ports": [...] }],
+  "apiResults": [{ "cpeString", "vulnerabilities": [...], "lastChecked" }],
+  "nmapVersion": "...",
+  "startTime": "...",
+  "endTime": "..."
+}
+```
+
+Endpoints Flask:
+- `POST /scan` → 202 { jobId }
+- `GET /scan/{jobId}/status` → 200 { status, progress }
+- `GET /scan/{jobId}/result` → 200 { scanResult }
+
+Endpoint backend (callback interno):
+- `POST /api/internal/scans/{jobId}/result` → 200
+
+**NVD API key:**
+Cada usuario gestiona su propia API key de NVD. La key se almacena
+en la tabla usuario (encriptada) y se envía al módulo en cada request
+de scan. Esto distribuye el rate limit entre usuarios y respeta el
+principio de menor privilegio: el backend solo conoce la key del
+usuario autenticado, no una key global.
+
+Restricciones:
+- Flask usa threading para no bloquear el event loop de aiohttp
+- Timeout configurable por scan (default 600s)
+- Si Flask no responde en 10s, backend marca job como FAILED
+- Callback al backend es obligatorio (no polling inverso)
+- La nvd_api_key del usuario es opcional: sin ella se omite fase 3
+
+Justificación:
+Operaciones de escaneo duran 1-5 minutos. Un patrón sync bloquearía
+el hilo de Flask y no permitiría mostrar progreso. El patrón async
+con job ID es el estándar para operaciones de larga duración (CI/CD,
+escaneos, exports). Escala horizontalmente si se agrega más de un
+worker de escaneo.
+
+---
+
+## ADR-012 — Modelo de datos de escaneo
+
+Status: Accepted
+
+Decisión:
+Introducir la entidad `Escaneo` como nodo central entre Auditoría y
+los resultados del scan. Cada ejecución de escaneo se modela como
+una entidad propia con relación 1:N con Auditoría y 1:N con Activo.
+
+Modelo:
+
+```
+ Auditoría (1) ──── (N) Escaneo ──── (N) Activo ──── (N) Puerto ──── (M:N) Cpe ──── (M:N) Cve ──── (M:N) Cwe
+                            │
+                            └── objetivos[], estado, progreso, modulo_job_id, ...
+```
+
+Entidad Escaneo:
+- Representa una ejecución individual de Nmap + NVD lookup
+- Agrupa todos los hosts resultantes de una llamada al módulo
+  - Una llamada puede cubrir un CIDR (192.168.1.0/24) o múltiples IPs (192.168.2.5, 192.168.3.4). Nmap soporta ambos
+- Tiene su propio ciclo de vida: PENDING → RUNNING → COMPLETED/FAILED
+
+Cambios en el DER:
+
+Nuevas tablas:
+- Escaneo (escaneo_id, auditoria_id FK, objetivos TEXT[], estado, progreso, modulo_job_id, nmap_version, mensaje_error,
+  iniciado_a, completado_a, creado_a, resultado_jsonb)
+
+Tablas modificadas: solo hay cambios en:
+- Activo: auditoria_id FK → escaneo_id FK (la relación ahora es con Escaneo, no directamente con Auditoría)
+- Auditoria: eliminar campo resultado_jsonb (los resultados viven en Escaneo), eliminar campo nmap_version (ahora en Escaneo)
+- Usuario: agregar campo nvd_api_key (VARCHAR, nullable)
+
+Justificación:
+Escaneo como entidad propia permite:
+- Historial completo de escaneos por auditoría
+- Comparación temporal de resultados (**T8: dashboard**)
+- Cada escaneo tiene su propio status, timestamps y targets
+- `Activo.auditoria_id` se reemplaza por `Activo.escaneo_id`, manteniendo la trazabilidad de cuándo se descubrió cada host
+- Los datos de referencia (Cpe, Cve, Cwe) se comparten entre escaneos, no se duplican

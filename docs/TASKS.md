@@ -111,7 +111,7 @@ Componentes afectados:
 
 ### T3 — API REST: Auditoría y Activos
 
-Status: REVIEW
+Status: REVIEW (terminada, pero falta testeo de DB con el back en funcionamiento, se queda en REVIEW por prevención)
 
 Título:
 CRUD de gestión de auditorías y activos
@@ -139,7 +139,7 @@ Componentes afectados:
 
 *Insertada manualmente por el PO, por conveniencia, la estructura es distinta en este tipo de inserciones*
 
-Status: APPROVED
+Status: REVIEW (terminada, pero falta testeo de DB con el back en funcionamiento, se queda en REVIEW por prevención)
 
 Título:
 Review de implementación de T3
@@ -205,65 +205,133 @@ El repo declara `findByAuditoriaId(UUID, Pageable)` pero el service usa `findAll
 
 ---
 
-### T4 — Refactor de recon_modules: de CLI a servicio
+### T4 — Refactor de recon_modules: de CLI a servicio HTTP
 
-Status: APPROVED
+Status: REVIEW
 
 Título:
-Adaptar `recon_modules/` para ejecución como subproceso del backend
+Transformar recon_modules de CLI a servicio Flask con API REST
 
 Meta:
-Transformar la CLI actual en un servicio que acepte input del backend y devuelva resultados estructurados.
+Exponer el pipeline de reconocimiento como API HTTP que el backend
+consume según **ADR-011**. El módulo deja de ser una CLI y pasa a ser
+un servicio independiente.
 
 Requerimientos:
-- Aceptar target, config de escaneo y API keys por argumentos o stdin
-- Devolver resultados como JSON por stdout (ScanResult serializado)
-- Eliminar generación de reportes (MD/CSV) del módulo — responsabilidad del backend
-- Mantener la lógica de Nmap, CPEs y consulta NVD/KEV/EPSS
-- Manejo de errores estructurado (exit codes, JSON de error, RFC 9457)
-- Aplicar refactorización interna para mejorar rendimiento, procesamiento o buenas prácticas (implementación en general). Cada tarea derivada de este requerimiento deberá ser consultada con el PO.
+
+**API Flask:**
+- Crear Flask app con endpoints: `POST /scan`, `GET /scan/{id}/status`, `GET /scan/{id}/result`
+  - `POST /scan` acepta JSON con target, nvdApiKey y config, retorna 202 con jobId
+    - Jobs se ejecutan en hilo separado (`threading.Thread`)
+  - `GET /status` retorna estado del job (PENDING/RUNNING/COMPLETED/FAILED) y progreso ("Phases" especificadas en `reconac.py`)
+  - `GET /result` retorna el JSON completo del escaneo solo si `status=COMPLETED`
+- Al finalizar, Flask hace POST callback al backend (url configurable via env)
+- Manejo de errores con respuesta JSON consistente
+
+**Pipeline refactorizado:**
+- Extraer pipeline de `reconac.py` como función reutilizable `run_scan(config) → dict`
+- Mantener las 3 fases: port_scan → service_scan → NVD/KEV/EPSS lookup
+- Desconectar fase 4 (reportes MD/CSV), es responsabilidad del backend.
+  - IMPORTANTE: el código se eliminará una vez terminada la integración (T5). Se lo deja para tener en cuenta estructura y presentación de datos.
+- Eliminar dependencia de `argparse` y `CLI` de `reconac.py`
+- Mantener `scanning/` y `cves/` sin cambios funcionales internos
+
+**Serialización:**
+- Convertir dataclasses (ScanResult, ApiResult, etc.) a diccionarios con `asdict()`
+- Fechas datetime → ISO 8601 string
+- Listas y Optional se serializan nativamente
+
+**Configuración:**
+- Crear ``requirements.txt`` con dependencias declaradas (flask, aiohttp, yarl)
+- `NVD_API_KEY` se recibe en cada request de scan (key por usuario, **no global**)
+- Configurar host/port/flask env via variables de entorno
+- Agregar `__init__.py` donde haga falta
+
+**Manejo de errores:**
+- Errores de Nmap → job `status=FAILED` con mensaje descriptivo
+- Errores de NVD API → job completado parcialmente (hosts sin CVEs)
+- Target inalcanzable → warning en resultado, no error fatal. No se debe ejecutar el escaneo (comprobación de conectividad antes de ejecutar Nmap)
+- Todos los errores se retornan como JSON con campo "error"
 
 Restricciones:
 - Python 3.10+
-- No romper funcionalidad existente de escaneo
-- Mantener modularidad interna (scanning/, cves/, models/)
+- No romper funcionalidad de escaneo existente
+- Mantener modularidad interna (`scanning/`, `cves/`, `models/`)
+- El pipeline debe seguir siendo async internamente (aiohttp para NVD)
 
 Componentes afectados:
 - `recon_modules`
+
+Nota:
+- Es CRÍTICO mantener la restricción de fetching de CPEs genéricas.
 
 ---
 
 ### T5 — Integración backend ↔ recon_modules
 
-Status: PROPOSED
+Status: REVIEW
 
 Título:
-Invocación de recon_modules como subproceso desde el backend
+Backend invoca escaneo via HTTP y persiste resultados
 
 Meta:
-El backend ejecuta el motor de reconocimiento y persiste los resultados en PostgreSQL.
+El backend envía targets al módulo Python vía HTTP (**ADR-011**),
+recibe resultados y los persiste en PostgreSQL siguiendo el
+modelo de datos de **ADR-012**, usando caché Redis para tablas
+de referencia.
 
 Requerimientos:
-- Ejecutar recon_modules como subproceso (ProcessBuilder)
-- Pasar target y configuración por argumentos
-- Recibir y parsear JSON de stdout
-- Persistir resultados: Activos, Puertos, CPEs, CVEs en PostgreSQL
-- Usar caché Redis para tablas de referencia (Cpe, Cve, Cwe)
-- Actualizar Cpe.ultimo_check tras cada escaneo
+
+**Migración V2:**
+- Crear tabla Escaneo (escaneo_id, auditoria_id FK, objetivos TEXT[], estado, progreso, modulo_job_id, nmap_version, mensaje_error,
+  iniciado_a, completado_a, creado_a, resultado_jsonb)
+  - Estados: PENDING, RUNNING, COMPLETED, FAILED
+  - Relación 1:N con Auditoría y 1:N con Activo
+- Alterar tabla Activo: reemplazar auditoria_id FK → escaneo_id FK
+- Alterar tabla Auditoria: eliminar resultado_jsonb y nmap_version
+- Alterar tabla Usuario: agregar `nvd_api_key (VARCHAR, nullable)`
+  - La key es opcional: sin ella se omite la fase de lookup de CVEs, se debe informar que sin ella al escaneo le faltará información.
+  - El backend lee la key del usuario autenticado y la pasa al módulo
+
+**Controller de escaneo:**
+- `POST /api/auditorias/{id}/scan` → recibe objetivos[], crea Escaneo (status=PENDING), envía al módulo
+- `GET /api/auditorias/{id}/scan/{scanId}/status` → retorna estado del Escaneo
+- Endpoint interno `POST /api/internal/scans/{scanId}/result` → callback del módulo
+
+**Service de escaneo:**
+- `ScanService`: coordina creación de Escaneo, llamada HTTP al módulo, persistencia
+- Usa RestTemplate o WebClient para llamar a Flask
+- Timeout configurable para la llamada HTTP
+- Si el módulo no responde, marca Escaneo como FAILED
+
+**Persistencia de resultados:**
+- Recorrer hosts del scan → crear/actualizar Activo
+- Recorrer puertos → crear Puerto, vincular con CPEs via Puerto_Cpe
+- Recorrer apiResults → upsert Cpe, Cve, Cwe, Referencia
+- Usar `CacheService` para tablas de referencia (Cpe, Cve, Cwe)
+- Actualizar `Cpe.ultimo_check` tras cada escaneo
+- Transacciones: todo el persist dentro de `@Transactional`
+
+**Manejo de errores:**
+- Si el callback falla, el Escaneo queda en FAILED con error message
+- Si un host no tiene puertos, se guarda como Activo sin puertos
+- Si NVD no retorna CVEs, el Cpe se guarda sin vulns
+- No crashear el backend por errores del módulo
 
 Restricciones:
-- Timeout configurable para el subproceso
-- Manejo de fallos del subproceso (no crashear el backend)
-- Coordinación con T4 (endpoints de auditoría)
+- Comunicación back → modules via HTTP interno (no subprocess)
+- Coordinar con **ADR-010** (Docker Compose, hostname "modules")
+- NVD_API_KEY viene del usuario autenticado, no es global
+- Los puertos se gestionan exclusivamente por escaneo (no manual)
 
 Componentes afectados:
-- `recon_back`, `recon_modules`
+- `recon_back`
 
 ---
 
 ### T6 — Integración APIs externas (NVD, KEV, EPSS)
 
-Status: PROPOSED
+Status: REVIEW
 
 Título:
 Consultas a APIs externas de vulnerabilidades
@@ -286,6 +354,9 @@ Restricciones:
 
 Componentes afectados:
 - `recon_back`
+
+Notas:
+- Luego de implementación ¿cómo administrar grandes cantidades de CVEs? ¿Restrición de objetos? ¿Paginación?
 
 ---
 
