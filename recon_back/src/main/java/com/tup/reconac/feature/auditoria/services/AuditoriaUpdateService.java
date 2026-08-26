@@ -27,7 +27,7 @@ public class AuditoriaUpdateService implements IAuditoriaUpdateService {
                 .orElseThrow(() ->
                         new AuditoriaNotFoundException("Auditoria no encontrada"));
 
-        AuditoriaMapper.updateEntity(audit, req);
+        AuditoriaMapper.updateEntity(audit, req);   // dirty checking
         return AuditoriaMapper.toResponse(audit);
     }
 }

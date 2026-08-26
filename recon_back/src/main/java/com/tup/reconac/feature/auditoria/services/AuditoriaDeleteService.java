@@ -22,6 +22,8 @@ public class AuditoriaDeleteService implements IAuditoriaDeleteService {
         if (!repo.existsById(id))
             throw new AuditoriaNotFoundException("La auditoria no existe");
 
-        repo.deleteById(id); // no aplica: soft delete
+        repo.deleteById(id);
+
+        // Arquitectura: por el tamaño potencial de `auditoría`, no aplica usar soft delete.
     }
 }

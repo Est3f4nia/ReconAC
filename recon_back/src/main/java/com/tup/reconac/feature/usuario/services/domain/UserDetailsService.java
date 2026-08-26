@@ -2,7 +2,7 @@ package com.tup.reconac.feature.usuario.services.domain;
 
 import com.tup.reconac.feature.usuario.models.Usuario;
 import com.tup.reconac.feature.usuario.repositories.UsuarioRepository;
-import com.tup.reconac.exceptions.usuario.UnauthorizedException;
+import com.tup.reconac.exceptions.jwt.UnauthorizedException;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
-public class ReconacUserDetailsService implements UserDetailsService {
+public class UserDetailsService implements org.springframework.security.core.userdetails.UserDetailsService {
 
     private final UsuarioRepository usuarioRepository;
 

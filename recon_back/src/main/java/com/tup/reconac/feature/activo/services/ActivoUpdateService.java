@@ -26,6 +26,7 @@ public class ActivoUpdateService implements IActivoUpdateService {
                 .orElseThrow(() -> new ActivoNotFoundException("Activo no encontrado"));
 
         ActivoMapper.updateEntity(activo, req);
-        return ActivoMapper.toResponse(activo);
+        Activo saved = repo.save(activo);
+        return ActivoMapper.toResponse(saved);
     }
 }

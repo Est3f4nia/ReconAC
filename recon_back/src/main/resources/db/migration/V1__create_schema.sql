@@ -31,8 +31,6 @@ CREATE TABLE Auditoria (
 
     fecha_generacion TIMESTAMP NOT NULL,
     fecha_final TIMESTAMP,
-    resultado_jsonb JSONB NOT NULL,
-    nmap_version TEXT,
 
     CONSTRAINT fk_auditoria_usuario
         FOREIGN KEY (usuario_id)
@@ -43,7 +41,6 @@ CREATE TABLE Auditoria (
 
 CREATE TABLE Activo (
     activo_id UUID PRIMARY KEY,
-    auditoria_id UUID NOT NULL,
 
     host INET NOT NULL,
     hostname TEXT,
@@ -53,11 +50,7 @@ CREATE TABLE Activo (
     CONSTRAINT chk_activo_so_probab
         CHECK (so_probab BETWEEN 0 AND 100),
     mac MACADDR,
-    descripcion TEXT,
-
-    CONSTRAINT fk_activo_auditoria
-        FOREIGN KEY (auditoria_id)
-            REFERENCES Auditoria(auditoria_id)
+    descripcion TEXT
 );
 
 -- ===== CPE =====
@@ -218,9 +211,6 @@ CREATE TABLE Cve_Cwe (
 
 CREATE INDEX idx_auditoria_usuario_id
     ON Auditoria(usuario_id);
-
-CREATE INDEX idx_activo_auditoria_id
-    ON Activo(auditoria_id);
 
 CREATE INDEX idx_activo_host
     ON Activo(host);

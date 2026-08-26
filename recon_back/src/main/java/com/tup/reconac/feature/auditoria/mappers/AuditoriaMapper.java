@@ -3,19 +3,17 @@ package com.tup.reconac.feature.auditoria.mappers;
 import com.tup.reconac.feature.auditoria.dtos.AuditoriaRequestDto;
 import com.tup.reconac.feature.auditoria.dtos.AuditoriaResponse;
 import com.tup.reconac.feature.auditoria.models.Auditoria;
+import com.tup.reconac.feature.usuario.models.Usuario;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
 
 @Component
 public class AuditoriaMapper {
 
-    public static Auditoria toEntity(AuditoriaRequestDto req) {
+    public static Auditoria toEntity(AuditoriaRequestDto req, Usuario usuario) {
         Auditoria auditoria = new Auditoria();
-        auditoria.setUsuarioId(req.usuarioId());
+        auditoria.setUsuarioId(usuario.getId());
         auditoria.setNombre(req.nombre());
         auditoria.setObjetivo(req.objetivo());
-        auditoria.setFechaGeneracion(LocalDateTime.now());
         return auditoria;
     }
 
@@ -30,8 +28,7 @@ public class AuditoriaMapper {
                 auditoria.getNombre(),
                 auditoria.getObjetivo(),
                 auditoria.getFechaGeneracion(),
-                auditoria.getFechaFinal(),
-                auditoria.getNmapVersion()
+                auditoria.getFechaFinal()
         );
     }
 }

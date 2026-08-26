@@ -8,5 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ActivoRepository extends JpaRepository<Activo, UUID> {
 
-    Page<Activo> findByAuditoriaId(UUID auditoriaId, Pageable pageable);
+    Page<Activo> findByEscaneoId(UUID escaneoId, Pageable pageable);
 }

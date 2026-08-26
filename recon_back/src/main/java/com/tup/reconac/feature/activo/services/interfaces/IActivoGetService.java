@@ -1,9 +1,12 @@
 package com.tup.reconac.feature.activo.services.interfaces;
 
 import com.tup.reconac.feature.activo.dtos.ActivoResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
+import java.util.UUID;
 
 public interface IActivoGetService {
-    List<ActivoResponse> getAll();
+    Page<ActivoResponse> getAll(Pageable pageable);
+    Page<ActivoResponse> getByEscaneoId(UUID escaneoId, Pageable pageable);
 }

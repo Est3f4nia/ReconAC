@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -16,7 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Getter
 @Setter
-public class Auditoria implements Serializable { // que chota es eso
+public class Auditoria implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -37,13 +35,6 @@ public class Auditoria implements Serializable { // que chota es eso
 
     @Column(name = "fecha_final")
     private LocalDateTime fechaFinal;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "resultado_jsonb", nullable = false)
-    private String resultadoJsonb;
-
-    @Column(name = "nmap_version")
-    private String nmapVersion;
 
     @PrePersist
     public void prePersist() {

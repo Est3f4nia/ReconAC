@@ -1,9 +1,9 @@
 package com.tup.reconac.feature.auditoria.services.interfaces;
 
 import com.tup.reconac.feature.auditoria.dtos.AuditoriaResponse;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface IAuditoriaGetService {
-    List<AuditoriaResponse> getAll();
+    Page<AuditoriaResponse> getAll(Pageable pageable);
 }

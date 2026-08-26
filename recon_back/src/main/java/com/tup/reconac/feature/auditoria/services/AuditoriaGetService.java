@@ -5,40 +5,20 @@ import com.tup.reconac.feature.auditoria.mappers.AuditoriaMapper;
 import com.tup.reconac.feature.auditoria.repositories.AuditoriaRepository;
 import com.tup.reconac.feature.auditoria.services.interfaces.IAuditoriaGetService;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
 public class AuditoriaGetService implements IAuditoriaGetService {
 
-    private final AuditoriaRepository auditoriaRepository;
+    private final AuditoriaRepository repo;
 
     @Override
     @Transactional(readOnly = true)
-    public List<AuditoriaResponse>  getAll() {
-        return auditoriaRepository.findAll()
-                .stream()
-                .map(AuditoriaMapper::toResponse)
-                .collect(Collectors.toList());
+    public Page<AuditoriaResponse> getAll(Pageable pageable) {
+        return repo.findAll(pageable).map(AuditoriaMapper::toResponse);
     }
-
-
 }
-
-/**
- * @Override
- *     @Transactional(readOnly = true)
- *     public List<PronosticoResponseDto> listarMisPronosticos() {
- *
- *         Usuario usuario = validateUser.getAuthenticatedUserSession();
- *
- *         return pronosticoRepository.findByUsuarioId(usuario.getId())
- *                 .stream()
- *                 .map(pronosticoMapper::toDto)
- *                 .toList();
- *     }
- */

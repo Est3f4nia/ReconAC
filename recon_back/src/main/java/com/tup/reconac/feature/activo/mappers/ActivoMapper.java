@@ -10,7 +10,7 @@ public class ActivoMapper {
 
     public static Activo toEntity(ActivoRequestDto req) {
         Activo activo = new Activo();
-        activo.setAuditoriaId(req.auditoriaId());
+        activo.setEscaneoId(req.escaneoId());
         activo.setHost(req.host());
         activo.setHostname(req.hostname());
         activo.setSo(req.so());

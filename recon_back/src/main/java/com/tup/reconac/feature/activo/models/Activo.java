@@ -27,10 +27,9 @@ public class Activo implements Serializable {
     @Column(name = "activo_id")
     private UUID id;
 
-    @Column(name = "auditoria_id", nullable = false)
-    private UUID auditoriaId;
+    @Column(name = "escaneo_id", nullable = false)
+    private UUID escaneoId;
 
-    // string interpretado como inet en db (Hibernate)
     @JdbcTypeCode(SqlTypes.INET)
     @Column(name = "host", nullable = false)
     private String host;

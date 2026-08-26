@@ -30,26 +30,26 @@ public class GlobalExceptionHandler {
     }
 
     // Acceso a endpoints admin por parte de usuarios con privilegios básicos
-//    @ExceptionHandler(AuthorizationDeniedException.class)
-//    public ResponseEntity<ProblemDetail> handleAuthorizationDenied(
-//            AuthorizationDeniedException ex,
-//            HttpServletRequest req) {
-//
-//        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-//                HttpStatus.FORBIDDEN,
-//                "No tiene permisos para realizar esta acción"
-//        );
-//
-//        problem.setType(URI.create("/errors/forbidden"));
-//        problem.setInstance(URI.create(req.getRequestURI()));
-//        problem.setProperty("errors",
-//                List.of("Esta acción requiere de más privilegios"));
-//        problem.setProperty("timestamp", Instant.now().toString());
-//
-//        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-//                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-//                .body(problem);
-//    }
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleAuthorizationDenied(
+            AuthorizationDeniedException ex,
+            HttpServletRequest req) {
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN,
+                "No tiene permisos para realizar esta acción"
+        );
+
+        problem.setType(URI.create("/errors/forbidden"));
+        problem.setInstance(URI.create(req.getRequestURI()));
+        problem.setProperty("errors",
+                List.of("Esta acción requiere de más privilegios"));
+        problem.setProperty("timestamp", Instant.now().toString());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ProblemDetail> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest req) {

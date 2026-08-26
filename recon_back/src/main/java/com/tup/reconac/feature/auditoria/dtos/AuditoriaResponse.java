@@ -8,6 +8,5 @@ public record AuditoriaResponse(
         String nombre,
         String objetivo,
         LocalDateTime fechaGeneracion,
-        LocalDateTime fechaFinal,
-        String nmapVersion
+        LocalDateTime fechaFinal
 ) {}
