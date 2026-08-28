@@ -40,7 +40,7 @@ Notas:
 
 ---
 
-## Reglas
+### Reglas
 
 - Solo implementar tareas `APPROVED`.
 - OpenCode puede modificar el estado a `IN_PROGRESS` y `REVIEW`.
@@ -135,6 +135,77 @@ Restricciones:
 Componentes afectados:
 - `recon_back`
 
+<<<<<<< Updated upstream
+=======
+#### T3.1 — API REST: JWT, buenas prácticas, evaluación de implementación
+
+*Insertada manualmente por el PO, por conveniencia, la estructura es distinta en este tipo de inserciones*
+
+Status: REVIEW (terminada, pero falta testeo de DB con el back en funcionamiento, se queda en REVIEW por prevención)
+
+Título:
+Review de implementación de T3
+
+Meta:
+Enriquecer y corregir funcionalidades
+
+> Contexto: API compila en el estado actual, aún así, existe deuda técnica y problemas graves de implentación.
+
+**Bugs y problemas:**
+
+1. `ActivoUpdateService` no persiste (`ActivoUpdateService.java:24-29`)
+
+```java
+ActivoMapper.updateEntity(activo, req);
+return ActivoMapper.toResponse(activo);
+// Falta repo.save(activo)
+```
+
+Solo funciona por dirty checking de JPA en `@Transactional`, pero es frágil e implícito. Si alguien saca `@Transactional` o cambia el isolation level, los updates se pierden silenciosamente.
+
+2. `AuditoriaRequestDto` — pide ID de usuario (`AuditoriaRequestDto.java:12`)
+
+El campo no es necesario con la implementación de JWT, la auditoría debe crearse "sobre" una sesión válida.
+
+2-2. `AuditoriaCreateService` ignora el usuario autenticado (`AuditoriaCreateService.java:15`)
+
+```java
+// Usuario usuario = validateUser.getAuthenticatedUserSession();
+```
+
+El `usuarioId` viene en el request DTO. Cualquier usuario autenticado puede crear auditorías a nombre de cualquier otro usuario. Esto es un problema de seguridad serio.
+
+3. `ActivoGetService` — sin paginación (`ActivoGetService.java:20`)
+
+```java
+return repo.findAll().stream()...
+```
+
+El repo declara `findByAuditoriaId(UUID, Pageable)` pero el service usa `findAll()`. Con muchos activos esto es un problema de rendimiento y de memoria.
+
+**Deuda técnica y malas prácticas:**
+
+1. No hay paginación en endpoints — Requisito de T3: "Paginación en listados". No está implementada en ningún controller. Los repos la tienen pero nada la usa.
+
+2. Roles hardcodeados — Usuario.getAuthorities() devuelve siempre `ROLE_USER`. El JWT extrae roles pero el claim se ignora al reconstruir la sesión. No hay escalabilidad para roles futuros. Se planea agregar `ROLE_ADMIN`, con privilegios **no destructivos** de administrador.
+
+3. Refresh token sin rotación — Cada `/refresh` valida el token viejo y devuelve uno nuevo, pero el viejo sigue siendo válido hasta expirar. Un token robado puede refrescarse indefinidamente. Fallo de seguridad (saltear y luego discutir con el PO, la solución a esto implica desición sobre la arquitectura).
+
+4. CORS hardcodeado — `localhost:3000` no es configurable por profile. En producción o Docker habrá que cambiar el código.
+
+5. BaseResponse sin error body — BaseResponse solo tiene errors: `List<String>` pero `ok()` siempre setea `errors=null`. No hay un factory method para errores. El handler usa ProblemDetail directamente, lo cual es correcto, pero la Response DTO no refleja eso.
+
+6. `so_probab` sin validación en DTO — La DB tiene `CHECK (so_probab BETWEEN 0 AND 100)` pero el DTO no valida esto. Un request con `soProbab: 200` llega hasta la DB y falla con un error genérico en vez de un 400 claro.
+
+**Errores de seguridad (deuda técnica T7) — RESUELTOS:**
+
+1. Rate limiting — `RateLimitFilter` (Bucket4j in-memory) sobre `/api/auth/*` por IP. Propiedades en `app.ratelimit.*`. Para réplicas múltiples convendría respaldar en Redis (mejora futura).
+
+2. CSRF — patrón Double Submit Cookie implementado (`CsrfFilter` + cookie `XSRF-TOKEN` no-httpOnly emitida en login/refresh). Se mantiene `csrf` deshabilitado en Spring (lo reemplaza este filtro). Aplica solo a sesiones cookie; Bearer queda exento.
+
+3. Headers de seguridad — configurados en `SecurityConfig.headers(...)`: `HSTS`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'`.
+
+>>>>>>> Stashed changes
 ---
 
 ### T4 — Refactor de recon_modules: de CLI a servicio
@@ -162,6 +233,26 @@ Restricciones:
 Componentes afectados:
 - `recon_modules`
 
+<<<<<<< Updated upstream
+=======
+Nota:
+- Es CRÍTICO mantener la restricción de fetching de CPEs genéricas.
+
+Notas de implementación (estado actual, alineado a ADR-011 revisada):
+- El módulo ahora NOTIFICA al backend (no solo trackea en memoria):
+  - Al iniciar el hilo: `POST {BACKEND_API_URL}/api/internal/scans/{scan_id}/status` (RUNNING).
+  - Al terminar OK: `POST .../status` (COMPLETED) + `POST .../callback` con el resultado
+    mapeado al contrato `EscaneoResult` (hosts con ip/mac/hostname/os, nmapVersion, startTime, endTime).
+  - Al fallar: `POST .../status` (FAILED, con error).
+- `run_scan` ahora devuelve `ScanReport` (ScanResult + ApiResult) para conservar el
+  inventario de hosts/puertos que antes se descartaba.
+- Variables de entorno del módulo: `BACKEND_API_URL` (default `http://localhost:8080`,
+  en Docker `http://recon_back:8080`), `NVD_API_KEY` (fallback; el backend ya envía la key
+  por usuario). Se agregó `requests` a requirements.txt para los callbacks.
+- El backend expone los endpoints internos en `/api/internal/scans/{jobId}/status` y
+  `/callback` (sin JWT, permitidos en SecurityConfig).
+
+>>>>>>> Stashed changes
 ---
 
 ### T5 — Integración backend ↔ recon_modules
@@ -190,11 +281,51 @@ Restricciones:
 Componentes afectados:
 - `recon_back`, `recon_modules`
 
+Notas de implementación (estado actual, alineado a ADR-011 revisada):
+- Backend expone: `POST /api/auditorias/{auditoriaId}/escaneos` (inicia),
+  `GET /api/auditorias/{auditoriaId}/escaneos/{escaneoId}/status` (progreso),
+  `DELETE /api/auditorias/{auditoriaId}/escaneos/{escaneoId}` (borrado real).
+- Backend expone endpoints internos solo para Flask (sin JWT):
+  `POST /api/internal/scans/{jobId}/status` y `POST /api/internal/scans/{jobId}/callback`.
+- El backend NO consulta NVD/KEV/EPSS: lo hace Flask. `HttpConfig` fue eliminado
+  (los beans NIST/EPSS/KEV no corresponden al backend).
+- `Escaneo.estado` es ahora `EscaneoEstado` (enum: QUEUED/RUNNING/COMPLETED/FAILED),
+  coherente con `estado_escaneo_enum` de V2.
+- `nvd_api_key` se valida con `KeyNotValidException` (unicidad, sin data leakage) en
+  `UsuarioKeyService`.
+- El callback persiste `resultado` JSONB y crea `Activo` por host detectado. La migración
+  de `Puerto`/`Cpe`/`Cve` queda pendiente hasta que esas entidades existan como JPA.
+- La NVD API key del usuario se almacena **hasheada (SHA-256)** en `usuario.nvd_api_key`
+  (unicidad, sin plaintext). En cada scan el frontend envía la key en `ScanStartRequest.nvdApiKey`;
+  el backend la valida contra el hash (`isUserKey`) y la **retransmite a Flask** en `POST /scan`
+  (`nvd_api_key`). NO existe key global: cada usuario usa su propia key (límite de NVD por key).
+  Si el usuario no envía su key, el scan se hace sin enriquecer CVEs y se le informa. Ver ADR-011.
+- **Carrera benigna (conocida):** Flask notifica `RUNNING`/`COMPLETED`/`FAILED` al backend por
+  callback. El estado `RUNNING` a veces puede no persistirse si Flask notifica antes de que el
+  backend guarde `modulo_job_id` (el backend lo guarda justo tras recibir el 202 de Flask). El
+  estado final `COMPLETED`/`FAILED` siempre llega porque Nmap tarda segundos. Para eliminarla
+  del todo se podría generar el `jobId` en el backend y pasarlo a Flask en lugar de que Flask lo
+  genere; se deja como mejora pendiente.
+- Config de endpoints de módulos externalizada como mapa (`ModulesConfig` +
+  `ModuleEndpoint`, `@ConfigurationProperties` `app.modules.*`). ADR-013: Opción A
+  (mapa por entorno). Opción B (registro en DB/Redis, afecta ADR-010) queda
+  comentada en `EscaneoCreateService` como mejora futura. `app.modules.api-url`
+  fue reemplazado por `app.modules.recon.url`.
+
 ---
 
 ### T6 — Integración APIs externas (NVD, KEV, EPSS)
 
+<<<<<<< Updated upstream
 Status: PROPOSED
+=======
+> ⚠️ Conflicto con ADR-011 revisada: la decisión ahora establece que Flask (recon_modules)
+> ejecuta las consultas a NVD/KEV/EPSS, no el backend. T6 debe reescribirse para reflejar que
+> el backend solo orquesta y persiste, y que las consultas externas viven en el módulo Python.
+> Pendiente de decisión del PO.
+
+Status: REVIEW
+>>>>>>> Stashed changes
 
 Título:
 Consultas a APIs externas de vulnerabilidades
@@ -222,7 +353,7 @@ Componentes afectados:
 
 ### T7 — Autenticación y seguridad
 
-Status: PROPOSED
+Status: REVIEW
 
 Título:
 Implementar autenticación, autorización y headers de seguridad
@@ -247,6 +378,15 @@ Restricciones:
 Componentes afectados:
 - `recon_back`
 
+Notas de implementación (REVIEW):
+- Auth/registro/login/refresh: ya existían (JWT en cookies `HttpOnly`+`Secure`+`SameSite=Strict`).
+- CSRF: `CsrfFilter` (Double Submit Cookie) + cookie `XSRF-TOKEN` emitida en login/refresh; el SPA debe reenviarla en header `X-XSRF-TOKEN` en requests mutantes.
+- CORS: `CorsConfig` (origen del frontend).
+- Headers: `SecurityConfig.headers(...)` → HSTS, nosniff, X-Frame-Options DENY, Referrer-Policy no-referrer, CSP restrictiva.
+- Rate limiting: `RateLimitFilter` (Bucket4j in-memory, por IP) en `/api/auth/*`; props `app.ratelimit.*`.
+- Bean Validation: `@Valid` + `@NotBlank/@Email/@Size` en DTOs + handler 400 (`MethodArgumentNotValidException`). Ya cubierto.
+- Pendiente de pruebas manuales del PO (flujo CSRF desde el SPA y headers en prod/HTTPS).
+
 ---
 
 ### T8 — Frontend React
@@ -257,7 +397,7 @@ Título:
 Desarrollo de la interfaz de usuario con React
 
 Meta:
-Implementar la GUI completa según los requisitos del TPIF.
+Implementar la GUI completa según los requisitos del formulario 1.
 
 Requerimientos:
 - Portales de login y registro
@@ -268,7 +408,7 @@ Requerimientos:
   - Historial parcial y completo de escaneos
   - Timeline de nivel general de riesgo
   - Desglose de CVEs: más comunes, con explotación activa, más criticidad
-  - Desglose de hosts: con más vulns críticas
+  - Desglose de hosts: con más vulns crítsicas
   - Comparación entre ejecuciones sobre mismo activo
 - Exportación de reportes (MD, CSV)
 
