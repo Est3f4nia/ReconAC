@@ -14,5 +14,7 @@ public record ScanStartRequest(
 
         Integer maxCveYears,
 
-        Double minCvssScore
+        Double minCvssScore,
+
+        String nvdApiKey
 ) {}

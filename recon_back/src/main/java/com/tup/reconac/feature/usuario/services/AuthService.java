@@ -8,6 +8,7 @@ import com.tup.reconac.feature.usuario.dtos.request.*;
 import com.tup.reconac.feature.usuario.dtos.response.AuthResponseDto;
 import com.tup.reconac.feature.usuario.dtos.response.RefreshResponseDto;
 import com.tup.reconac.feature.usuario.models.Usuario;
+import java.util.UUID;
 import com.tup.reconac.feature.usuario.repositories.UsuarioRepository;
 import com.tup.reconac.feature.usuario.services.interfaces.IAuthService;
 import io.jsonwebtoken.Claims;
@@ -54,6 +55,7 @@ public class AuthService implements IAuthService {
                     .map(GrantedAuthority::getAuthority).toList();
             String accessToken = jwtService.generateToken(principal.getUsername(), roles);
             String refreshToken = jwtService.generateRefreshToken(principal.getUsername());
+            String csrfToken = UUID.randomUUID().toString();
             Usuario usuario = (Usuario) principal;
             return new AuthResponseDto(
                     usuario.getId(),
@@ -61,7 +63,8 @@ public class AuthService implements IAuthService {
                     refreshToken,
                     TOKEN_TYPE_BEARER,
                     jwtProperties.expirationMs(),
-                    usuario.getEmail()
+                    usuario.getEmail(),
+                    csrfToken
             );
         } catch (BadCredentialsException e) {
             throw new InvalidCredentialsException("Credenciales inválidas");
@@ -77,10 +80,12 @@ public class AuthService implements IAuthService {
                 .orElseThrow(() -> new InvalidCredentialsException("Usuario no encontrado"));
         var roles = jwtService.extractRoles(claims);
         String newAccessToken = jwtService.generateToken(username, roles);
+        String csrfToken = UUID.randomUUID().toString();
         return new RefreshResponseDto(
                 newAccessToken,
                 "Bearer",
-                jwtProperties.expirationMs()
+                jwtProperties.expirationMs(),
+                csrfToken
         );
     }
 }

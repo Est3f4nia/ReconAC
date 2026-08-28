@@ -8,5 +8,6 @@ public record AuthResponseDto(
         String refreshToken,
         String tokenType,
         long expiresInMs,
-        String email
+        String email,
+        String csrfToken
 ) {}

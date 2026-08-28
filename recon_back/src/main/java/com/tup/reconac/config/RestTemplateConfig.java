@@ -4,11 +4,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
-/**
- * qué hace esto
- */
 @Configuration
-public class HttpConfig {
+public class RestTemplateConfig {
 
     @Bean
     public RestTemplate restTemplate() {

@@ -11,6 +11,8 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.tup.reconac.feature.escaneo.models.EscaneoEstado;
+
 @Entity
 @Table(name = "escaneo")
 @NoArgsConstructor
@@ -30,8 +32,9 @@ public class Escaneo implements Serializable {
     @Column(name = "objetivos", columnDefinition = "text[]")
     private String[] objetivos;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false)
-    private String estado = "QUEUED";
+    private EscaneoEstado estado = EscaneoEstado.QUEUED;
 
     @Column(name = "progreso", nullable = false)
     private Integer progreso = 0;
@@ -60,8 +63,11 @@ public class Escaneo implements Serializable {
 
     @PrePersist
     public void prePersist() {
-        if (this.creadoA == null) {
-            this.creadoA = LocalDateTime.now();
-        }
+        this.creadoA = LocalDateTime.now();
     }
 }
+
+/** Problema: ¿cómo se le asignan activos? La auditoria debería estar relacionada por endpoints
+ *  y por DB.
+ */
+

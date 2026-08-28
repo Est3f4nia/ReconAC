@@ -1,6 +1,7 @@
 package com.tup.reconac.feature.escaneo.mappers;
 
 import com.tup.reconac.feature.escaneo.dtos.EscaneoResponse;
+import com.tup.reconac.feature.escaneo.dtos.ScanStatusResponse;
 import com.tup.reconac.feature.escaneo.models.Escaneo;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +20,15 @@ public class EscaneoMapper {
                 escaneo.getIniciadoA(),
                 escaneo.getCompletadoA(),
                 escaneo.getCreadoA()
+        );
+    }
+
+    public static ScanStatusResponse toStatusResponse(Escaneo escaneo) {
+        return new ScanStatusResponse(
+                escaneo.getModuloJobId(),
+                escaneo.getEstado(),
+                escaneo.getProgreso(),
+                escaneo.getMensajeError()
         );
     }
 }

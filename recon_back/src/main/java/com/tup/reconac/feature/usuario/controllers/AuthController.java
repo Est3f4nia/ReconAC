@@ -39,6 +39,7 @@ public class AuthController {
         AuthResponseDto body = authService.login(request);
         addCookie(response, "access_token", body.accessToken(), 86400);
         addCookie(response, "refresh_token", body.refreshToken(), 604800);
+        addCsrfCookie(response, body.csrfToken());
         return ResponseEntity.ok(BaseResponse.ok(body, "Autenticación correcta"));
     }
 
@@ -48,6 +49,7 @@ public class AuthController {
             HttpServletResponse response) {
         RefreshResponseDto body = authService.refresh(request);
         addCookie(response, "access_token", body.accessToken(), 86400);
+        addCsrfCookie(response, body.csrfToken());
         return ResponseEntity.ok(BaseResponse.ok(body, "Token renovado correctamente"));
     }
 
@@ -57,6 +59,16 @@ public class AuthController {
         cookie.setSecure(true);
         cookie.setPath("/");
         cookie.setMaxAge(maxAge);
+        cookie.setAttribute("SameSite", "Strict");
+        response.addCookie(cookie);
+    }
+
+    private void addCsrfCookie(HttpServletResponse response, String value) {
+        Cookie cookie = new Cookie("XSRF-TOKEN", value);
+        cookie.setHttpOnly(false);
+        cookie.setSecure(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(86400);
         cookie.setAttribute("SameSite", "Strict");
         response.addCookie(cookie);
     }

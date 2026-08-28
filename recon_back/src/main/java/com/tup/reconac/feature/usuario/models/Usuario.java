@@ -29,8 +29,11 @@ public class Usuario implements UserDetails, Serializable {
     @Column(name = "contrasenia", nullable = false)
     private String contrasenia;
 
+    // Almacena el hash SHA-256 de la NVD API key del usuario (irreversible).
+    // No se persiste el plaintext: el backend no transmite la key al módulo;
+    // Flask usa su propia NVD_API_KEY de entorno para las consultas.
     @Column(name = "nvd_api_key")
-    private String nvdApiKey;
+    private String nvdApiKeyHash;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
