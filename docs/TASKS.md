@@ -316,16 +316,12 @@ Notas de implementación (estado actual, alineado a ADR-011 revisada):
 
 ### T6 — Integración APIs externas (NVD, KEV, EPSS)
 
-<<<<<<< Updated upstream
-Status: PROPOSED
-=======
 > ⚠️ Conflicto con ADR-011 revisada: la decisión ahora establece que Flask (recon_modules)
 > ejecuta las consultas a NVD/KEV/EPSS, no el backend. T6 debe reescribirse para reflejar que
 > el backend solo orquesta y persiste, y que las consultas externas viven en el módulo Python.
 > Pendiente de decisión del PO.
 
 Status: REVIEW
->>>>>>> Stashed changes
 
 Título:
 Consultas a APIs externas de vulnerabilidades

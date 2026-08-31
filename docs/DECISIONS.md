@@ -159,9 +159,6 @@ Justificación:
 Incluir Nmap en el contenedor elimina la dependencia de instalación
 manual en el host. En Windows, Nmap no está presente por defecto
 y su instalación manual agrega fricción. El contenedor garantiza
-<<<<<<< Updated upstream
-que el entorno de ejecución sea reproducible y consistente.
-=======
 que el entorno de ejecución sea reproducible y consistente.
 
 ---
@@ -397,4 +394,3 @@ módulos de ADR-010** y requeriría revisarla. La interfaz de resolución
 
 Trade-off: Opción B añade infra/complejidad (tabla `modulo`, health-check,
 cache). Para el alcance actual (1–2 módulos) la Opción A alcanza y sobra.
->>>>>>> Stashed changes
