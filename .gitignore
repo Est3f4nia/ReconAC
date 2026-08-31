@@ -56,10 +56,6 @@ ENV/
 .venv/
 . env/
 .env
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
 
 # IDEs and editors
 .vscode/
