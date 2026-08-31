@@ -26,7 +26,6 @@ build/
 !**/src/test/**/build/
 
 # Python
-
 __pycache__/
 *.py[cod]
 *$py.class
@@ -57,7 +56,10 @@ ENV/
 .venv/
 . env/
 .env
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 
 # IDEs and editors
 .vscode/
@@ -80,3 +82,19 @@ outputs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Dependencias
+node_modules/
+.pnpm-store/
+
+# Archivos de producción/compilación
+dist/
+dist-ssr/
+*.local
+
+# Logs de error y ejecución
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
