@@ -1,10 +1,6 @@
 notes.md
 notes.txt
 
-.env
-.env.*
-!.env.example
-
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -30,7 +26,6 @@ build/
 !**/src/test/**/build/
 
 # Python
-
 __pycache__/
 *.py[cod]
 *$py.class
@@ -54,12 +49,13 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Virtual environments
+# Environment
 venv/
 env/
 ENV/
 .venv/
 . env/
+.env
 
 # IDEs and editors
 .vscode/
@@ -82,3 +78,19 @@ outputs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Dependencias
+node_modules/
+.pnpm-store/
+
+# Archivos de producción/compilación
+dist/
+dist-ssr/
+*.local
+
+# Logs de error y ejecución
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

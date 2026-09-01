@@ -40,7 +40,7 @@ Notas:
 
 ---
 
-## Reglas
+### Reglas
 
 - Solo implementar tareas `APPROVED`.
 - OpenCode puede modificar el estado a `IN_PROGRESS` y `REVIEW`.
@@ -195,13 +195,13 @@ El repo declara `findByAuditoriaId(UUID, Pageable)` pero el service usa `findAll
 
 6. `so_probab` sin validación en DTO — La DB tiene `CHECK (so_probab BETWEEN 0 AND 100)` pero el DTO no valida esto. Un request con `soProbab: 200` llega hasta la DB y falla con un error genérico en vez de un 400 claro.
 
-**Errores de seguridad (deuda técnica T7):**
+**Errores de seguridad (deuda técnica T7) — RESUELTOS:**
 
-1. Sin rate limiting — T7 pide Bucket4j. Los endpoints de auth son públicos sin protección contra brute force.
+1. Rate limiting — `RateLimitFilter` (Bucket4j in-memory) sobre `/api/auth/*` por IP. Propiedades en `app.ratelimit.*`. Para réplicas múltiples convendría respaldar en Redis (mejora futura).
 
-2. CSRF deshabilitado sin alternativa — T7 pide CSRF (Double Submit Cookie). Se deshabilitó pero no se implementó la alternativa. Cookies `HttpOnly` con `SameSite=Strict` mitiga parcialmente, pero no está completo.
+2. CSRF — patrón Double Submit Cookie implementado (`CsrfFilter` + cookie `XSRF-TOKEN` no-httpOnly emitida en login/refresh). Se mantiene `csrf` deshabilitado en Spring (lo reemplaza este filtro). Aplica solo a sesiones cookie; Bearer queda exento.
 
-3. Headers de seguridad ausentes — T7 pide `HSTS`, `X-Content-Type-Options`, `X-Frame-Options`, `CSP`, `Referrer-Policy`. Ninguno está configurado.
+3. Headers de seguridad — configurados en `SecurityConfig.headers(...)`: `HSTS`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'`.
 
 ---
 
@@ -265,6 +265,20 @@ Componentes afectados:
 Nota:
 - Es CRÍTICO mantener la restricción de fetching de CPEs genéricas.
 
+Notas de implementación (estado actual, alineado a ADR-011 revisada):
+- El módulo ahora NOTIFICA al backend (no solo trackea en memoria):
+  - Al iniciar el hilo: `POST {BACKEND_API_URL}/api/internal/scans/{scan_id}/status` (RUNNING).
+  - Al terminar OK: `POST .../status` (COMPLETED) + `POST .../callback` con el resultado
+    mapeado al contrato `EscaneoResult` (hosts con ip/mac/hostname/os, nmapVersion, startTime, endTime).
+  - Al fallar: `POST .../status` (FAILED, con error).
+- `run_scan` ahora devuelve `ScanReport` (ScanResult + ApiResult) para conservar el
+  inventario de hosts/puertos que antes se descartaba.
+- Variables de entorno del módulo: `BACKEND_API_URL` (default `http://localhost:8080`,
+  en Docker `http://recon_back:8080`), `NVD_API_KEY` (fallback; el backend ya envía la key
+  por usuario). Se agregó `requests` a requirements.txt para los callbacks.
+- El backend expone los endpoints internos en `/api/internal/scans/{jobId}/status` y
+  `/callback` (sin JWT, permitidos en SecurityConfig).
+
 ---
 
 ### T5 — Integración backend ↔ recon_modules
@@ -327,9 +341,45 @@ Restricciones:
 Componentes afectados:
 - `recon_back`
 
+Notas de implementación (estado actual, alineado a ADR-011 revisada):
+- Backend expone: `POST /api/auditorias/{auditoriaId}/escaneos` (inicia),
+  `GET /api/auditorias/{auditoriaId}/escaneos/{escaneoId}/status` (progreso),
+  `DELETE /api/auditorias/{auditoriaId}/escaneos/{escaneoId}` (borrado real).
+- Backend expone endpoints internos solo para Flask (sin JWT):
+  `POST /api/internal/scans/{jobId}/status` y `POST /api/internal/scans/{jobId}/callback`.
+- El backend NO consulta NVD/KEV/EPSS: lo hace Flask. `HttpConfig` fue eliminado
+  (los beans NIST/EPSS/KEV no corresponden al backend).
+- `Escaneo.estado` es ahora `EscaneoEstado` (enum: QUEUED/RUNNING/COMPLETED/FAILED),
+  coherente con `estado_escaneo_enum` de V2.
+- `nvd_api_key` se valida con `KeyNotValidException` (unicidad, sin data leakage) en
+  `UsuarioKeyService`.
+- El callback persiste `resultado` JSONB y crea `Activo` por host detectado. La migración
+  de `Puerto`/`Cpe`/`Cve` queda pendiente hasta que esas entidades existan como JPA.
+- La NVD API key del usuario se almacena **hasheada (SHA-256)** en `usuario.nvd_api_key`
+  (unicidad, sin plaintext). En cada scan el frontend envía la key en `ScanStartRequest.nvdApiKey`;
+  el backend la valida contra el hash (`isUserKey`) y la **retransmite a Flask** en `POST /scan`
+  (`nvd_api_key`). NO existe key global: cada usuario usa su propia key (límite de NVD por key).
+  Si el usuario no envía su key, el scan se hace sin enriquecer CVEs y se le informa. Ver ADR-011.
+- **Carrera benigna (conocida):** Flask notifica `RUNNING`/`COMPLETED`/`FAILED` al backend por
+  callback. El estado `RUNNING` a veces puede no persistirse si Flask notifica antes de que el
+  backend guarde `modulo_job_id` (el backend lo guarda justo tras recibir el 202 de Flask). El
+  estado final `COMPLETED`/`FAILED` siempre llega porque Nmap tarda segundos. Para eliminarla
+  del todo se podría generar el `jobId` en el backend y pasarlo a Flask en lugar de que Flask lo
+  genere; se deja como mejora pendiente.
+- Config de endpoints de módulos externalizada como mapa (`ModulesConfig` +
+  `ModuleEndpoint`, `@ConfigurationProperties` `app.modules.*`). ADR-013: Opción A
+  (mapa por entorno). Opción B (registro en DB/Redis, afecta ADR-010) queda
+  comentada en `EscaneoCreateService` como mejora futura. `app.modules.api-url`
+  fue reemplazado por `app.modules.recon.url`.
+
 ---
 
 ### T6 — Integración APIs externas (NVD, KEV, EPSS)
+
+> ⚠️ Conflicto con ADR-011 revisada: la decisión ahora establece que Flask (recon_modules)
+> ejecuta las consultas a NVD/KEV/EPSS, no el backend. T6 debe reescribirse para reflejar que
+> el backend solo orquesta y persiste, y que las consultas externas viven en el módulo Python.
+> Pendiente de decisión del PO.
 
 Status: REVIEW
 
@@ -362,7 +412,7 @@ Notas:
 
 ### T7 — Autenticación y seguridad
 
-Status: PROPOSED
+Status: REVIEW
 
 Título:
 Implementar autenticación, autorización y headers de seguridad
@@ -387,6 +437,15 @@ Restricciones:
 Componentes afectados:
 - `recon_back`
 
+Notas de implementación (REVIEW):
+- Auth/registro/login/refresh: ya existían (JWT en cookies `HttpOnly`+`Secure`+`SameSite=Strict`).
+- CSRF: `CsrfFilter` (Double Submit Cookie) + cookie `XSRF-TOKEN` emitida en login/refresh; el SPA debe reenviarla en header `X-XSRF-TOKEN` en requests mutantes.
+- CORS: `CorsConfig` (origen del frontend).
+- Headers: `SecurityConfig.headers(...)` → HSTS, nosniff, X-Frame-Options DENY, Referrer-Policy no-referrer, CSP restrictiva.
+- Rate limiting: `RateLimitFilter` (Bucket4j in-memory, por IP) en `/api/auth/*`; props `app.ratelimit.*`.
+- Bean Validation: `@Valid` + `@NotBlank/@Email/@Size` en DTOs + handler 400 (`MethodArgumentNotValidException`). Ya cubierto.
+- Pendiente de pruebas manuales del PO (flujo CSRF desde el SPA y headers en prod/HTTPS).
+
 ---
 
 ### T8 — Frontend React
@@ -397,7 +456,7 @@ Título:
 Desarrollo de la interfaz de usuario con React
 
 Meta:
-Implementar la GUI completa según los requisitos del TPIF.
+Implementar la GUI completa según los requisitos del formulario 1.
 
 Requerimientos:
 - Portales de login y registro
@@ -408,7 +467,7 @@ Requerimientos:
   - Historial parcial y completo de escaneos
   - Timeline de nivel general de riesgo
   - Desglose de CVEs: más comunes, con explotación activa, más criticidad
-  - Desglose de hosts: con más vulns críticas
+  - Desglose de hosts: con más vulns crítsicas
   - Comparación entre ejecuciones sobre mismo activo
 - Exportación de reportes (MD, CSV)
 
@@ -455,4 +514,3 @@ ya que la comunicación entre contenedores cambia de subprocess a HTTP.
 
 Componentes afectados:
 - `recon_back`, `recon_modules`, `recon_front`
-
