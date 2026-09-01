@@ -1,30 +1,27 @@
 import { Link } from "react-router-dom";
-import "./AuditCard.css"; //ver
-
-export type AuditStatus = "En proceso" | "Completada" | "Failed";  // debe coincidir con los del back
-
-export interface AuditCardData {
-  id: string;
-  nombre: string;
-  activos: number;
-  puertos: number;
-  ultimoEscaneo: string;
-  status: AuditStatus;
-  cve: number;
-  cveCriticos: number;
-}
+import type { EscaneoResumen } from "@/data/escaneos";
+import "./AuditCard.css";
 
 interface AuditCardProps {
-  audit: AuditCardData;
+  audit: EscaneoResumen;
 }
 
-
 export function AuditCard({ audit }: AuditCardProps) {
+  const fecha = audit.ultimoEscaneo
+    ? new Date(audit.ultimoEscaneo).toLocaleString("es-AR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
+
   return (
     <article className="audit-card">
-      <h3 className="audit-card-title">
-        {audit.nombre}
-      </h3>
+      <h3 className="audit-card-title">{audit.auditoriaNombre}</h3>
+
+      <hr className="audit-card-divider" />
 
       <div className="audit-card-info">
         <p>{audit.activos} activos</p>
@@ -32,17 +29,13 @@ export function AuditCard({ audit }: AuditCardProps) {
 
         <div className="audit-card-scan">
           <p>Último escaneo:</p>
-          <p>{audit.ultimoEscaneo}</p>
+          <p>{fecha}</p>
         </div>
 
         <div className="audit-card-status">
           <p>Status:</p>
-          <span
-            className={`status status-${audit.status
-              .toLowerCase()
-              .replace(" ", "-")}`}
-          >
-            {audit.status}
+          <span className={`status status-${audit.status}`}>
+            {audit.status.replace("_", " ")}
           </span>
         </div>
 
@@ -51,8 +44,10 @@ export function AuditCard({ audit }: AuditCardProps) {
         </p>
       </div>
 
+      <hr className="audit-card-divider" />
+
       <Link
-        to={`/auditorias/${audit.id}`}
+        to={`/auditorias/${audit.auditoriaId}/escaneos/${audit.escaneoId}`}
         className="audit-card-button"
       >
         Ver
