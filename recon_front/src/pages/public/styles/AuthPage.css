@@ -1,0 +1,194 @@
+/* ======= AUTH PAGE ======= */
+
+.auth-page {
+    padding: 32px 20px;
+}
+
+
+/* ======= AUTH CARD ======= */
+
+.auth-card {
+    width: 340px;
+
+    padding: 30px 22px 20px;
+
+    border: 2px solid var(--border-big);
+    border-radius: var(--br-radius);
+
+    background: var(--bg);
+}
+
+
+/* ======= TITLE ======= */
+
+.auth-card h1 {
+    margin-bottom: 24px;
+
+    font-family: var(--font-title);
+    font-size: 1.7rem;
+    font-weight: 400;
+
+    text-align: center;
+}
+
+
+/* ======= ERROR ======= */
+
+.auth-error {
+    margin-bottom: 14px;
+
+    padding: 8px 12px;
+
+    border: 1px solid var(--critical);
+    border-radius: 4px;
+
+    background: rgba(255, 49, 49, 0.1);
+    color: var(--critical);
+
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+
+/* ======= FORM ======= */
+
+.auth-card form {
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* ======= FIELD ======= */
+
+.auth-field {
+    display: flex;
+    flex-direction: column;
+
+    margin-bottom: 14px;
+}
+
+.auth-field label {
+    margin-bottom: 5px;
+
+    font-size: 0.85rem;
+}
+
+.auth-field input {
+    width: 100%;
+    height: 40px;
+
+    padding: 6px 8px;
+
+    border: 2px solid var(--border-big);
+    border-radius: 4px;
+
+    outline: none;
+
+    background: var(--bg);
+    color: var(--font);
+
+    font-size: 0.85rem;
+
+    transition: border-color var(--transition);
+}
+
+.auth-field input:focus {
+    border-color: var(--border-acc);
+}
+
+
+/* ======= LEGAL CHECK ======= */
+
+.legal-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    margin: 7px 0 24px;
+
+    font-size: 0.85rem;
+}
+
+.legal-check input[type="checkbox"] {
+    flex-shrink: 0;
+
+    width: 15px;
+    height: 15px;
+
+    margin: 0;
+
+    cursor: pointer;
+
+    accent-color: var(--button-link);
+}
+
+.legal-check label {
+    cursor: pointer;
+}
+
+
+/* ======= FORGOT PASSWORD ======= */
+
+.forgot-password {
+    align-self: flex-start;
+
+    margin: -2px 0 20px;
+
+    color: var(--button-link);
+
+    font-size: 0.65rem;
+}
+
+.forgot-password:hover {
+    color: var(--button-link);
+}
+
+
+/* ======= SUBMIT BUTTON ======= */
+
+.auth-button {
+    width: 244px;
+    height: 40px;
+
+    align-self: center;
+
+    border: 2px solid var(--button-link);
+    border-radius: 4px;
+
+    background: transparent;
+    color: var(--font);
+
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background var(--transition),
+        color var(--transition);
+}
+
+.auth-button:hover {
+    background: var(--button-link);
+    color: var(--bg);
+}
+
+
+/* ======= AUTH SWITCH ======= */
+
+.auth-switch {
+    margin-top: 18px;
+
+    font-size: 0.65rem;
+
+    text-align: center;
+}
+
+.auth-switch a {
+    color: var(--button-link);
+}
+
+.auth-switch a:hover {
+    color: var(--button-link);
+}
