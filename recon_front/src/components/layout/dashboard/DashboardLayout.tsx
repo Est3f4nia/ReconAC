@@ -1,14 +1,13 @@
 import { Outlet } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
-// import "./DashboardLayout.css";
+import "@/components/layout/dashboard/DashboardStyle.css";
 
 export default function DashboardLayout() {
   return (
     <div className="dashboard-layout">
         <Navbar
-            username="User"
             items={[
-                { label: "Escaneos", path: "/escaneos" },  // ver por rdd
+                { label: "Escaneos", path: "/escaneos" },
                 { label: "Activos", path: "/activos" },
             ]}
         />

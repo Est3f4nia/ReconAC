@@ -1,0 +1,51 @@
+/* ======= DASHBOARD PAGE ======= */
+
+.dashboard-page {
+    padding: 32px 24px;
+}
+
+.dashboard-page h1 {
+    margin-bottom: 28px;
+
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+
+/* ======= SESSION INFO ======= */
+
+.session-info {
+    width: 100%;
+    max-width: 420px;
+
+    padding: 22px 24px;
+
+    border: 2px solid var(--border-big);
+    border-radius: var(--br-radius);
+
+    background: var(--bg);
+}
+
+.session-info h2 {
+    margin-bottom: 16px;
+
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--border-acc);
+}
+
+.session-info dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 16px;
+}
+
+.session-info dt {
+    font-weight: 600;
+    color: var(--font);
+}
+
+.session-info dd {
+    color: var(--font);
+    opacity: 0.85;
+}
