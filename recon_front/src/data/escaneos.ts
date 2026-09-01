@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import type { BaseResponse } from "./types";
+import type { BaseResponse, AuditoriaResponse } from "./types";
 
 export type AuditStatus = "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED";
 
@@ -20,4 +20,25 @@ export async function fetchResumen(): Promise<EscaneoResumen[]> {
   if (!res.ok) throw new Error("Error al obtener resumen");
   const body: BaseResponse<EscaneoResumen[]> = await res.json();
   return body.data;
+}
+
+export async function createAuditoria(
+  nombre: string,
+  objetivo: string,
+): Promise<AuditoriaResponse> {
+  const res = await apiFetch("/api/auditorias", {
+    method: "POST",
+    body: JSON.stringify({ nombre, objetivo }),
+  });
+  return parseResponse<AuditoriaResponse>(res);
+}
+
+async function parseResponse<T>(res: Response): Promise<T> {
+  const body = await res.json();
+  if (!res.ok) {
+    const detail = body.detail ?? body.message ?? "Error desconocido";
+    const errors: string[] | undefined = body.errors;
+    throw new Error(errors?.[0] ?? detail);
+  }
+  return (body.data ?? body) as T;
 }

@@ -7,6 +7,7 @@ import type { AuthResponse, JwtPayload } from "./types";
 const CSRF_COOKIE = "XSRF-TOKEN";
 const CSRF_HEADER = "X-XSRF-TOKEN";
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const BEARER_PREFIX = "Bearer ";
 
 /* ---------- estado en memoria (singleton) ---------- */
 
@@ -87,6 +88,11 @@ export async function apiFetch(
 
   if (!headers.has("Content-Type") && options.body) {
     headers.set("Content-Type", "application/json");
+  }
+
+  const token = getAccessToken();
+  if (token) {
+    headers.set("Authorization", BEARER_PREFIX + token);
   }
 
   let res = await fetch(url, {

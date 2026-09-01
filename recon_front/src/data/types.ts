@@ -27,6 +27,16 @@ export interface RefreshResponse {
   csrfToken: string;
 }
 
+/* ---------- Auditoría ---------- */
+
+export interface AuditoriaResponse {
+  id: string;
+  nombre: string;
+  objetivo: string;
+  fechaGeneracion: string;
+  usuarioId: string;
+}
+
 /* ---------- JWT decodificado ---------- */
 
 export interface JwtPayload {

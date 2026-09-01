@@ -130,3 +130,8 @@
     color: var(--bg);
     text-decoration: none;
 }
+
+.audit-card-button--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

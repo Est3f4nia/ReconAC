@@ -46,12 +46,18 @@ export function AuditCard({ audit }: AuditCardProps) {
 
       <hr className="audit-card-divider" />
 
-      <Link
-        to={`/auditorias/${audit.auditoriaId}/escaneos/${audit.escaneoId}`}
-        className="audit-card-button"
-      >
-        Ver
-      </Link>
+      {audit.escaneoId ? (
+        <Link
+          to={`/auditorias/${audit.auditoriaId}/escaneos/${audit.escaneoId}`}
+          className="audit-card-button"
+        >
+          Ver
+        </Link>
+      ) : (
+        <span className="audit-card-button audit-card-button--disabled">
+          Ver
+        </span>
+      )}
     </article>
   );
 }
