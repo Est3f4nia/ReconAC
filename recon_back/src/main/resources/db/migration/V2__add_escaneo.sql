@@ -7,10 +7,10 @@
 -- ===== ENUM TYPES =====
 
 CREATE TYPE estado_escaneo_enum AS ENUM (
-    'QUEUED',
-    'RUNNING',
-    'COMPLETED',
-    'FAILED'
+    'PENDIENTE',
+    'EN_PROCESO',
+    'COMPLETADO',
+    'FALLO'
 );
 
 -- ===== ESCANEO =====
@@ -20,7 +20,7 @@ CREATE TABLE Escaneo (
     auditoria_id UUID NOT NULL,
 
     objetivos TEXT[] NOT NULL,
-    estado estado_escaneo_enum NOT NULL DEFAULT 'QUEUED',
+    estado estado_escaneo_enum NOT NULL DEFAULT 'PENDIENTE',
     progreso INTEGER NOT NULL DEFAULT 0,
 
     modulo_job_id VARCHAR(100),

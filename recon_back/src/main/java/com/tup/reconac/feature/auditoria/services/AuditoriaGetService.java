@@ -19,6 +19,6 @@ public class AuditoriaGetService implements IAuditoriaGetService {
     @Override
     @Transactional(readOnly = true)
     public Page<AuditoriaResponse> getAll(Pageable pageable) {
-        return repo.findAll(pageable).map(AuditoriaMapper::toResponse);
+        return repo.findAll(pageable).map(AuditoriaMapper::toResponse);  //ver
     }
 }

@@ -1,8 +1,8 @@
 package com.tup.reconac.feature.escaneo.models;
 
 public enum EscaneoEstado {
-    QUEUED,
-    RUNNING,
-    COMPLETED,
-    FAILED
+    PENDIENTE,
+    EN_PROCESO,
+    COMPLETADO,
+    FALLO
 }

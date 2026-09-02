@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS Escaneo (
     auditoria_id UUID NOT NULL,
 
     objetivos VARCHAR(1000) NOT NULL,
-    estado VARCHAR(20) NOT NULL DEFAULT 'QUEUED',
+    estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
     progreso INTEGER NOT NULL DEFAULT 0,
 
     modulo_job_id VARCHAR(100),

@@ -72,7 +72,7 @@ public class EscaneoCreateService implements IEscaneoPostService {
         Escaneo escaneo = new Escaneo();
         escaneo.setAuditoriaId(auditoriaId);
         escaneo.setObjetivos(req.objetivos().toArray(new String[0]));
-        escaneo.setEstado(EscaneoEstado.QUEUED);
+        escaneo.setEstado(EscaneoEstado.PENDIENTE);
 
         Escaneo saved = repo.save(escaneo);
 
@@ -107,20 +107,20 @@ public class EscaneoCreateService implements IEscaneoPostService {
             if (response.getStatusCode() == HttpStatus.ACCEPTED && response.getBody() != null) {
                 String externalScanId = (String) response.getBody().get("scan_id");
                 saved.setModuloJobId(externalScanId);
-                saved.setEstado(EscaneoEstado.RUNNING);
+                saved.setEstado(EscaneoEstado.EN_PROCESO);
                 saved.setIniciadoA(LocalDateTime.now());
                 repo.save(saved);
             } else {
-                saved.setEstado(EscaneoEstado.FAILED);
+                saved.setEstado(EscaneoEstado.FALLO);
                 saved.setMensajeError("El módulo no pudo iniciar el escaneo");
                 repo.save(saved);
             }
         } catch (ResourceAccessException e) {
-            saved.setEstado(EscaneoEstado.FAILED);
+            saved.setEstado(EscaneoEstado.FALLO);
             saved.setMensajeError("No se pudo conectar con el módulo de reconocimiento: " + e.getMessage());
             repo.save(saved);
         } catch (Exception e) {
-            saved.setEstado(EscaneoEstado.FAILED);
+            saved.setEstado(EscaneoEstado.FALLO);
             saved.setMensajeError("Error al iniciar el escaneo: " + e.getMessage());
             repo.save(saved);
         }
@@ -143,7 +143,7 @@ public class EscaneoCreateService implements IEscaneoPostService {
         if (status.error() != null) {
             escaneo.setMensajeError(status.error());
         }
-        if (EscaneoEstado.COMPLETED.equals(status.status()) || EscaneoEstado.FAILED.equals(status.status())) {
+        if (EscaneoEstado.COMPLETADO.equals(status.status()) || EscaneoEstado.FALLO.equals(status.status())) {
             escaneo.setCompletadoA(LocalDateTime.now());
         }
         repo.save(escaneo);
@@ -158,14 +158,14 @@ public class EscaneoCreateService implements IEscaneoPostService {
         try {
             escaneo.setResultado(objectMapper.writeValueAsString(result));
             escaneo.setNmapVersion(result.nmapVersion());
-            escaneo.setEstado(EscaneoEstado.COMPLETED);
+            escaneo.setEstado(EscaneoEstado.COMPLETADO);
             escaneo.setProgreso(100);
             escaneo.setCompletadoA(LocalDateTime.now());
             repo.save(escaneo);
 
             migrarActivos(escaneo, result.hosts());
         } catch (Exception e) {
-            escaneo.setEstado(EscaneoEstado.FAILED);
+            escaneo.setEstado(EscaneoEstado.FALLO);
             escaneo.setMensajeError("Error al procesar el resultado del escaneo: " + e.getMessage());
             repo.save(escaneo);
         }

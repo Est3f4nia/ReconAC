@@ -11,8 +11,6 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import com.tup.reconac.feature.escaneo.models.EscaneoEstado;
-
 @Entity
 @Table(name = "escaneo")
 @NoArgsConstructor
@@ -34,7 +32,7 @@ public class Escaneo implements Serializable {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false)
-    private EscaneoEstado estado = EscaneoEstado.QUEUED;
+    private EscaneoEstado estado = EscaneoEstado.PENDIENTE;
 
     @Column(name = "progreso", nullable = false)
     private Integer progreso = 0;

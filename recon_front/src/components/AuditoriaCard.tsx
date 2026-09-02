@@ -7,8 +7,8 @@ interface AuditCardProps {
 }
 
 export function AuditCard({ audit }: AuditCardProps) {
-  const fecha = audit.ultimoEscaneo
-    ? new Date(audit.ultimoEscaneo).toLocaleString("es-AR", {
+  const fecha = audit.completadoA
+    ? new Date(audit.completadoA).toLocaleString("es-AR", {
         day: "2-digit",
         month: "2-digit",
         year: "2-digit",
@@ -16,6 +16,14 @@ export function AuditCard({ audit }: AuditCardProps) {
         minute: "2-digit",
       })
     : "—";
+
+  const statusText = audit.status
+    ? audit.status.replace("_", " ")
+    : "SIN ESCANEOS";
+
+  const statusClass = audit.status
+    ? `status-${audit.status.toLowerCase()}`
+    : "status-sin-escaneos";
 
   return (
     <article className="audit-card">
@@ -34,8 +42,8 @@ export function AuditCard({ audit }: AuditCardProps) {
 
         <div className="audit-card-status">
           <p>Status:</p>
-          <span className={`status status-${audit.status}`}>
-            {audit.status.replace("_", " ")}
+          <span className={`status ${statusClass}`}>
+            {statusText}
           </span>
         </div>
 
@@ -54,7 +62,7 @@ export function AuditCard({ audit }: AuditCardProps) {
           Ver
         </Link>
       ) : (
-        <span className="audit-card-button audit-card-button--disabled">
+        <span className="audit-card-button audit-card-button">
           Ver
         </span>
       )}

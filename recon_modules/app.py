@@ -3,7 +3,7 @@ import uuid
 import threading
 import json
 import requests
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from dataclasses import asdict
 from flask import Flask, request, jsonify
 from config import Config
@@ -16,6 +16,8 @@ BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8080").rstrip("
 
 _scans: dict[str, dict] = {}
 _lock = threading.Lock()
+_MAX_SCANS = 500
+_SCAN_TTL = timedelta(hours=24)
 
 
 def _default_serializer(obj):
@@ -34,16 +36,42 @@ def _update_scan(scan_id: str, **kwargs):
             _scans[scan_id].update(kwargs)
 
 
+def _cleanup_scans():
+    with _lock:
+        now = datetime.now()
+        expired = [
+            sid for sid, s in _scans.items()
+            if s.get("status") in ("COMPLETED", "FAILED")
+            and s.get("updated_at") is not None
+            and (now - s["updated_at"]) > _SCAN_TTL
+        ]
+        for sid in expired:
+            del _scans[sid]
+        if len(_scans) > _MAX_SCANS:
+            oldest = sorted(
+                _scans.items(),
+                key=lambda x: x[1].get("created_at") or datetime.min,
+            )[: len(_scans) - _MAX_SCANS]
+            for sid, _ in oldest:
+                del _scans[sid]
+
+
 def _notify_status(scan_id: str, status: str, progress=None, error=None):
     payload = {"scanId": scan_id, "status": status, "progress": progress, "error": error}
     try:
-        requests.post(
+        resp = requests.post(
             f"{BACKEND_API_URL}/api/internal/scans/{scan_id}/status",
             json=payload,
-            timeout=10,
+            timeout=15,
         )
+        if resp.status_code != 200:
+            print(f"[!] Notificación de estado rechazada ({resp.status_code}): {scan_id}")
+    except requests.exceptions.Timeout:
+        print(f"[!] Timeout al notificar estado al backend: {scan_id}")
+    except requests.exceptions.ConnectionError:
+        print(f"[!] Error de conexión al notificar estado al backend: {scan_id}")
     except Exception as e:
-        print(f"[!] Fallo al notificar estado al backend: {e}")
+        print(f"[!] Fallo al notificar estado al backend ({scan_id}): {e}")
 
 
 def _notify_callback(scan_id: str, report: ScanReport):
@@ -65,13 +93,19 @@ def _notify_callback(scan_id: str, report: ScanReport):
         "endTime": sr.end_time.isoformat() if sr.end_time else None,
     }
     try:
-        requests.post(
+        resp = requests.post(
             f"{BACKEND_API_URL}/api/internal/scans/{scan_id}/callback",
             json=payload,
-            timeout=10,
+            timeout=15,
         )
+        if resp.status_code != 200:
+            print(f"[!] Callback rechazado ({resp.status_code}): {scan_id}")
+    except requests.exceptions.Timeout:
+        print(f"[!] Timeout al notificar resultado al backend: {scan_id}")
+    except requests.exceptions.ConnectionError:
+        print(f"[!] Error de conexión al notificar resultado al backend: {scan_id}")
     except Exception as e:
-        print(f"[!] Fallo al notificar resultado al backend: {e}")
+        print(f"[!] Fallo al notificar resultado al backend ({scan_id}): {e}")
 
 
 @app.route("/scan", methods=["POST"])
@@ -91,6 +125,7 @@ def start_scan():
     min_cvss_score = body.get("min_cvss_score", 0.0)
 
     scan_id = str(uuid.uuid4())
+    now = datetime.now()
 
     with _lock:
         _scans[scan_id] = {
@@ -99,10 +134,14 @@ def start_scan():
             "targets": targets,
             "result": None,
             "error": None,
+            "created_at": now,
+            "updated_at": now,
         }
+        if len(_scans) > _MAX_SCANS:
+            _cleanup_scans()
 
     def _run():
-        _update_scan(scan_id, status="RUNNING")
+        _update_scan(scan_id, status="RUNNING", updated_at=datetime.now())
         _notify_status(scan_id, "RUNNING", progress=10)
         try:
             cfg = Config(
@@ -114,12 +153,14 @@ def start_scan():
                 min_cvss_score=min_cvss_score,
             )
             report = run_scan(cfg)
-            _update_scan(scan_id, status="COMPLETED", result=_to_json_safe(report))
+            _update_scan(scan_id, status="COMPLETED", result=_to_json_safe(report), updated_at=datetime.now())
             _notify_status(scan_id, "COMPLETED", progress=100)
             _notify_callback(scan_id, report)
         except Exception as e:
-            _update_scan(scan_id, status="FAILED", error=str(e))
+            _update_scan(scan_id, status="FAILED", error=str(e), updated_at=datetime.now())
             _notify_status(scan_id, "FAILED", error=str(e))
+        finally:
+            _cleanup_scans()
 
     thread = threading.Thread(target=_run, daemon=True)
     thread.start()

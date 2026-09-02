@@ -9,19 +9,26 @@ const CSRF_HEADER = "X-XSRF-TOKEN";
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const BEARER_PREFIX = "Bearer ";
 
+const STORAGE_KEY_ACCESS = "reconac_access_token";
+const STORAGE_KEY_REFRESH = "reconac_refresh_token";
+
 /* ---------- estado en memoria (singleton) ---------- */
 
-let accessToken: string | null = null;
-let refreshToken: string | null = null;
+let accessToken: string | null = sessionStorage.getItem(STORAGE_KEY_ACCESS);
+let refreshToken: string | null = sessionStorage.getItem(STORAGE_KEY_REFRESH);
 
 export function setTokens(access: string, refresh: string) {
   accessToken = access;
   refreshToken = refresh;
+  sessionStorage.setItem(STORAGE_KEY_ACCESS, access);
+  sessionStorage.setItem(STORAGE_KEY_REFRESH, refresh);
 }
 
 export function clearTokens() {
   accessToken = null;
   refreshToken = null;
+  sessionStorage.removeItem(STORAGE_KEY_ACCESS);
+  sessionStorage.removeItem(STORAGE_KEY_REFRESH);
 }
 
 export function getAccessToken(): string | null {
@@ -68,7 +75,11 @@ async function doRefresh(): Promise<boolean> {
   const body = await res.json();
   const data = body.data ?? body;
   accessToken = data.accessToken;
-  if (data.refreshToken) refreshToken = data.refreshToken;
+  sessionStorage.setItem(STORAGE_KEY_ACCESS, data.accessToken);
+  if (data.refreshToken) {
+    refreshToken = data.refreshToken;
+    sessionStorage.setItem(STORAGE_KEY_REFRESH, data.refreshToken);
+  }
   return true;
 }
 

@@ -9,17 +9,21 @@ export interface EscaneoResumen {
   auditoriaNombre: string;
   activos: number;
   puertos: number;
-  ultimoEscaneo: string | null;
-  status: AuditStatus;
+  completadoA: string | null;
+  status: AuditStatus | null;
   cve: number;
   cveCriticos: number;
 }
 
 export async function fetchResumen(): Promise<EscaneoResumen[]> {
   const res = await apiFetch("/api/auditorias/resumen");
-  if (!res.ok) throw new Error("Error al obtener resumen");
+  if (!res.ok) {
+    const body = await res.json();
+    const detail = body.detail ?? body.message ?? "Error al obtener resumen";
+    throw new Error(detail);
+  }
   const body: BaseResponse<EscaneoResumen[]> = await res.json();
-  return body.data;
+  return body.data ?? [];
 }
 
 export async function createAuditoria(

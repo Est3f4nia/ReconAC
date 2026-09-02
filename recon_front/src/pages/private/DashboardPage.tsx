@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { fetchResumen, createAuditoria, type EscaneoResumen } from "@/data/escaneos";
+import {
+  fetchResumen,
+  createAuditoria,
+  type EscaneoResumen,
+} from "@/data/escaneos";
 import { AuditCard } from "@/components/AuditoriaCard";
 import "@/pages/global.css";
 import "@/pages/private/styles/DashboardPage.css";
 
 export default function DashboardPage() {
   const { user } = useAuth();
+
   const [auditorias, setAuditorias] = useState<EscaneoResumen[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -15,40 +20,55 @@ export default function DashboardPage() {
   const [objetivo, setObjetivo] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  const nombreCapitalizado = (user?.email.split("@")[0] ?? "Usuario").charAt(0).toUpperCase() + (user?.email.split("@")[0] ?? "Usuario").slice(1);
+  const emailNombre = user?.email?.split("@")[0] ?? "Usuario";
+
+  const nombreCapitalizado =
+    emailNombre.charAt(0).toUpperCase() + emailNombre.slice(1);
 
   useEffect(() => {
-    fetchResumen()
-      .then(setAuditorias)
-      .catch((err) => setError(err instanceof Error ? err.message : "Error al cargar las auditorías"))
-      .finally(() => setCargando(false));
+    cargarAuditorias();
   }, []);
+
+  async function cargarAuditorias() {
+    try {
+      setCargando(true);
+      setError("");
+
+      const data = await fetchResumen();
+      setAuditorias(data);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Error al cargar las auditorías"
+      );
+    } finally {
+      setCargando(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
     setError("");
     setEnviando(true);
+
     try {
-      const response = await createAuditoria(nombre, objetivo);
-      const nueva: EscaneoResumen = {
-        escaneoId: null,
-        auditoriaId: response.id,
-        auditoriaNombre: response.nombre,
-        activos: 0,
-        puertos: 0,
-        ultimoEscaneo: null,
-        status: "QUEUED",
-        cve: 0,
-        cveCriticos: 0,
-      };
-      setAuditorias((prev) => [nueva, ...prev]);
+      await createAuditoria(nombre, objetivo);
+
       setNombre("");
       setObjetivo("");
       setMostrarForm(false);
-      const res = await fetchResumen();
-      setAuditorias(res);
+
+      // Recarga el resumen para obtener la auditoría
+      // exactamente como la devuelve el backend.
+      await cargarAuditorias();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al crear la auditoría");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Error al crear la auditoría"
+      );
     } finally {
       setEnviando(false);
     }
@@ -61,6 +81,7 @@ export default function DashboardPage() {
       <section className="auditorias-section">
         <div className="auditorias-header">
           <h2 className="auditorias-title">Auditorías</h2>
+
           <button
             className="auditorias-nueva-btn"
             onClick={() => setMostrarForm(true)}
@@ -69,29 +90,39 @@ export default function DashboardPage() {
           </button>
         </div>
 
+        {error && <p className="modal-error">{error}</p>}
+
         {cargando ? (
           <p className="auditorias-empty">Cargando...</p>
         ) : auditorias.length === 0 ? (
           <p className="auditorias-empty">No hay auditorías</p>
         ) : (
           <div className="auditorias-grid">
-            {auditorias.map((a) => (
-              <AuditCard key={a.auditoriaId} audit={a} />
+            {auditorias.map((auditoria) => (
+              <AuditCard
+                key={auditoria.auditoriaId}
+                audit={auditoria}
+              />
             ))}
           </div>
         )}
       </section>
 
       {mostrarForm && (
-        <div className="modal-overlay" onClick={() => setMostrarForm(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="modal-overlay"
+          onClick={() => setMostrarForm(false)}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className="modal-title">Nueva Auditoría</h2>
-
-            {error && <p className="modal-error">{error}</p>}
 
             <form className="modal-form" onSubmit={handleSubmit}>
               <div className="modal-field">
                 <label htmlFor="nombre">Nombre</label>
+
                 <input
                   id="nombre"
                   type="text"
@@ -104,6 +135,7 @@ export default function DashboardPage() {
 
               <div className="modal-field">
                 <label htmlFor="objetivo">Objetivo</label>
+
                 <textarea
                   id="objetivo"
                   required
@@ -121,6 +153,7 @@ export default function DashboardPage() {
                 >
                   {enviando ? "Creando..." : "Crear"}
                 </button>
+
                 <button
                   type="button"
                   className="modal-cancel"

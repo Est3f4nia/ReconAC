@@ -12,10 +12,16 @@ function ProtectedRoute() {
   return isAuthenticated ? <Outlet /> : <Navigate to="/" replace />;
 }
 
+function AuthRedirect() {
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  return <Outlet />;
+}
+
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route element={<AuthLayout />}>
+      <Route element={<AuthRedirect />}>
         <Route path="/" element={<AuthPage />} />
         <Route path="/register" element={<AuthPage />} />
       </Route>

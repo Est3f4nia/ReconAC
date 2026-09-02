@@ -12,6 +12,7 @@ import com.tup.reconac.modules.vulnEnum.repositories.CveCweRepository;
 import com.tup.reconac.modules.vulnEnum.repositories.CveRepository;
 import com.tup.reconac.modules.vulnEnum.repositories.CweRepository;
 import com.tup.reconac.modules.vulnEnum.repositories.ReferenciaRepository;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,6 +30,7 @@ public class CacheService {
     @Value("${cache.ttl-hours}")
     private long ttlHours;
 
+    private final Clock clock;
     private final RedisTemplate<String, Object> redis;
     private final CpeRepository cpeRepository;
     private final CveRepository cveRepository;
@@ -207,7 +209,7 @@ public class CacheService {
         if (cpe == null || cpe.getUltimoCheck() == null) {
             return false;
         }
-        return cpe.getUltimoCheck().plus(Duration.ofHours(ttlHours)).isAfter(LocalDateTime.now());
+        return cpe.getUltimoCheck().plus(Duration.ofHours(ttlHours)).isAfter(LocalDateTime.now(clock));
     }
 
     // ========================
