@@ -99,7 +99,7 @@ def _notify_callback(scan_id: str, report: ScanReport):
             timeout=15,
         )
         if resp.status_code != 200:
-            print(f"[!] Callback rechazado ({resp.status_code}): {scan_id}")
+            print(f"[!] Callback rechazado ({resp.status_code}): {scan_id} - {resp.text[:200]}")
     except requests.exceptions.Timeout:
         print(f"[!] Timeout al notificar resultado al backend: {scan_id}")
     except requests.exceptions.ConnectionError:

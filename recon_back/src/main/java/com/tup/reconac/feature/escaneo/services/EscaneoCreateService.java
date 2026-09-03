@@ -105,11 +105,18 @@ public class EscaneoCreateService implements IEscaneoPostService {
                     moduleBaseUrl + "/scan", request, Map.class);
 
             if (response.getStatusCode() == HttpStatus.ACCEPTED && response.getBody() != null) {
-                String externalScanId = (String) response.getBody().get("scan_id");
-                saved.setModuloJobId(externalScanId);
-                saved.setEstado(EscaneoEstado.EN_PROCESO);
-                saved.setIniciadoA(LocalDateTime.now());
-                repo.save(saved);
+                Object scanIdObj = response.getBody().get("scan_id");
+                if (scanIdObj == null) {
+                    saved.setEstado(EscaneoEstado.FALLO);
+                    saved.setMensajeError("El módulo no devolvió scan_id en la respuesta");
+                    repo.save(saved);
+                } else {
+                    String externalScanId = scanIdObj.toString();
+                    saved.setModuloJobId(externalScanId);
+                    saved.setEstado(EscaneoEstado.EN_PROCESO);
+                    saved.setIniciadoA(LocalDateTime.now());
+                    repo.save(saved);
+                }
             } else {
                 saved.setEstado(EscaneoEstado.FALLO);
                 saved.setMensajeError("El módulo no pudo iniciar el escaneo");
@@ -152,10 +159,10 @@ public class EscaneoCreateService implements IEscaneoPostService {
     @Override
     @Transactional
     public void processCallback(String jobId, EscaneoResult result) {
-        Escaneo escaneo = repo.findByModuloJobId(jobId)
-                .orElseThrow(() -> new BadRequestException("Escaneo no encontrado para jobId: " + jobId));
-
         try {
+            Escaneo escaneo = repo.findByModuloJobId(jobId)
+                    .orElseThrow(() -> new BadRequestException("Escaneo no encontrado para jobId: " + jobId));
+
             escaneo.setResultado(objectMapper.writeValueAsString(result));
             escaneo.setNmapVersion(result.nmapVersion());
             escaneo.setEstado(EscaneoEstado.COMPLETADO);
@@ -164,10 +171,16 @@ public class EscaneoCreateService implements IEscaneoPostService {
             repo.save(escaneo);
 
             migrarActivos(escaneo, result.hosts());
+        } catch (BadRequestException e) {
+            throw e;
         } catch (Exception e) {
-            escaneo.setEstado(EscaneoEstado.FALLO);
-            escaneo.setMensajeError("Error al procesar el resultado del escaneo: " + e.getMessage());
-            repo.save(escaneo);
+            Escaneo escaneo = repo.findByModuloJobId(jobId)
+                    .orElse(null);
+            if (escaneo != null) {
+                escaneo.setEstado(EscaneoEstado.FALLO);
+                escaneo.setMensajeError("Error al procesar el resultado del escaneo: " + e.getMessage());
+                repo.save(escaneo);
+            }
         }
     }
 
