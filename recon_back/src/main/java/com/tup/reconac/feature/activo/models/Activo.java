@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -44,7 +45,7 @@ public class Activo implements Serializable {
     private Integer soProbab;
 
     @JdbcTypeCode(SqlTypes.OTHER)
-    @Column(name = "mac")
+    @Column(name = "mac", columnDefinition = "macaddr")
     private String mac;
 
     @Column(name = "descripcion")
