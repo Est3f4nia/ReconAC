@@ -4,7 +4,7 @@ import threading
 import json
 import requests
 from datetime import datetime, date, timedelta
-from dataclasses import asdict
+from dataclasses import asdict, is_dataclass
 from flask import Flask, request, jsonify
 from config import Config
 from reconac import run_scan
@@ -14,6 +14,13 @@ app = Flask(__name__)
 
 BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8080").rstrip("/")
 
+_BACKEND_STATUS = {
+    "PENDIENTE": "PENDIENTE",
+    "EN_PROCESO": "EN_PROCESO",
+    "COMPLETADO": "COMPLETADO",
+    "FALLO": "FALLO",
+}
+
 _scans: dict[str, dict] = {}
 _lock = threading.Lock()
 _MAX_SCANS = 500
@@ -21,13 +28,15 @@ _SCAN_TTL = timedelta(hours=24)
 
 
 def _default_serializer(obj):
+    if is_dataclass(obj):
+        return asdict(obj)
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 
 def _to_json_safe(obj):
-    return json.loads(json.dumps(asdict(obj), default=_default_serializer))
+    return json.loads(json.dumps(obj, default=_default_serializer))
 
 
 def _update_scan(scan_id: str, **kwargs):
@@ -41,7 +50,7 @@ def _cleanup_scans():
         now = datetime.now()
         expired = [
             sid for sid, s in _scans.items()
-            if s.get("status") in ("COMPLETED", "FAILED")
+            if s.get("status") in ("COMPLETADO", "FALLO")
             and s.get("updated_at") is not None
             and (now - s["updated_at"]) > _SCAN_TTL
         ]
@@ -57,7 +66,12 @@ def _cleanup_scans():
 
 
 def _notify_status(scan_id: str, status: str, progress=None, error=None):
-    payload = {"scanId": scan_id, "status": status, "progress": progress, "error": error}
+    payload = {
+        "scanId": scan_id,
+        "status": _BACKEND_STATUS[status],
+        "progress": progress,
+        "error": error,
+    }
     try:
         resp = requests.post(
             f"{BACKEND_API_URL}/api/internal/scans/{scan_id}/status",
@@ -118,7 +132,9 @@ def start_scan():
     if not isinstance(targets, list) or not targets:
         return jsonify({"error": "targets must be a non-empty list"}), 400
 
-    nvd_api_key = body.get("nvd_api_key") or os.getenv("NVD_API_KEY")
+    # La key la incluye el backend solo cuando el usuario optó a enriquecimiento CVE.
+    # No usar silenciosamente la key a nivel de módulo.
+    nvd_api_key = body.get("nvd_api_key")
     timeout = body.get("timeout", 600)
     icmp_timeout = body.get("icmp_timeout", 5)
     max_cve_years = body.get("max_cve_years", 2)
@@ -130,7 +146,7 @@ def start_scan():
     with _lock:
         _scans[scan_id] = {
             "scan_id": scan_id,
-            "status": "QUEUED",
+            "status": "PENDIENTE",
             "targets": targets,
             "result": None,
             "error": None,
@@ -141,8 +157,8 @@ def start_scan():
             _cleanup_scans()
 
     def _run():
-        _update_scan(scan_id, status="RUNNING", updated_at=datetime.now())
-        _notify_status(scan_id, "RUNNING", progress=10)
+        _update_scan(scan_id, status="EN_PROCESO", updated_at=datetime.now())
+        _notify_status(scan_id, "EN_PROCESO", progress=10)
         try:
             cfg = Config(
                 targets=targets,
@@ -153,19 +169,19 @@ def start_scan():
                 min_cvss_score=min_cvss_score,
             )
             report = run_scan(cfg)
-            _update_scan(scan_id, status="COMPLETED", result=_to_json_safe(report), updated_at=datetime.now())
-            _notify_status(scan_id, "COMPLETED", progress=100)
+            _update_scan(scan_id, status="COMPLETADO", result=_to_json_safe(report), updated_at=datetime.now())
             _notify_callback(scan_id, report)
+            _notify_status(scan_id, "COMPLETADO", progress=100)
         except Exception as e:
-            _update_scan(scan_id, status="FAILED", error=str(e), updated_at=datetime.now())
-            _notify_status(scan_id, "FAILED", error=str(e))
+            _update_scan(scan_id, status="FALLO", error=str(e), updated_at=datetime.now())
+            _notify_status(scan_id, "FALLO", error=str(e))
         finally:
             _cleanup_scans()
 
     thread = threading.Thread(target=_run, daemon=True)
     thread.start()
 
-    return jsonify({"scan_id": scan_id, "status": "QUEUED"}), 202
+    return jsonify({"scan_id": scan_id, "status": "PENDIENTE"}), 202
 
 
 @app.route("/status/<scan_id>", methods=["GET"])
@@ -191,7 +207,7 @@ def get_result(scan_id: str):
     if not scan:
         return jsonify({"error": "scan not found"}), 404
 
-    if scan["status"] != "COMPLETED":
+    if scan["status"] != "COMPLETADO":
         return jsonify({"error": f"scan is {scan['status']}"}), 409
 
     return jsonify(scan["result"])
