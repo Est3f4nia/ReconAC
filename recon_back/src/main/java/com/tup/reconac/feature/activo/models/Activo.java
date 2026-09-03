@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 
 import java.io.Serializable;
@@ -44,7 +45,7 @@ public class Activo implements Serializable {
     @Column(name = "so_probab")
     private Integer soProbab;
 
-    @JdbcTypeCode(SqlTypes.OTHER)
+    @Type(type = "com.tup.reconac.feature.activo.models.MacAddressType")
     @Column(name = "mac", columnDefinition = "macaddr")
     private String mac;
 
