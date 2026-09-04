@@ -1,6 +1,10 @@
 /* ======= AUTH PAGE ======= */
 
 .auth-page {
+    display: flex;
+    justify-content: center;
+    align-items: center; /* no andaaaaaaaa*/
+
     padding: 32px 20px;
 }
 

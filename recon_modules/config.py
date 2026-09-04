@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from typing import Optional
-import os
 
 
 @dataclass
@@ -13,9 +12,6 @@ class Config:
     min_cvss_score: Optional[float] = None
 
     def __post_init__(self):
-        if not self.nvd_api_key:
-            self.nvd_api_key = os.getenv("NVD_API_KEY")
-
         # La NVD API key es opcional (ADR-011): sin ella se omite la fase
         # de lookup de CVEs en lugar de fallar el escaneo.
         if not self.targets:

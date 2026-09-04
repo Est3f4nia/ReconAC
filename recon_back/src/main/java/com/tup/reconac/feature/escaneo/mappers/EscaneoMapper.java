@@ -10,8 +10,6 @@ public class EscaneoMapper {
 
     public static EscaneoResponse toResponse(Escaneo escaneo) {
         return new EscaneoResponse(
-                escaneo.getId(),
-                escaneo.getAuditoriaId(),
                 escaneo.getObjetivos(),
                 escaneo.getEstado(),
                 escaneo.getProgreso(),
@@ -31,4 +29,5 @@ public class EscaneoMapper {
                 escaneo.getMensajeError()
         );
     }
+
 }

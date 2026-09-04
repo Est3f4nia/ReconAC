@@ -1,6 +1,17 @@
 import { Link } from "react-router-dom";
-import type { EscaneoResumen } from "@/data/escaneos";
 import "./AuditCard.css";
+
+interface EscaneoResumen {
+  auditoriaId: string | number;
+  auditoriaNombre: string;
+  escaneoId?: string | number | null;
+  completadoA?: string | Date | null;
+  status?: string | null;
+  activos: number;
+  puertos: number;
+  cve: number;
+  cveCriticos: number;
+}
 
 interface AuditCardProps {
   audit: EscaneoResumen;
@@ -22,7 +33,7 @@ export function AuditCard({ audit }: AuditCardProps) {
     : "SIN ESCANEOS";
 
   const statusClass = audit.status
-    ? `status-${audit.status.toLowerCase()}`
+    ? `status-${audit.status}`
     : "status-sin-escaneos";
 
   return (
@@ -31,7 +42,7 @@ export function AuditCard({ audit }: AuditCardProps) {
 
       <hr className="audit-card-divider" />
 
-      <div className="audit-card-info">
+      <div className="audit-card-info console">
         <p>{audit.activos} activos</p>
         <p>{audit.puertos} puertos</p>
 
@@ -54,18 +65,12 @@ export function AuditCard({ audit }: AuditCardProps) {
 
       <hr className="audit-card-divider" />
 
-      {audit.escaneoId ? (
-        <Link
-          to={`/auditorias/${audit.auditoriaId}/escaneos/${audit.escaneoId}`}
-          className="audit-card-button"
-        >
-          Ver
-        </Link>
-      ) : (
-        <span className="audit-card-button audit-card-button">
-          Ver
-        </span>
-      )}
+      <Link
+        to={`/auditorias/${audit.auditoriaId}`}
+        className="button audit-card-button"
+      >
+        Ver auditoría
+      </Link>
     </article>
   );
 }

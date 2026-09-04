@@ -1,0 +1,167 @@
+.auditoria-detail-page {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 32px 24px 56px;
+}
+
+.auditoria-detail-feedback {
+  padding: 32px 24px;
+}
+
+.auditoria-detail-back {
+  color: var(--button-link);
+  font-size: 0.85rem;
+}
+
+.auditoria-detail-header {
+  margin: 28px 0;
+}
+
+.auditoria-detail-eyebrow {
+  color: var(--border-acc);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.auditoria-detail-header h1 {
+  margin: 4px 0 10px;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+}
+
+.scan-panel {
+  margin-top: 18px;
+  padding: 22px;
+  border: 2px solid var(--border-big);
+  border-radius: var(--br-radius);
+  background: var(--acc1);
+}
+
+.scan-panel h2 {
+  font-size: 1.15rem;
+}
+
+.scan-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.scan-panel-heading p,
+.scan-panel > p {
+  margin-top: 4px;
+  color: var(--font);
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.scan-live-label {
+  flex: 0 0 auto;
+  color: var(--en-proceso);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.scan-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.scan-form label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.scan-form textarea,
+.scan-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-big);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--font);
+  font-size: 0.9rem;
+}
+
+.scan-form textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.scan-field-note {
+  margin: 0 0 4px;
+  padding: 9px 10px;
+  border-left: 3px solid var(--medium);
+  background: rgba(245, 197, 66, 0.1);
+  color: var(--font);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.scan-submit {
+  justify-self: start;
+  margin-top: 8px;
+  padding: 9px 18px;
+}
+
+.scan-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.scan-progress {
+  margin-top: 18px;
+}
+
+.scan-progress-values {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+
+.scan-progress progress {
+  width: 100%;
+  height: 12px;
+  accent-color: var(--border-acc);
+}
+
+.scan-error {
+  margin-top: 12px;
+  color: var(--critical) !important;
+  font-size: 0.85rem;
+}
+
+.scan-host-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  list-style: none;
+}
+
+.scan-host-list li {
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+  border-left: 3px solid var(--border-acc);
+  background: var(--bg);
+  font-size: 0.85rem;
+}
+
+.scan-host-list span {
+  opacity: 0.82;
+}
+
+@media (max-width: 560px) {
+  .auditoria-detail-page {
+    padding: 24px 16px 40px;
+  }
+
+  .scan-panel-heading {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

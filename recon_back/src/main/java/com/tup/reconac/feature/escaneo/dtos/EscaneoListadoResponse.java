@@ -3,15 +3,17 @@ package com.tup.reconac.feature.escaneo.dtos;
 import com.tup.reconac.feature.escaneo.models.EscaneoEstado;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
-public record EscaneoResponse(
-        String[] activos,
+public record EscaneoListadoResponse(
+        UUID escaneoId,
+        UUID auditoriaId,
+        String auditoriaNombre,
+        List<String> objetivos,
         EscaneoEstado estado,
         Integer progreso,
         String nmapVersion,
-        String mensajeError,
         LocalDateTime iniciadoA,
-        LocalDateTime completadoA,
-        LocalDateTime creadoA
+        LocalDateTime completadoA
 ) {}

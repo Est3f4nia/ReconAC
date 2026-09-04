@@ -1,5 +1,4 @@
 import os
-import uuid
 import threading
 import json
 import requests
@@ -28,10 +27,12 @@ _SCAN_TTL = timedelta(hours=24)
 
 
 def _default_serializer(obj):
-    if is_dataclass(obj):
+    if is_dataclass(obj) and not isinstance(obj, type):
         return asdict(obj)
+
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
+
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 
@@ -48,19 +49,24 @@ def _update_scan(scan_id: str, **kwargs):
 def _cleanup_scans():
     with _lock:
         now = datetime.now()
+
         expired = [
-            sid for sid, s in _scans.items()
+            sid
+            for sid, s in _scans.items()
             if s.get("status") in ("COMPLETADO", "FALLO")
             and s.get("updated_at") is not None
             and (now - s["updated_at"]) > _SCAN_TTL
         ]
+
         for sid in expired:
             del _scans[sid]
+
         if len(_scans) > _MAX_SCANS:
             oldest = sorted(
                 _scans.items(),
                 key=lambda x: x[1].get("created_at") or datetime.min,
             )[: len(_scans) - _MAX_SCANS]
+
             for sid, _ in oldest:
                 del _scans[sid]
 
@@ -72,24 +78,42 @@ def _notify_status(scan_id: str, status: str, progress=None, error=None):
         "progress": progress,
         "error": error,
     }
+
     try:
         resp = requests.post(
             f"{BACKEND_API_URL}/api/internal/scans/{scan_id}/status",
             json=payload,
             timeout=15,
         )
+
         if resp.status_code != 200:
-            print(f"[!] Notificación de estado rechazada ({resp.status_code}): {scan_id}")
+            print(
+                f"[!] Notificación de estado rechazada "
+                f"({resp.status_code}): {scan_id}"
+            )
+
     except requests.exceptions.Timeout:
-        print(f"[!] Timeout al notificar estado al backend: {scan_id}")
+        print(
+            f"[!] Timeout al notificar estado al backend: "
+            f"{scan_id}"
+        )
+
     except requests.exceptions.ConnectionError:
-        print(f"[!] Error de conexión al notificar estado al backend: {scan_id}")
+        print(
+            f"[!] Error de conexión al notificar estado al backend: "
+            f"{scan_id}"
+        )
+
     except Exception as e:
-        print(f"[!] Fallo al notificar estado al backend ({scan_id}): {e}")
+        print(
+            f"[!] Fallo al notificar estado al backend "
+            f"({scan_id}): {e}"
+        )
 
 
 def _notify_callback(scan_id: str, report: ScanReport):
     sr = report.scan_result
+
     hosts = [
         {
             "ip": h.ip,
@@ -99,53 +123,99 @@ def _notify_callback(scan_id: str, report: ScanReport):
         }
         for h in sr.hosts
     ]
+
     payload = {
         "hosts": hosts,
-        "apiResults": {"vulnerabilities": _to_json_safe(report.api_result.vulnerabilities)},
+        "apiResults": {
+            "vulnerabilities": _to_json_safe(
+                report.api_result.vulnerabilities
+            )
+        },
         "nmapVersion": sr.nmap_version,
-        "startTime": sr.start_time.isoformat() if sr.start_time else None,
-        "endTime": sr.end_time.isoformat() if sr.end_time else None,
+        "startTime": sr.start_time.isoformat()
+        if sr.start_time
+        else None,
+        "endTime": sr.end_time.isoformat()
+        if sr.end_time
+        else None,
     }
+
     try:
         resp = requests.post(
             f"{BACKEND_API_URL}/api/internal/scans/{scan_id}/callback",
             json=payload,
             timeout=15,
         )
+
         if resp.status_code != 200:
-            print(f"[!] Callback rechazado ({resp.status_code}): {scan_id} - {resp.text[:200]}")
+            print(
+                f"[!] Callback rechazado "
+                f"({resp.status_code}): {scan_id} - "
+                f"{resp.text[:200]}"
+            )
+
     except requests.exceptions.Timeout:
-        print(f"[!] Timeout al notificar resultado al backend: {scan_id}")
+        print(
+            f"[!] Timeout al notificar resultado al backend: "
+            f"{scan_id}"
+        )
+
     except requests.exceptions.ConnectionError:
-        print(f"[!] Error de conexión al notificar resultado al backend: {scan_id}")
+        print(
+            f"[!] Error de conexión al notificar resultado al backend: "
+            f"{scan_id}"
+        )
+
     except Exception as e:
-        print(f"[!] Fallo al notificar resultado al backend ({scan_id}): {e}")
+        print(
+            f"[!] Fallo al notificar resultado al backend "
+            f"({scan_id}): {e}"
+        )
 
 
 @app.route("/scan", methods=["POST"])
 def start_scan():
     body = request.get_json(silent=True)
-    if not body or "targets" not in body:
+
+    if not body:
+        return jsonify({"error": "request body is required"}), 400
+
+    if "job_id" not in body:
+        return jsonify({"error": "job_id is required"}), 400
+
+    job_id = body["job_id"]
+
+    if not isinstance(job_id, str) or not job_id.strip():
+        return jsonify({"error": "job_id must be a non-empty string"}), 400
+
+    if "targets" not in body:
         return jsonify({"error": "targets is required"}), 400
 
     targets = body["targets"]
+
     if not isinstance(targets, list) or not targets:
         return jsonify({"error": "targets must be a non-empty list"}), 400
 
-    # La key la incluye el backend solo cuando el usuario optó a enriquecimiento CVE.
-    # No usar silenciosamente la key a nivel de módulo.
+    # La key la incluye el backend solo cuando el usuario
+    # optó a enriquecimiento CVE.
     nvd_api_key = body.get("nvd_api_key")
+
     timeout = body.get("timeout", 600)
     icmp_timeout = body.get("icmp_timeout", 5)
     max_cve_years = body.get("max_cve_years", 2)
     min_cvss_score = body.get("min_cvss_score", 0.0)
 
-    scan_id = str(uuid.uuid4())
     now = datetime.now()
 
     with _lock:
-        _scans[scan_id] = {
-            "scan_id": scan_id,
+        # Evita sobrescribir accidentalmente un trabajo existente.
+        if job_id in _scans:
+            return jsonify({
+                "error": "job_id already exists"
+            }), 409
+
+        _scans[job_id] = {
+            "scan_id": job_id,
             "status": "PENDIENTE",
             "targets": targets,
             "result": None,
@@ -153,12 +223,23 @@ def start_scan():
             "created_at": now,
             "updated_at": now,
         }
+
         if len(_scans) > _MAX_SCANS:
             _cleanup_scans()
 
     def _run():
-        _update_scan(scan_id, status="EN_PROCESO", updated_at=datetime.now())
-        _notify_status(scan_id, "EN_PROCESO", progress=10)
+        _update_scan(
+            job_id,
+            status="EN_PROCESO",
+            updated_at=datetime.now(),
+        )
+
+        _notify_status(
+            job_id,
+            "EN_PROCESO",
+            progress=10,
+        )
+
         try:
             cfg = Config(
                 targets=targets,
@@ -168,20 +249,52 @@ def start_scan():
                 max_cve_years=max_cve_years,
                 min_cvss_score=min_cvss_score,
             )
+
             report = run_scan(cfg)
-            _update_scan(scan_id, status="COMPLETADO", result=_to_json_safe(report), updated_at=datetime.now())
-            _notify_callback(scan_id, report)
-            _notify_status(scan_id, "COMPLETADO", progress=100)
+
+            _update_scan(
+                job_id,
+                status="COMPLETADO",
+                result=_to_json_safe(report),
+                updated_at=datetime.now(),
+            )
+
+            _notify_callback(job_id, report)
+
+            # _notify_status(
+            #     job_id,
+            #     "COMPLETADO",
+            #     progress=100,
+            # )
+
         except Exception as e:
-            _update_scan(scan_id, status="FALLO", error=str(e), updated_at=datetime.now())
-            _notify_status(scan_id, "FALLO", error=str(e))
+            _update_scan(
+                job_id,
+                status="FALLO",
+                error=str(e),
+                updated_at=datetime.now(),
+            )
+
+            _notify_status(
+                job_id,
+                "FALLO",
+                error=str(e),
+            )
+
         finally:
             _cleanup_scans()
 
-    thread = threading.Thread(target=_run, daemon=True)
+    thread = threading.Thread(
+        target=_run,
+        daemon=True,
+    )
+
     thread.start()
 
-    return jsonify({"scan_id": scan_id, "status": "PENDIENTE"}), 202
+    return jsonify({
+        "scan_id": job_id,
+        "status": "PENDIENTE",
+    }), 202
 
 
 @app.route("/status/<scan_id>", methods=["GET"])
@@ -208,7 +321,9 @@ def get_result(scan_id: str):
         return jsonify({"error": "scan not found"}), 404
 
     if scan["status"] != "COMPLETADO":
-        return jsonify({"error": f"scan is {scan['status']}"}), 409
+        return jsonify({
+            "error": f"scan is {scan['status']}"
+        }), 409
 
     return jsonify(scan["result"])
 
@@ -219,4 +334,8 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True,
+    )

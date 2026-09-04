@@ -48,6 +48,7 @@ public class EscaneoCreateService implements IEscaneoPostService {
     private final ModulesConfig modulesConfig;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final EscaneoPersistenceService persistenceService;
 
     @Override
     @Transactional
@@ -74,20 +75,25 @@ public class EscaneoCreateService implements IEscaneoPostService {
         escaneo.setObjetivos(req.objetivos().toArray(new String[0]));
         escaneo.setEstado(EscaneoEstado.PENDIENTE);
 
-        Escaneo saved = repo.save(escaneo);
+        String jobId = UUID.randomUUID().toString();
+
+        Escaneo saved = persistenceService.crear(
+                auditoriaId,
+                req.objetivos().toArray(new String[0]),
+                jobId
+        );
+
+        System.out.println(
+                "ESCANEO GUARDADO -> id=" + saved.getId()
+                        + " moduloJobId=" + saved.getModuloJobId()
+        );
 
         try {
-            /*
-             * Opción B (futura, ADR-013 / ADR-010): descubrimiento dinámico vía registro en
-             * DB/Redis. En lugar de resolver por config estática, se consultaría una tabla
-             * `modulo` (activo=true) cacheada en Redis:
-             *     String moduleBaseUrl = moduleRegistry.resolveUrl("recon");
-             * La interfaz de resolución se mantendría igual, por lo que este call site no
-             * cambiaría. Por ahora se usa la config externalizada (Opción A).
-             */
+
             String moduleBaseUrl = modulesConfig.getEndpoint("recon").getUrl();
 
             Map<String, Object> body = new java.util.LinkedHashMap<>();
+            body.put("job_id", jobId);
             body.put("targets", req.objetivos());
             body.put("timeout", req.timeout() != null ? req.timeout() : 600);
             body.put("icmp_timeout", req.icmpTimeout() != null ? req.icmpTimeout() : 5);
@@ -136,8 +142,11 @@ public class EscaneoCreateService implements IEscaneoPostService {
     }
 
     @Override
-    @Transactional
     public void updateStatusFromExternal(String jobId, ScanStatusResponse status) {
+        System.out.println(
+                "STATUS RECIBIDO -> jobId=" + jobId
+        );
+
         Escaneo escaneo = repo.findByModuloJobId(jobId)
                 .orElseThrow(() -> new BadRequestException("Escaneo no encontrado para jobId: " + jobId));
 
@@ -159,6 +168,10 @@ public class EscaneoCreateService implements IEscaneoPostService {
     @Override
     @Transactional
     public void processCallback(String jobId, EscaneoResult result) {
+        System.out.println(
+                "CALLBACK RECIBIDO -> jobId=" + jobId
+        );
+
         try {
             Escaneo escaneo = repo.findByModuloJobId(jobId)
                     .orElseThrow(() -> new BadRequestException("Escaneo no encontrado para jobId: " + jobId));

@@ -26,6 +26,7 @@
     font-family: var(--font-title);
     font-size: 1.1rem;
     font-weight: 700;
+    text-align: center;
 }
 
 
@@ -63,40 +64,10 @@
     margin-top: 4px;
 }
 
-.status {
-    font-weight: 600;
-}
-
-.status-QUEUED {
-    color: var(--pendiente);
-}
-
-.status-RUNNING {
-    color: var(--en-proceso);
-}
-
-.status-COMPLETED {
-    color: var(--completado);
-}
-
-.status-FAILED {
-    color: var(--fallo);
-}
-
-
 /* ------- CVE CONSOLE ------- */
 
 .audit-card-cves {
     margin-top: 8px;
-    padding: 8px 12px;
-
-    border: 1px solid var(--border-big);
-    border-radius: 3px;
-
-    background: var(--bg);
-
-    font-family: var(--font-console);
-    font-size: 0.8rem;
 }
 
 
@@ -107,31 +78,4 @@
     width: 100%;
     margin-top: 14px;
     padding: 8px 0;
-
-    border: 1px solid var(--button-link);
-    border-radius: 3px;
-
-    background: transparent;
-    color: var(--button-link);
-
-    font-family: var(--font-body);
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-align: center;
-
-    cursor: pointer;
-    transition:
-        background var(--transition),
-        color var(--transition);
-}
-
-.audit-card-button:hover {
-    background: var(--button-link);
-    color: var(--bg);
-    text-decoration: none;
-}
-
-.audit-card-button--disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }

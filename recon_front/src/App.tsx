@@ -1,10 +1,11 @@
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
-import AuthLayout from "@/components/layout/auth/AuthLayout";
 import DashboardLayout from "@/components/layout/dashboard/DashboardLayout";
 import AuthPage from "@/pages/public/AuthPage";
 import DashboardPage from "@/pages/private/DashboardPage";
+import AuditoriaDetailPage from "./pages/private/AuditoriaDetail";
+import EscaneosListado from "./pages/private/EscaneosListado";
 
 function ProtectedRoute() {
   const { isAuthenticated, loading } = useAuth();
@@ -29,6 +30,18 @@ export default function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route
+              path="/auditorias/:auditoriaId"
+              element={<AuditoriaDetailPage />}
+            />
+          <Route
+              path="/auditorias/:auditoriaId/escaneos/:escaneoId"
+              element={<AuditoriaDetailPage />}
+            />
+          <Route
+              path="/escaneos"
+              element={<EscaneosListado />}
+            />
         </Route>
       </Route>
     </Routes>

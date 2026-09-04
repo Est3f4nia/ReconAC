@@ -1,4 +1,6 @@
 import asyncio
+import os
+import shutil
 from config import Config
 from scanning.port_scan import initial_scan
 from scanning.service_scan import service_scan
@@ -9,12 +11,18 @@ from models.scan_result import ScanResult, HostResult
 from models.scan_report import ScanReport
 from datetime import datetime
 
-NMAP_CMD = "nmap"
+NMAP_CMD = os.getenv("NMAP_CMD", "nmap")
 
 PIPELINE_TIMEOUT = 1800
 
 
 async def _run_pipeline(cfg: Config) -> ScanReport:
+    if shutil.which(NMAP_CMD) is None:
+        raise RuntimeError(
+            "Nmap no está instalado o no está disponible en PATH. "
+            "Instalalo o configurá la variable NMAP_CMD con su ruta completa."
+        )
+
     target = cfg.targets[0]
     open_ports = await initial_scan(NMAP_CMD, target, cfg.timeout)
 

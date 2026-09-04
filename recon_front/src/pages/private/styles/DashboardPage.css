@@ -5,6 +5,7 @@
 }
 
 .dashboard-page h1 {
+    margin-left: 28px;
     margin-bottom: 28px;
 
     font-size: 4rem;
@@ -23,6 +24,8 @@
     border-radius: var(--br-radius);
 
     background: var(--acc1);
+
+    justify-self: center;
 }
 
 .auditorias-title {
@@ -59,24 +62,10 @@
 
 .auditorias-nueva-btn {
     padding: 8px 18px;
-    border: 1px solid var(--button-link);
-    border-radius: 4px;
-    background: transparent;
-    color: var(--button-link);
-    font-family: var(--font-body);
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-        background var(--transition),
-        color var(--transition);
+    margin-bottom: 20px;
 }
 
-.auditorias-nueva-btn:hover {
-    background: var(--button-link);
-    color: var(--bg);
-    text-decoration: none;
-}
+
 
 
 /* ------- MODAL ------- */

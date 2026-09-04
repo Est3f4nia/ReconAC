@@ -9,4 +9,6 @@ public interface IEscaneoGetService {
     ScanStatusResponse getStatus(UUID auditoriaId, UUID escaneoId);
 
     EscaneoResultResponse getResultado(UUID auditoriaId, UUID escaneoId);
+
+    EscaneoResultResponse getById(UUID id);
 }

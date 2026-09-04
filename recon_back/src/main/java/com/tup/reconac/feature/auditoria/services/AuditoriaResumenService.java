@@ -55,10 +55,6 @@ public class AuditoriaResumenService {
                             auditoria.getId()
                     );
 
-            /*
-             * La auditoría existe, pero todavía no tiene ningún escaneo.
-             * Es un estado válido, no una excepción.
-             */
             if (ultimoEscaneo.isEmpty()) {
 
                 log.info(

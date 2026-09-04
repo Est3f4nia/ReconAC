@@ -29,4 +29,5 @@ public class UserDetailsService implements org.springframework.security.core.use
         return usuarioRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
     }
+
 }

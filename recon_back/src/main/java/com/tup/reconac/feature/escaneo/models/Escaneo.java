@@ -28,10 +28,11 @@ public class Escaneo implements Serializable {
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "objetivos", columnDefinition = "text[]")
-    private String[] objetivos;
+    private String[] objetivos;  // activos
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "estado", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "estado", columnDefinition = "estado_escaneo_enum", nullable = false)
     private EscaneoEstado estado = EscaneoEstado.PENDIENTE;
 
     @Column(name = "progreso", nullable = false)

@@ -1,17 +1,24 @@
 package com.tup.reconac.feature.escaneo.repositories;
 
 import com.tup.reconac.feature.escaneo.models.Escaneo;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
+
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface EscaneoRepository extends JpaRepository<Escaneo, UUID> {
 
-    Optional<Escaneo> findByModuloJobId(String moduloJobId);
+    Optional<Escaneo> findByIdAndAuditoriaId(UUID id, UUID auditoriaId);
+    Optional<Escaneo> findFirstByAuditoriaIdOrderByCreadoADesc(UUID auditoriaId);
 
-    @Query("SELECT e FROM Escaneo e WHERE e.auditoriaId = :auditoriaId ORDER BY e.creadoA DESC")
-    Optional<Escaneo> findFirstByAuditoriaIdOrderByCreadoADesc(@Param("auditoriaId") UUID auditoriaId);
+    Optional<Escaneo> findByModuloJobId(String jobId);
+
+    Page<Escaneo> findByAuditoriaIdIn(
+            List<UUID> auditoriaIds,
+            Pageable pageable
+    );
 }

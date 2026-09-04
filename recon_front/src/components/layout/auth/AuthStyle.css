@@ -2,12 +2,4 @@
     min-height: 100vh;
     
     background: var(--bg);
-    
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.auth-content {
-    flex: 1;
 }

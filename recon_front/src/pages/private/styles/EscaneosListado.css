@@ -1,0 +1,152 @@
+.escaneos-listado {
+    width: 100%;
+    padding: 30px;
+}
+
+.escaneos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.escaneos-header h1 {
+    margin-bottom: 5px;
+}
+
+.escaneos-header p {
+    color: #aeb8c4;
+    font-size: 0.9rem;
+}
+
+.escaneos-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--border-big);
+    border-radius: var(--br-radius);
+}
+
+.escaneos-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1100px;
+}
+
+.escaneos-table th,
+.escaneos-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--acc2);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.escaneos-table th {
+    background: var(--acc1);
+    font-family: var(--font-title);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.escaneos-table tbody tr:hover {
+    background: var(--acc1);
+}
+
+.escaneos-objetivos {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-family: var(--font-console);
+    font-size: 0.85rem;
+}
+
+.escaneos-actions {
+    display: flex;
+    gap: 7px;
+}
+
+.escaneos-actions .button {
+    padding: 6px 9px;
+    white-space: nowrap;
+}
+
+.escaneos-error {
+    color: var(--fallo);
+}
+
+.escaneos-empty {
+    padding: 30px;
+    border: 1px solid var(--border-big);
+    border-radius: var(--br-radius);
+    text-align: center;
+}
+
+
+
+
+.escaneo-modal {
+    position: fixed;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, 0.7);
+
+    z-index: 1000;
+}
+
+.escaneo-modal-content {
+    width: min(500px, 90%);
+    padding: 25px;
+
+    background: var(--acc1);
+    border: 1px solid var(--border-big);
+    border-radius: var(--br-radius);
+}
+
+.escaneo-modal-content h2 {
+    margin-bottom: 20px;
+}
+
+.escaneo-modal-content p {
+    margin-bottom: 20px;
+}
+
+.escaneo-modal-content strong {
+    display: block;
+    margin-top: 5px;
+}
+
+.escaneo-modal-content label {
+    display: block;
+    margin-bottom: 7px;
+}
+
+.escaneo-modal-content select {
+    width: 100%;
+    padding: 9px;
+
+    background: var(--bg);
+    color: var(--font);
+
+    border: 1px solid var(--border-big);
+    border-radius: var(--br-radius);
+}
+
+.escaneo-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+
+    margin-top: 25px;
+}
+
+.escaneo-modal-actions .button {
+    padding: 8px 14px;
+}
+
+.escaneos-actions .button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

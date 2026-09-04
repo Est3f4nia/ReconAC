@@ -3,8 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   fetchResumen,
   createAuditoria,
-  type EscaneoResumen,
 } from "@/data/escaneos";
+import type { EscaneoResumen } from "@/data/types";
 import { AuditCard } from "@/components/AuditoriaCard";
 import "@/pages/global.css";
 import "@/pages/private/styles/DashboardPage.css";
@@ -83,7 +83,7 @@ export default function DashboardPage() {
           <h2 className="auditorias-title">Auditorías</h2>
 
           <button
-            className="auditorias-nueva-btn"
+            className="button auditorias-nueva-btn"
             onClick={() => setMostrarForm(true)}
           >
             Nueva Auditoría

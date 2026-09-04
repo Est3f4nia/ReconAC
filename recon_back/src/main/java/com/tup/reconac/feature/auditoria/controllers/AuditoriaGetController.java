@@ -7,8 +7,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auditorias")
@@ -20,5 +23,10 @@ public class AuditoriaGetController {
     @GetMapping
     public ResponseEntity<Page<AuditoriaResponse>> findAll(Pageable pageable) {
         return ResponseEntity.ok(auditoriaGet.getAll(pageable));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<AuditoriaResponse> findById(@PathVariable UUID id) {
+        return ResponseEntity.ok(auditoriaGet.getById(id));
     }
 }
