@@ -22,7 +22,7 @@ public class AuditoriaConsultService {
                 .orElseThrow(() -> new AuditoriaNotFoundException("Auditoría no encontrada: " + auditoriaId));
     }
 
-    public void escaneos(Escaneo escaneo, UUID usuarioId) {
+    public void verifyEscaneoOwnership(Escaneo escaneo, UUID usuarioId) {
         repo.findByIdAndUsuarioId(escaneo.getAuditoriaId(), usuarioId)
                 .orElseThrow(() ->
                         new EscaneoNotFoundException("Escaneo no encontrado")

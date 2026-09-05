@@ -56,7 +56,7 @@ public class EscaneoGetService implements IEscaneoGetService {
                         new EscaneoNotFoundException("Escaneo no encontrado")
                 );
 
-        auditoriaConsult.escaneos(escaneo, usuarioId);
+        auditoriaConsult.verifyEscaneoOwnership(escaneo, usuarioId);
 
         EscaneoResponse escaneoResponse = EscaneoMapper.toResponse(escaneo);
 

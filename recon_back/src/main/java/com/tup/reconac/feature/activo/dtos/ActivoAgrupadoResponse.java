@@ -1,14 +1,14 @@
 package com.tup.reconac.feature.activo.dtos;
 
+import java.util.List;
 import java.util.UUID;
 
-public record ActivoResponse(
-        UUID id,
-        UUID escaneoId,
+public record ActivoAgrupadoResponse(
         String host,
         String hostname,
         String so,
         Integer soProbab,
         String mac,
-        String descripcion
+        String descripcion,
+        List<UUID> escaneoIds
 ) {}

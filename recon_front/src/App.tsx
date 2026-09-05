@@ -6,6 +6,7 @@ import AuthPage from "@/pages/public/AuthPage";
 import DashboardPage from "@/pages/private/DashboardPage";
 import AuditoriaDetailPage from "./pages/private/AuditoriaDetail";
 import EscaneosListado from "./pages/private/EscaneosListado";
+import ActivosListado from "@/pages/private/ActivosListado";
 
 function ProtectedRoute() {
   const { isAuthenticated, loading } = useAuth();
@@ -42,6 +43,10 @@ export default function AppRoutes() {
               path="/escaneos"
               element={<EscaneosListado />}
             />
+          <Route
+              path="/activos"
+              element={<ActivosListado />}
+          />
         </Route>
       </Route>
     </Routes>

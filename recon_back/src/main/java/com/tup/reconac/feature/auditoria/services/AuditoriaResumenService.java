@@ -58,7 +58,7 @@ public class AuditoriaResumenService {
             if (ultimoEscaneo.isEmpty()) {
 
                 log.info(
-                        "auditoria {} no tiene escaneos",
+                        "auditoria {} no tiene verifyEscaneoOwnership",
                         auditoria.getId()
                 );
 

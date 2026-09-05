@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/auditorias/{auditoriaId}/escaneos")
+@RequestMapping("/api/auditorias/{auditoriaId}/verifyEscaneoOwnership")
 @RequiredArgsConstructor
 public class EscaneoDeleteController {
 

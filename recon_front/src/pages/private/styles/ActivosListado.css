@@ -1,0 +1,205 @@
+.activos-listado {
+    width: 100%;
+    padding: 30px;
+}
+
+.activos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.activos-header h1 {
+    margin-bottom: 5px;
+}
+
+.activos-header p {
+    color: #aeb8c4;
+    font-size: .9rem;
+}
+
+.activos-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--border-big);
+    border-radius: var(--br-radius);
+}
+
+.activos-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1100px;
+}
+
+.activos-table th,
+.activos-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--acc2);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.activos-table th {
+    background: var(--acc1);
+    font-family: var(--font-title);
+    font-size: .8rem;
+    white-space: nowrap;
+}
+
+.activos-table tbody tr:hover {
+    background: var(--acc1);
+}
+
+.activo-host {
+    font-family: var(--font-console);
+    white-space: nowrap;
+}
+
+.activo-so {
+    max-width: 350px;
+    font-family: var(--font-console);
+    font-size: .85rem;
+}
+
+.activos-actions {
+    display: flex;
+    gap: 7px;
+}
+
+.activos-actions .button {
+    padding: 6px 9px;
+    white-space: nowrap;
+}
+
+.activos-actions .button:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+
+.activos-error {
+    margin-bottom: 20px;
+    color: var(--fallo);
+}
+
+.activos-empty {
+    padding: 30px;
+    border: 1px solid var(--border-big);
+    border-radius: var(--br-radius);
+    text-align: center;
+}
+
+/* ============================================================
+ * Modal
+ * ============================================================ */
+
+.activo-modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, .7);
+    z-index: 1000;
+}
+
+.activo-modal-content {
+    position: relative;
+    width: min(600px, 90%);
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 25px;
+    background: var(--acc1);
+    border: 1px solid var(--border-big);
+    border-radius: var(--br-radius);
+}
+
+.activo-modal-content h2 {
+    margin-bottom: 20px;
+}
+
+.activo-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    border: 0;
+    background: transparent;
+    color: var(--font);
+    font-size: 1.6rem;
+    cursor: pointer;
+}
+
+.activo-modal-close:hover {
+    color: var(--button-link);
+}
+
+/* ============================================================
+ * Detalle
+ * ============================================================ */
+
+.activo-detalle {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.activo-detalle p {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.activo-detalle strong {
+    font-family: var(--font-title);
+    font-size: .8rem;
+}
+
+.activo-detalle code {
+    font-family: var(--font-console);
+    word-break: break-all;
+}
+
+/* ============================================================
+ * Formulario
+ * ============================================================ */
+
+.activo-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 15px;
+}
+
+.activo-form-field label {
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+.activo-form-field input,
+.activo-form-field textarea {
+    width: 100%;
+    padding: 9px;
+    background: var(--bg);
+    color: var(--font);
+    border: 1px solid var(--border-big);
+    border-radius: var(--br-radius);
+    resize: vertical;
+}
+
+.activo-form-field input:focus,
+.activo-form-field textarea:focus {
+    outline: none;
+    border-color: var(--border-acc);
+}
+
+.activo-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+.activo-modal-actions .button {
+    padding: 8px 14px;
+}

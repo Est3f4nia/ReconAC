@@ -36,7 +36,7 @@ public class EscaneoPatchService implements IEscaneoPatchService {
 
         // Verificar que la auditoría actual del escaneo
         // pertenece al usuario autenticado.
-        auditoriaConsult.escaneos(escaneo, usuario.getId());
+        auditoriaConsult.verifyEscaneoOwnership(escaneo, usuario.getId());
 
         Auditoria nuevaAuditoria =
                 auditoriaConsult.findId(nuevaAuditoriaId);

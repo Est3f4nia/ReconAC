@@ -1,5 +1,6 @@
 package com.tup.reconac.feature.activo.controllers;
 
+import com.tup.reconac.feature.activo.dtos.ActivoAgrupadoResponse;
 import com.tup.reconac.feature.activo.dtos.ActivoResponse;
 import com.tup.reconac.feature.activo.services.interfaces.IActivoGetService;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,7 @@ public class ActivoGetController {
     private final IActivoGetService activoGet;
 
     @GetMapping
-    public ResponseEntity<Page<ActivoResponse>> findAll(Pageable pageable) {
+    public ResponseEntity<Page<ActivoAgrupadoResponse>> findAll(Pageable pageable) {
         return ResponseEntity.ok(activoGet.getAll(pageable));
     }
 

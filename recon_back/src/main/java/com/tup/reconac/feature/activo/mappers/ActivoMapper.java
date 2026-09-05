@@ -1,9 +1,13 @@
 package com.tup.reconac.feature.activo.mappers;
 
+import com.tup.reconac.feature.activo.dtos.ActivoAgrupadoResponse;
 import com.tup.reconac.feature.activo.dtos.ActivoRequestDto;
 import com.tup.reconac.feature.activo.dtos.ActivoResponse;
 import com.tup.reconac.feature.activo.models.Activo;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.UUID;
 
 @Component
 public class ActivoMapper {
@@ -32,12 +36,33 @@ public class ActivoMapper {
     public static ActivoResponse toResponse(Activo activo) {
         return new ActivoResponse(
                 activo.getId(),
+                activo.getEscaneoId(),
                 activo.getHost(),
                 activo.getHostname(),
                 activo.getSo(),
                 activo.getSoProbab(),
                 activo.getMac(),
                 activo.getDescripcion()
+        );
+    }
+
+    public static ActivoAgrupadoResponse toAgrupadoResponse(List<Activo> activos) {
+
+        Activo activo = activos.getFirst();
+
+        List<UUID> escaneoIds = activos.stream()
+                .map(Activo::getEscaneoId)
+                .distinct()
+                .toList();
+
+        return new ActivoAgrupadoResponse(
+                activo.getHost(),
+                activo.getHostname(),
+                activo.getSo(),
+                activo.getSoProbab(),
+                activo.getMac(),
+                activo.getDescripcion(),
+                escaneoIds
         );
     }
 }

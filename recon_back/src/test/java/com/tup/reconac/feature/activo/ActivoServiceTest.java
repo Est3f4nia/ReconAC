@@ -1,6 +1,7 @@
 package com.tup.reconac.feature.activo;
 
 import com.tup.reconac.exceptions.activo.ActivoNotFoundException;
+import com.tup.reconac.feature.activo.dtos.ActivoAgrupadoResponse;
 import com.tup.reconac.feature.activo.dtos.ActivoRequestDto;
 import com.tup.reconac.feature.activo.dtos.ActivoResponse;
 import com.tup.reconac.feature.activo.models.Activo;
@@ -122,7 +123,7 @@ class ActivoServiceTest {
         Page<Activo> page = new PageImpl<>(List.of(activo));
         when(activoRepository.findAll(pageable)).thenReturn(page);
 
-        Page<ActivoResponse> response = getService.getAll(pageable);
+        Page<ActivoAgrupadoResponse> response = getService.getAll(pageable);
 
         assertEquals(1, response.getContent().size());
         assertEquals("192.168.1.10", response.getContent().getFirst().host());
@@ -136,7 +137,7 @@ class ActivoServiceTest {
         Page<Activo> page = new PageImpl<>(List.of());
         when(activoRepository.findAll(pageable)).thenReturn(page);
 
-        Page<ActivoResponse> response = getService.getAll(pageable);
+        Page<ActivoAgrupadoResponse> response = getService.getAll(pageable);
 
         assertTrue(response.getContent().isEmpty());
         verify(activoRepository).findAll(pageable);

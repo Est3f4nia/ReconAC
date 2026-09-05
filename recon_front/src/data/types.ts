@@ -130,3 +130,36 @@ export interface PageResponse<T> {
   first: boolean;
   last: boolean;
 }
+
+/* ---------- Activo ---------- */
+
+export interface ActivoResponse {
+  id: string;
+  escaneoId: string;
+  host: string;
+  hostname: string | null;
+  so: string | null;
+  soProbab: number | null;
+  mac: string | null;
+  descripcion: string | null;
+}
+
+export interface ActivoAgrupadoResponse {
+    host: string;
+    hostname: string | null;
+    so: string | null;
+    soProbab: number | null;
+    mac: string | null;
+    descripcion: string | null;
+    escaneoIds: string[];
+}
+
+export interface ActivoRequest {
+  escaneoId: string;
+  host: string;
+  hostname?: string;
+  so?: string;
+  soProbab?: number;
+  mac?: string;
+  descripcion?: string;
+}

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/escaneos")
+@RequestMapping("/api/verifyEscaneoOwnership")
 @RequiredArgsConstructor
 public class EscaneoPatchController {
 
