@@ -1,18 +1,34 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+
 import {
   fetchAuditoria,
-  fetchEscaneo,
   fetchEscaneoStatus,
-  fetchResumen,
+  fetchEscaneos,
   startEscaneo,
 } from "@/data/escaneos";
+
+import { fetchDashboardAuditoria } from "@/data/auditorias";
+
 import type {
   AuditoriaResponse,
-  EscaneoResultResponse,
+  DashboardAuditoria,
   Estado,
+  EscaneoListado,
+  ScanStartRequest,
   ScanStatusResponse,
 } from "@/data/types";
+
+import { AuditoriaHeader } from "@/components/metricas/AuditoriaHeader";
+import { ScanForm } from "@/components/metricas/ScanForm";
+import { DashboardKpiGrid } from "@/components/metricas/DashboardKpiGrid";
+import { ScanHistory } from "@/components/metricas/ScanHistory";
+import { RiskTimeline } from "@/components/metricas/RiskTimeline";
+import { CveBreakdown } from "@/components/metricas/CveBreakdown";
+import { HostBreakdown } from "@/components/metricas/HostBreakdown";
+import { ScanComparison } from "@/components/metricas/ScanComparison";
+import { ReportGenerator } from "@/components/metricas/ReportGenerator";
+
 import "@/pages/private/styles/AuditoriaDetail.css";
 
 const POLL_INTERVAL_MS = 3_000;
@@ -21,332 +37,461 @@ function esEstadoFinal(estado: Estado) {
   return estado === "COMPLETADO" || estado === "FALLO";
 }
 
-function textoEstado(estado: Estado) {
-  return estado.replace("_", " ");
-}
-
-function objetivosDesdeTexto(texto: string) {
-  return [
-    ...new Set(
-      texto
-        .split(/[\n,]/)
-        .map((valor) => valor.trim())
-        .filter(Boolean),
-    ),
-  ];
+function ordenarPorCreadoDesc(
+  escaneos: EscaneoListado[],
+): EscaneoListado[] {
+  return [...escaneos].sort(
+    (a, b) =>
+      new Date(b.creadoA).getTime() -
+      new Date(a.creadoA).getTime(),
+  );
 }
 
 export default function AuditoriaDetailPage() {
-  const { auditoriaId, escaneoId: escaneoIdRuta } = useParams<{
+  const { auditoriaId } = useParams<{
     auditoriaId: string;
     escaneoId?: string;
   }>();
 
-  const [auditoria, setAuditoria] = useState<AuditoriaResponse | null>(null);
-  const [escaneoId, setEscaneoId] = useState<string | null>(
-    escaneoIdRuta ?? null,
-  );
-  const [estado, setEstado] = useState<ScanStatusResponse | null>(null);
-  const [resultado, setResultado] = useState<EscaneoResultResponse | null>(null);
+  const [auditoria, setAuditoria] =
+    useState<AuditoriaResponse | null>(null);
+
+  const [dashboard, setDashboard] =
+    useState<DashboardAuditoria | null>(null);
+
+  const [escaneoActivo, setEscaneoActivo] =
+    useState<string | null>(null);
+
+  const [estado, setEstado] =
+    useState<ScanStatusResponse | null>(null);
+
   const [cargando, setCargando] = useState(true);
+  const [cargandoDashboard, setCargandoDashboard] = useState(false);
+  const [iniciandoEscaneo, setIniciandoEscaneo] = useState(false);
+
   const [error, setError] = useState("");
   const [errorEscaneo, setErrorEscaneo] = useState("");
-  const [objetivos, setObjetivos] = useState("");
-  const [nvdApiKey, setNvdApiKey] = useState("");
-  const [iniciando, setIniciando] = useState(false);
+
+  const cargarDashboard = useCallback(async () => {
+    if (!auditoriaId) {
+      return;
+    }
+
+    const id = auditoriaId;
+
+    try {
+      setCargandoDashboard(true);
+
+      const data = await fetchDashboardAuditoria(id);
+
+      setDashboard(data);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo cargar el dashboard.",
+      );
+    } finally {
+      setCargandoDashboard(false);
+    }
+  }, [auditoriaId]);
+
+  const cargarEscaneoActivo = useCallback(async () => {
+    if (!auditoriaId) {
+      return;
+    }
+
+    const id = auditoriaId;
+
+    const response = await fetchEscaneos(0, 100);
+
+    const deEstaAuditoria =
+      response.content.filter(
+        (escaneo) => escaneo.auditoriaId === id,
+      );
+
+    const ordenados =
+      ordenarPorCreadoDesc(deEstaAuditoria);
+
+    const ultimo = ordenados[0];
+
+    if (!ultimo) {
+      setEscaneoActivo(null);
+      setEstado(null);
+      return;
+    }
+
+    setEscaneoActivo(ultimo.escaneoId);
+
+    setEstado({
+      scanId: ultimo.escaneoId,
+      status: ultimo.estado,
+      progress: ultimo.progreso,
+      error: null,
+    });
+  }, [auditoriaId]);
 
   useEffect(() => {
     if (!auditoriaId) {
-      setError("Parámetros inválidos");
+      setError("No se indicó una auditoría.");
       setCargando(false);
       return;
     }
 
-    const auditoriaIdValido = auditoriaId;
-    let vigente = true;
+    const id = auditoriaId;
+    let cancelled = false;
 
-    async function cargarContexto() {
+    async function load() {
       try {
         setCargando(true);
         setError("");
 
-        const [auditoriaData, resumen] = await Promise.all([
-          fetchAuditoria(auditoriaIdValido),
-          fetchResumen(),
+        const [
+          auditoriaData,
+          escaneosResponse,
+          dashboardData,
+        ] = await Promise.all([
+          fetchAuditoria(id),
+          fetchEscaneos(0, 100),
+          fetchDashboardAuditoria(id),
         ]);
 
-        if (!vigente) return;
-
-        const ultimoEscaneo = resumen.find(
-          (item) => item.auditoriaId === auditoriaIdValido,
-        );
+        if (cancelled) {
+          return;
+        }
 
         setAuditoria(auditoriaData);
-        setEscaneoId(escaneoIdRuta ?? ultimoEscaneo?.escaneoId ?? null);
-        setEstado(
-          ultimoEscaneo?.status
-            ? {
-                scanId: null,
-                status: ultimoEscaneo.status,
-                progress: 0,
-                error: null,
-              }
-            : null,
-        );
-      } catch (err) {
-        if (vigente) {
-          setError(
-            err instanceof Error ? err.message : "Error al cargar la auditoría",
+        setDashboard(dashboardData);
+
+        const deEstaAuditoria =
+          escaneosResponse.content.filter(
+            (escaneo) =>
+              escaneo.auditoriaId === id,
           );
+
+        const ordenados =
+          ordenarPorCreadoDesc(deEstaAuditoria);
+
+        const ultimo = ordenados[0];
+
+        if (ultimo) {
+          setEscaneoActivo(ultimo.escaneoId);
+
+          setEstado({
+            scanId: ultimo.escaneoId,
+            status: ultimo.estado,
+            progress: ultimo.progreso,
+            error: null,
+          });
+        } else {
+          setEscaneoActivo(null);
+          setEstado(null);
         }
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "No se pudo cargar la auditoría.",
+        );
       } finally {
-        if (vigente) setCargando(false);
+        if (!cancelled) {
+          setCargando(false);
+        }
       }
     }
 
-    cargarContexto();
+    load();
 
     return () => {
-      vigente = false;
+      cancelled = true;
     };
-  }, [auditoriaId, escaneoIdRuta]);
+  }, [auditoriaId]);
 
   useEffect(() => {
-    if (!auditoriaId || !escaneoId) return;
-
-    const auditoriaIdValido = auditoriaId;
-    const escaneoIdValido = escaneoId;
-    let vigente = true;
-    let proximaActualizacion: number | undefined;
-
-    async function actualizarEstado() {
-      let estadoActual: ScanStatusResponse | null = null;
-
-      try {
-        estadoActual = await fetchEscaneoStatus(auditoriaIdValido, escaneoIdValido);
-        if (!vigente) return;
-
-        setEstado(estadoActual);
-        setErrorEscaneo("");
-
-        if (esEstadoFinal(estadoActual.status)) {
-          try {
-            const detalle = await fetchEscaneo(auditoriaIdValido, escaneoIdValido);
-            if (vigente) setResultado(detalle);
-          } catch (err) {
-            if (vigente) {
-              setErrorEscaneo(
-                err instanceof Error
-                  ? err.message
-                  : "No se pudo obtener el resultado del escaneo",
-              );
-            }
-          }
-        }
-      } catch (err) {
-        if (vigente) {
-          setErrorEscaneo(
-            err instanceof Error
-              ? err.message
-              : "No se pudo actualizar el estado del escaneo",
-          );
-        }
-      } finally {
-        if (vigente && (!estadoActual || !esEstadoFinal(estadoActual.status))) {
-          proximaActualizacion = window.setTimeout(
-            actualizarEstado,
-            POLL_INTERVAL_MS,
-          );
-        }
-      }
-    }
-
-    actualizarEstado();
-
-    return () => {
-      vigente = false;
-      if (proximaActualizacion) window.clearTimeout(proximaActualizacion);
-    };
-  }, [auditoriaId, escaneoId]);
-
-  async function iniciarEscaneo(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!auditoriaId) return;
-
-    const destinos = objetivosDesdeTexto(objetivos);
-    if (destinos.length === 0) {
-      setErrorEscaneo("Indicá al menos un dominio, IP o rango de red.");
+    if (!auditoriaId || !escaneoActivo) {
       return;
     }
 
+    const id = auditoriaId;
+    const scanId = escaneoActivo;
+
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    async function poll() {
+      try {
+        const status =
+          await fetchEscaneoStatus(id, scanId);
+
+        if (cancelled) {
+          return;
+        }
+
+        setEstado(status);
+
+        if (esEstadoFinal(status.status)) {
+          if (status.status === "FALLO") {
+            setErrorEscaneo(
+              status.error ??
+                "La ejecución terminó con errores.",
+            );
+          } else {
+            setErrorEscaneo("");
+          }
+
+          await cargarDashboard();
+
+          if (!cancelled) {
+            setEscaneoActivo(null);
+          }
+
+          return;
+        }
+
+        timeoutId = setTimeout(
+          poll,
+          POLL_INTERVAL_MS,
+        );
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+
+        setErrorEscaneo(
+          err instanceof Error
+            ? err.message
+            : "No se pudo consultar el estado del escaneo.",
+        );
+
+        timeoutId = setTimeout(
+          poll,
+          POLL_INTERVAL_MS,
+        );
+      }
+    }
+
+    poll();
+
+    return () => {
+      cancelled = true;
+
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [
+    auditoriaId,
+    escaneoActivo,
+    cargarDashboard,
+  ]);
+
+  async function handleStartScan(
+    request: ScanStartRequest,
+  ) {
+    if (!auditoriaId) {
+      return;
+    }
+
+    const id = auditoriaId;
+
     try {
-      setIniciando(true);
+      setIniciandoEscaneo(true);
       setErrorEscaneo("");
-      setResultado(null);
 
-      const creado = await startEscaneo(auditoriaId, {
-        objetivos: destinos,
-        nvdApiKey: nvdApiKey.trim() || undefined,
-      });
+      await startEscaneo(id, request);
 
-      // El POST no incluye el identificador. El resumen devuelve el último
-      // escaneo de esta auditoría inmediatamente después de su creación.
-      const resumen = await fetchResumen();
-      const auditoriaResumen = resumen.find(
-        (item) => item.auditoriaId === auditoriaId,
-      );
+      const response =
+        await fetchEscaneos(0, 100);
 
-      if (!auditoriaResumen?.escaneoId) {
+      const deEstaAuditoria =
+        response.content.filter(
+          (escaneo) =>
+            escaneo.auditoriaId === id,
+        );
+
+      const ordenados =
+        ordenarPorCreadoDesc(deEstaAuditoria);
+
+      const nuevoEscaneo = ordenados[0];
+
+      if (!nuevoEscaneo) {
         throw new Error(
-          "El escaneo fue creado, pero no se pudo recuperar su identificador.",
+          "El escaneo fue iniciado pero no se pudo localizar su ejecución.",
         );
       }
 
+      setEscaneoActivo(
+        nuevoEscaneo.escaneoId,
+      );
+
       setEstado({
-        scanId: null,
-        status: creado.estado,
-        progress: creado.progreso,
-        error: creado.mensajeError,
+        scanId: nuevoEscaneo.escaneoId,
+        status: nuevoEscaneo.estado,
+        progress: nuevoEscaneo.progreso,
+        error: null,
       });
-      setEscaneoId(auditoriaResumen.escaneoId);
-      setObjetivos("");
-      setNvdApiKey("");
+
+      await cargarDashboard();
     } catch (err) {
       setErrorEscaneo(
-        err instanceof Error ? err.message : "No se pudo iniciar el escaneo",
+        err instanceof Error
+          ? err.message
+          : "No se pudo iniciar el escaneo.",
       );
     } finally {
-      setIniciando(false);
+      setIniciandoEscaneo(false);
     }
   }
 
   if (cargando) {
-    return <p className="auditoria-detail-feedback">Cargando...</p>;
+    return (
+      <main className="dashboard-page auditoria-detail">
+        <section className="dashboard-section">
+          <p>Cargando auditoría...</p>
+        </section>
+      </main>
+    );
   }
 
-  if (error) {
-    return <p className="auditoria-detail-feedback">{error}</p>;
+  if (error && !auditoria) {
+    return (
+      <main className="dashboard-page auditoria-detail">
+        <section className="dashboard-section">
+          <div className="dashboard-card">
+            <h2>Error</h2>
+            <p>{error}</p>
+
+            <Link
+              to="/dashboard"
+              className="button"
+            >
+              Volver al dashboard
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   if (!auditoria) {
-    return <p className="auditoria-detail-feedback">No se encontró la auditoría.</p>;
+    return (
+      <main className="dashboard-page auditoria-detail">
+        <section className="dashboard-section">
+          <p>No se encontró la auditoría.</p>
+        </section>
+      </main>
+    );
   }
 
-  const escaneoEnCurso = estado && !esEstadoFinal(estado.status);
-  const hosts = resultado?.resultado?.hosts ?? [];
-
   return (
-    <main className="auditoria-detail-page">
-      <Link className="auditoria-detail-back" to="/dashboard">
-        ← Volver a auditorías
-      </Link>
+    <main className="dashboard-page auditoria-detail">
+      <AuditoriaHeader auditoria={auditoria} />
 
-      <header className="auditoria-detail-header">
-        <p className="auditoria-detail-eyebrow">Auditoría</p>
-        <h1>{auditoria.nombre}</h1>
-        <p>{auditoria.objetivo}</p>
-      </header>
+      <section className="dashboard-section">
+        <ScanForm
+          onSubmit={handleStartScan}
+          loading={iniciandoEscaneo}
+        />
 
-      <section className="scan-panel" aria-labelledby="iniciar-escaneo-title">
-        <div className="scan-panel-heading">
-          <div>
-            <h2 id="iniciar-escaneo-title">Iniciar escaneo</h2>
-            <p>Ingresá un objetivo por línea; también podés separarlos con comas.</p>
-          </div>
-          {escaneoEnCurso && <span className="scan-live-label">Escaneo en curso</span>}
-        </div>
-
-        <form className="scan-form" onSubmit={iniciarEscaneo}>
-          <label htmlFor="objetivos">Objetivos</label>
-          <textarea
-            id="objetivos"
-            value={objetivos}
-            onChange={(event) => setObjetivos(event.target.value)}
-            placeholder={"192.168.1.10\nexample.com"}
-            disabled={iniciando || Boolean(escaneoEnCurso)}
-            required
-          />
-
-          <label htmlFor="nvd-api-key">
-            Clave de API NVD
-          </label>
-          <input
-            id="nvd-api-key"
-            type="password"
-            autoComplete="off"
-            aria-describedby="nvd-api-key-help"
-            value={nvdApiKey}
-            onChange={(event) => setNvdApiKey(event.target.value)}
-            disabled={iniciando || Boolean(escaneoEnCurso)}
-          />
-          <p id="nvd-api-key-help" className="scan-field-note">
-            Si no ingresás una clave, el reconocimiento se ejecutará igual, pero
-            no se enriquecerán los hallazgos con consultas a APIs externas.
-          </p>
-
-          <button
-            className="button scan-submit"
-            type="submit"
-            disabled={iniciando || Boolean(escaneoEnCurso)}
-          >
-            {iniciando ? "Iniciando..." : "Iniciar escaneo"}
-          </button>
-        </form>
-      </section>
-
-      <section
-        className="scan-panel"
-        aria-live="polite"
-        aria-labelledby="estado-escaneo-title"
-      >
-        <div className="scan-panel-heading">
-          <div>
-            <h2 id="estado-escaneo-title">Estado del escaneo</h2>
-            <p>
-              {escaneoId
-                ? "Se actualiza automáticamente cada 3 segundos."
-                : "Todavía no hay escaneos para esta auditoría."}
-            </p>
-          </div>
-          {estado && (
-            <span className={`status status-${estado.status}`}>
-              {textoEstado(estado.status)}
-            </span>
-          )}
-        </div>
-
-        {estado && (
-          <div className="scan-progress">
-            <div className="scan-progress-values">
-              <span>Progreso</span>
-              <strong>{estado.progress}%</strong>
-            </div>
-            <progress value={estado.progress} max="100">
-              {estado.progress}%
-            </progress>
-            {estado.error && <p className="scan-error">{estado.error}</p>}
+        {errorEscaneo && (
+          <div className="dashboard-error">
+            {errorEscaneo}
           </div>
         )}
 
-        {errorEscaneo && <p className="scan-error">{errorEscaneo}</p>}
+        {estado &&
+          !esEstadoFinal(estado.status) && (
+            <div className="scan-progress">
+              <div className="scan-progress-header">
+                <span>
+                  Estado:{" "}
+                  <strong>{estado.status}</strong>
+                </span>
+
+                <span>
+                  {estado.progress}%
+                </span>
+              </div>
+
+              <div className="scan-progress-bar">
+                <div
+                  className="scan-progress-value"
+                  style={{
+                    width: `${Math.max(
+                      0,
+                      Math.min(
+                        100,
+                        estado.progress,
+                      ),
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
       </section>
 
-      {estado?.status === "COMPLETADO" && (
-        <section className="scan-panel" aria-labelledby="resultado-escaneo-title">
-          <h2 id="resultado-escaneo-title">Resultados</h2>
-          {hosts.length === 0 ? (
-            <p>No hay activos disponibles para mostrar.</p>
-          ) : (
-            <ul className="scan-host-list">
-              {hosts.map((host) => (
-                <li key={`${host.ip}-${host.mac ?? "sin-mac"}`}>
-                  <strong>{host.ip}</strong>
-                  <span>{host.hostname ?? "Sin hostname"}</span>
-                  <span>{host.os ?? "Sistema operativo no detectado"}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+      {error && (
+        <section className="dashboard-section">
+          <div className="dashboard-error">
+            {error}
+          </div>
+        </section>
+      )}
+
+      {dashboard && (
+        <>
+          <section className="dashboard-section">
+            <DashboardKpiGrid
+              data={dashboard.kpis}
+            />
+          </section>
+
+          <section className="dashboard-section">
+            <ScanHistory
+              escaneos={dashboard.historial}
+            />
+          </section>
+
+          <section className="dashboard-section">
+            <RiskTimeline
+              data={dashboard.riesgoTemporal}
+            />
+          </section>
+
+          <section className="dashboard-section">
+            <CveBreakdown
+              data={dashboard.vulnerabilidades}
+            />
+          </section>
+
+          <section className="dashboard-section">
+            <HostBreakdown
+              data={dashboard.hosts}
+            />
+          </section>
+
+          <section className="dashboard-section">
+            <ScanComparison
+              escaneos={dashboard.historial}
+            />
+          </section>
+
+          <section className="dashboard-section">
+            <ReportGenerator
+              auditoriaId={auditoria.id}
+            />
+          </section>
+        </>
+      )}
+
+      {cargandoDashboard && (
+        <section className="dashboard-section">
+          <p>Actualizando métricas...</p>
         </section>
       )}
     </main>

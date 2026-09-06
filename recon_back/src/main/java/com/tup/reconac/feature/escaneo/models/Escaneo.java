@@ -66,7 +66,3 @@ public class Escaneo implements Serializable {
     }
 }
 
-/** Problema: ¿cómo se le asignan activos? La auditoria debería estar relacionada por endpoints
- *  y por DB.
- */
-

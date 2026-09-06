@@ -1,5 +1,6 @@
 package com.tup.reconac.feature.auditoria.controllers;
 
+import com.tup.reconac.feature.auditoria.dtos.AuditoriaEstadisticasResponse;
 import com.tup.reconac.feature.auditoria.dtos.AuditoriaResponse;
 import com.tup.reconac.feature.auditoria.services.interfaces.IAuditoriaGetService;
 import lombok.RequiredArgsConstructor;
@@ -28,5 +29,12 @@ public class AuditoriaGetController {
     @GetMapping("/{id}")
     public ResponseEntity<AuditoriaResponse> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(auditoriaGet.getById(id));
+    }
+
+    @GetMapping("/{id}/estadisticas")
+    public ResponseEntity<AuditoriaEstadisticasResponse> getEstadisticas(
+            @PathVariable UUID id
+    ) {
+        return ResponseEntity.ok(auditoriaGet.getEstadisticas(id));
     }
 }

@@ -7,7 +7,8 @@ import type {
   ScanStartRequest,
   ScanStatusResponse,
   PageResponse,
-  EscaneoListado
+  EscaneoListado,
+  AuditoriaEstadisticasResponse
 } from "./types";
 
 export async function fetchResumen(): Promise<EscaneoResumen[]> {
@@ -48,6 +49,16 @@ export async function fetchAuditorias(): Promise<AuditoriaResponse[]> {
   }
 
   return body.content ?? body.data ?? [];
+}
+
+export async function fetchAuditoriaEstadisticas(
+  auditoriaId: string,
+): Promise<AuditoriaEstadisticasResponse> {
+  const res = await apiFetch(
+    `/api/auditorias/${encodeURIComponent(auditoriaId)}/estadisticas`,
+  );
+
+  return parseResponse<AuditoriaEstadisticasResponse>(res);
 }
 
 

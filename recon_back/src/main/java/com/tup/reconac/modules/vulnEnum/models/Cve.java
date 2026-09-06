@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @Table(name = "cve")
 @RequiredArgsConstructor
 @Getter
+@Setter
 public class Cve implements Serializable {
 
     @Id

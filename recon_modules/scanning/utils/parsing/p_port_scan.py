@@ -9,6 +9,7 @@ import scanning.utils.validations.nmap_xml_validation as xml_validation
     Returns a sorted list of integers
 """
 
+# Principal cuello de botella
 def parse_open_ports(xml: str) -> list[int]:
     
     root = xml_validation.validate(xml)

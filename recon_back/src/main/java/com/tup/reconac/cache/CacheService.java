@@ -12,6 +12,8 @@ import com.tup.reconac.modules.vulnEnum.repositories.CveCweRepository;
 import com.tup.reconac.modules.vulnEnum.repositories.CveRepository;
 import com.tup.reconac.modules.vulnEnum.repositories.CweRepository;
 import com.tup.reconac.modules.vulnEnum.repositories.ReferenciaRepository;
+
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -75,6 +77,23 @@ public class CacheService {
     // ========================
     // CVE
     // ========================
+
+    public Cve updateCveEpss(
+            Cve cve,
+            BigDecimal epss
+    ) {
+        cve.setEpss(epss);
+
+        Cve saved = cveRepository.save(cve);
+
+        putInCache(
+                PREFIX_CVE,
+                saved.getCve(),
+                saved
+        );
+
+        return saved;
+    }
 
     public Optional<Cve> getCve(String cveId) {
         Cve cached = getFromCache(PREFIX_CVE, cveId, Cve.class);

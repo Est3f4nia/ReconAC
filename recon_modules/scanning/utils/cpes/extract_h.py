@@ -12,6 +12,7 @@ async def extract_cpes_from_headers(endpoints: list[str]) -> set[str]:
     connector = aiohttp.TCPConnector(ssl = False)
     timeout = aiohttp.ClientTimeout(total = 8)
 
+    print("[+] CVE...")
     async with aiohttp.ClientSession(connector = connector, timeout = timeout) as session:
         # one task for each endpoint
         tasks = [

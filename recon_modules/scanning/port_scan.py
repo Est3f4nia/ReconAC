@@ -25,6 +25,7 @@ async def initial_scan(nmap_cmd: str, target: str, timeout: int) -> list[int]:
 
     try:
         stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout = timeout)
+        print("[+] Ejecutando escaneo inicial")
     except asyncio.TimeoutError:
         proc.kill()
         await proc.wait()

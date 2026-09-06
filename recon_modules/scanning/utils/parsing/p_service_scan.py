@@ -15,6 +15,8 @@ from scanning.utils.validations.nmap_xml_validation import validate
 """
 
 def parse_service_scan(xml: str) -> ScanResult:
+
+    print("[+] Parsing ScanResult...")
     
     root = validate(xml)
     
