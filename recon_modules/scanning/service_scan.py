@@ -3,19 +3,22 @@ from scanning.utils.parsing.p_service_scan import parse_service_scan
 from models.scan_result import ScanResult
 
 """
-    Run a heavy Nmap scan just against open ports
-    
-    - Performs service and version detection, default NSE script scanning and OS fingerprinting
-      on specific ports
-    
-    Returns a ScanResult object
+Ejecuta un escaneo detallado de servicios sobre los puertos abiertos.
+
+- Detecta servicios y versiones.
+- Ejecuta scripts NSE por defecto.
+- Intenta detectar el sistema operativo.
+- Procesa el resultado XML de Nmap.
+- Devuelve un ScanResult estructurado.
 """
 
 async def service_scan(nmap_cmd: str, target: str, ports: list[int], timeout: int) -> ScanResult:
-    """nmap -p<ports> -n -Pn -sC -sV -O -oX"""
-    
+
     ports_str = ",".join(str(p) for p in ports)
 
+    print(f"[*] Ejecutando detección de servicios contra {target}")
+
+    """nmap -p<ports> -n -Pn -sC -sV -O -oX"""
     proc = await asyncio.create_subprocess_exec(
         nmap_cmd, f"-p{ports_str}", "-n", "-Pn", "-sC", "-sV", "-O",
         "-oX", "-", target,
@@ -28,13 +31,18 @@ async def service_scan(nmap_cmd: str, target: str, ports: list[int], timeout: in
     except asyncio.TimeoutError:
         proc.kill()
         await proc.wait()
-        raise RuntimeError("Nmap services scan timed out")
+        raise RuntimeError(f"[!] El escaneo de servicios de Nmap superó el tiempo máximo permitido para el objetivo: {target}")
 
     out = stdout.decode("utf-8", errors="ignore")
     err = stderr.decode("utf-8", errors="ignore")
 
     if proc.returncode != 0:
-        raise RuntimeError(f"Nmap services scan failed (code {proc.returncode}): {err.strip() or out.strip()}")
+         raise RuntimeError(f"[!] El escaneo de servicios de Nmap falló para {target} (código {proc.returncode}): {err.strip() or out.strip()}")
 
-    print("[+] Parsing scan output...")
-    return parse_service_scan(stdout.decode("utf-8", errors = "ignore"))
+    scan_result = parse_service_scan(out)
+
+    print(
+        f"[*] Análisis de servicios finalizado para: {target}"
+    )
+
+    return scan_result

@@ -1,15 +1,15 @@
 package com.tup.reconac.feature.auditoria.services;
 
 import com.tup.reconac.exceptions.auditoria.AuditoriaNotFoundException;
-import com.tup.reconac.feature.auditoria.dtos.AuditoriaEstadisticasResponse;
-import com.tup.reconac.feature.auditoria.dtos.AuditoriaResponse;
+import com.tup.reconac.feature.auditoria.dtos.response.AuditoriaEstadisticasResponse;
+import com.tup.reconac.feature.auditoria.dtos.response.AuditoriaResponse;
 import com.tup.reconac.feature.auditoria.mappers.AuditoriaMapper;
 import com.tup.reconac.feature.auditoria.models.Auditoria;
 import com.tup.reconac.feature.auditoria.repositories.AuditoriaRepository;
 import com.tup.reconac.feature.auditoria.services.interfaces.IAuditoriaGetService;
 import com.tup.reconac.feature.escaneo.models.Escaneo;
 import com.tup.reconac.feature.escaneo.models.EscaneoEstado;
-import com.tup.reconac.feature.escaneo.repositories.EscaneoRepository;
+import com.tup.reconac.feature.escaneo.services.domain.EscaneoConsultService;
 import com.tup.reconac.feature.usuario.services.domain.UserDetailsService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,32 +26,24 @@ public class AuditoriaGetService implements IAuditoriaGetService {
 
     private final AuditoriaRepository repo;
     private final UserDetailsService userService;
-    private final EscaneoRepository escaneoRepository; // nonono
+    private final EscaneoConsultService escaneoConsult;
 
     @Override
     @Transactional(readOnly = true)
     public Page<AuditoriaResponse> getAll(Pageable pageable) {
-        UUID usuarioId = userService
-                .getAuthenticatedUser()
-                .getId();
+        UUID usuarioId = userService.getAuthenticatedUser().getId();
 
-        return repo
-                .findByUsuarioIdOrderByFechaGeneracionDesc(
-                        usuarioId,
-                        pageable
-                )
+        return repo.findByUsuarioIdOrderByFechaGeneracionDesc(usuarioId, pageable)
                 .map(AuditoriaMapper::toResponse);
     }
 
-    // devolver auditoria + escaneo
     @Override
     @Transactional(readOnly = true)
     public AuditoriaResponse getById(UUID id) {
 
         UUID usuarioId = userService.getAuthenticatedUser().getId();
 
-        Auditoria auditoria = repo
-                .findByIdAndUsuarioId(id, usuarioId)
+        Auditoria auditoria = repo.findByIdAndUsuarioId(id, usuarioId)
                 .orElseThrow(() ->
                         new AuditoriaNotFoundException("Auditoría no encontrada")
                 );
@@ -61,18 +53,16 @@ public class AuditoriaGetService implements IAuditoriaGetService {
 
     @Override
     @Transactional(readOnly = true)
-    public AuditoriaEstadisticasResponse getEstadisticas(UUID id) {
+    public AuditoriaEstadisticasResponse getEstadisticas(UUID autitoriaId) {
 
         UUID usuarioId = userService.getAuthenticatedUser().getId();
 
-        repo.findByIdAndUsuarioId(id, usuarioId)
+        repo.findByIdAndUsuarioId(autitoriaId, usuarioId)
                 .orElseThrow(() ->
                         new AuditoriaNotFoundException("Auditoría no encontrada")
                 );
 
-        //no
-        List<Escaneo> escaneos =
-                escaneoRepository.findByAuditoriaIdOrderByCreadoADesc(id);
+        List<Escaneo> escaneos = escaneoConsult.getEscaneos(autitoriaId);
 
         int total = escaneos.size();
 

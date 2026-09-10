@@ -14,6 +14,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -41,7 +42,7 @@ public class SecurityConfig {
                         .httpStrictTransportSecurity(hsts ->
                                 hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
                         .contentTypeOptions(Customizer.withDefaults())
-                        .frameOptions(frame -> frame.deny())
+                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                         .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
                         .contentSecurityPolicy(csp ->
                                 csp.policyDirectives("default-src 'none'; frame-ancestors 'none'; base-uri 'none'"))
@@ -53,8 +54,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
-                        .requestMatchers("/api/internal/**").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/api/internal/**").permitAll()  // esto aplica?
+                        .requestMatchers("/actuator/health").permitAll() // sacar en prod
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

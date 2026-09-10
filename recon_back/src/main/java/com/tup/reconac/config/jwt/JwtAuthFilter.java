@@ -53,7 +53,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             try {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (UsernameNotFoundException ignored) {
@@ -63,7 +66,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    // Nota: qué tan bien está hacer esto
     private String extractToken(HttpServletRequest request) {
         // 1. Intentar desde cookie
         Cookie[] cookies = request.getCookies();

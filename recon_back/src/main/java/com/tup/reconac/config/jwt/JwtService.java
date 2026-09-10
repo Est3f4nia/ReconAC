@@ -27,12 +27,12 @@ public class JwtService {
     @PostConstruct
     void initSigningKey() {
         if (!"HS256".equalsIgnoreCase(properties.algorithm())) {
-            throw new IllegalStateException("Solo está soportado el algoritmo HS256 (app.jwt.algorithm)");
+            throw new IllegalStateException("Solo está soportado el algoritmo HS256");
         }
         byte[] keyBytes = properties.secret().getBytes(StandardCharsets.UTF_8);
         if (keyBytes.length < MIN_SECRET_BYTES) {
             throw new IllegalStateException(
-                    "app.jwt.secret debe tener al menos " + MIN_SECRET_BYTES + " bytes en UTF-8 para HS256");
+                    "El JWT Secret debe tener al menos " + MIN_SECRET_BYTES + " bytes en UTF-8 para HS256");
         }
         signingKey = Keys.hmacShaKeyFor(keyBytes);
     }

@@ -157,4 +157,31 @@ async function parseResponse<T>(res: Response): Promise<T> {
   return (body.data ?? body) as T;
 }
 
+// REPORTE ======================
 
+export type FormatoReporte = "MD" | "CSV";
+
+export async function descargarReporte(
+  auditoriaId: string,
+  escaneoId: string,
+  formato: FormatoReporte,
+): Promise<Blob> {
+  const res = await apiFetch(
+    `/api/${encodeURIComponent(auditoriaId)}/escaneos/${encodeURIComponent(
+      escaneoId,
+    )}/reporte?formato=${formato}`,
+  );
+
+  if (!res.ok) {
+    let detail = "No se pudo generar el reporte.";
+    try {
+      const body = await res.json();
+      detail = body.detail ?? body.message ?? detail;
+    } catch {
+      // La respuesta puede no ser JSON.
+    }
+    throw new Error(detail);
+  }
+
+  return res.blob();
+}

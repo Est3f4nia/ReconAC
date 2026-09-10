@@ -4,6 +4,7 @@ import com.tup.reconac.modules.vulnEnum.models.CpeCve;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface CpeCveRepository extends JpaRepository<CpeCve, UUID> {
@@ -11,4 +12,6 @@ public interface CpeCveRepository extends JpaRepository<CpeCve, UUID> {
     List<CpeCve> findByCpeId(UUID cpeId);
 
     List<CpeCve> findByCveId(UUID cveId);
+
+    Optional<CpeCve> findByCpeIdAndCveId(UUID cpeId, UUID cveI);
 }

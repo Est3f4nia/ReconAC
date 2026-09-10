@@ -2,7 +2,8 @@ from datetime import datetime
 from typing import Dict
 from models.scan_result import ScanResult
 from models.api_result import ApiResult
-from report.utils.cves_score import get_severity_from_cvss
+from report.utils.cves_score import get_severity_from_cvss, resolve_severity
+
 
 
 def generate_md(scan_result: ScanResult, api_results: Dict[str, ApiResult]) -> str:
@@ -78,7 +79,10 @@ def generate_md(scan_result: ScanResult, api_results: Dict[str, ApiResult]) -> s
     
             exploitable = [v for v in vulns if v.is_exploitable]
 
-            critical_high = [v for v in vulns if v.severity in ("CRITICAL", "HIGH")]
+            critical_high = [
+                v for v in vulns
+                if resolve_severity(v) in ("CRITICAL", "HIGH")
+            ]
             md.append(f"#### CPE: {cpe} ({len(vulns)} vulnerabilities)")
             md.append(f"**Critical/High:** {len(critical_high)} | **Exploitable:** {len(exploitable)}")
 

@@ -15,15 +15,14 @@ import java.io.IOException;
 import java.util.Set;
 
 /**
- * CSRF con patrón Double Submit Cookie (T7).
- *
- * El backend emite en login/refresh una cookie `XSRF-TOKEN` (no httpOnly, SameSite=Strict)
+ * CSRF con patrón Double Submit Cookie.
+ * El backend emite en /login/refresh una cookie `XSRF-TOKEN` (no httpOnly, SameSite=Strict)
  * con un token aleatorio. El cliente (SPA) debe leerla y reenviarla en el header
  * `X-XSRF-TOKEN` en cada request mutante. El filtro valida que header y cookie coincidan.
- *
  * Solo aplica a sesiones basadas en cookie (`access_token`). Los clientes que usan
  * Bearer (no-browser) no son susceptibles a CSRF y se dejan pasar.
  */
+
 @Component
 public class CsrfFilter extends OncePerRequestFilter {
 
@@ -33,7 +32,7 @@ public class CsrfFilter extends OncePerRequestFilter {
     private static final Set<String> SAFE_METHODS = Set.of("GET", "HEAD", "OPTIONS", "TRACE");
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
+    protected void doFilterInternal(@NonNull HttpServletRequest request,    // deprecated, ver
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
@@ -57,7 +56,7 @@ public class CsrfFilter extends OncePerRequestFilter {
         String headerToken = request.getHeader(CSRF_HEADER);
         String cookieToken = findCookie(request, CSRF_COOKIE);
 
-        if (headerToken == null || cookieToken == null || !headerToken.equals(cookieToken)) {
+        if (headerToken == null || !headerToken.equals(cookieToken)) {
             response.setStatus(HttpStatus.FORBIDDEN.value());
             response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
             response.getWriter().write(

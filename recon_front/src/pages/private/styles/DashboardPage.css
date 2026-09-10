@@ -1,23 +1,8 @@
-/* ======= DASHBOARD PAGE ======= */
-
-.dashboard-page {
-    padding: 32px 24px;
-}
-
-.dashboard-page h1 {
-    margin-left: 28px;
-    margin-bottom: 28px;
-
-    font-size: 4rem;
-    font-weight: 700;
-}
-
-
 /* ======= AUDITORIAS SECTION ======= */
 
 .auditorias-section {
     width: 100%;
-    max-width: 1100px;
+    max-width: 1400px;
     padding: 22px 24px;
 
     border: 2px solid var(--border-big);
@@ -31,7 +16,7 @@
 .auditorias-title {
     margin-bottom: 18px;
 
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 600;
 }
 
@@ -65,10 +50,7 @@
     margin-bottom: 20px;
 }
 
-
-
-
-/* ------- MODAL ------- */
+/* ------- MODAL NUEVA AUDITORIA ------- */
 
 .modal-overlay {
     position: fixed;

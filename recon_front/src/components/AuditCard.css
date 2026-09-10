@@ -12,9 +12,7 @@
     border-radius: var(--br-radius);
 
     background: var(--acc2);
-    color: var(--font);
 
-    font-family: var(--font-body);
     font-size: 0.85rem;
     line-height: 1.5;
 }
@@ -23,9 +21,7 @@
 /* ------- TITLE ------- */
 
 .audit-card-title {
-    font-family: var(--font-title);
-    font-size: 1.1rem;
-    font-weight: 700;
+    font-size: 1.3rem;
     text-align: center;
 }
 
@@ -47,6 +43,9 @@
     gap: 6px;
 }
 
+.card-audit-console {
+    font-size: 1rem;
+}
 
 /* ------- SCAN ------- */
 

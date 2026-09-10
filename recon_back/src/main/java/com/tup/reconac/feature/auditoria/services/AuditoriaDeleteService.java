@@ -24,6 +24,6 @@ public class AuditoriaDeleteService implements IAuditoriaDeleteService {
 
         repo.deleteById(id);
 
-        // Arquitectura: por el tamaño potencial de `auditoría`, no aplica usar soft delete.
+        // Arquitectura: por el tamaño potencial de `auditoría`, no aplica usar soft deleteEscaneo
     }
 }

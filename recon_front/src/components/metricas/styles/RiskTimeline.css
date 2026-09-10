@@ -1,0 +1,100 @@
+/* =========================================================
+   Gráfico de riesgo
+   ========================================================= */
+
+.risk-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.risk-chart-plot {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border-big);
+  border-radius: var(--br-radius);
+  background: var(--bg);
+}
+
+.risk-chart-plot svg {
+  display: block;
+  width: 100%;
+  height: 260px;
+}
+
+.risk-chart-grid {
+  stroke: var(--border-big);
+  stroke-width: 1;
+}
+
+.risk-chart-label {
+  fill: var(--font);
+  font-family: var(--font-console);
+  font-size: 12px;
+  opacity: 0.45;
+}
+
+.risk-chart-line {
+  stroke: var(--border-acc);
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.risk-chart-point {
+  fill: var(--bg);
+  stroke: var(--border-acc);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.risk-chart-value {
+  fill: var(--font);
+  font-family: var(--font-title);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.risk-chart-events {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  scroll-snap-type: x proximity;
+  gap: 10px;
+}
+
+.risk-chart-event {
+  flex: 0 0 200px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--border-big);
+  border-radius: var(--br-radius);
+  background: var(--bg);
+}
+
+.risk-chart-event strong {
+  font-family: var(--font-title);
+  font-size: 0.8rem;
+}
+
+.risk-chart-event > span {
+  font-size: 0.65rem;
+  opacity: 0.55;
+}
+
+.risk-chart-event div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.68rem;
+  opacity: 0.7;
+}
+.risk-chart-point.risk-critico { stroke: var(--critical); }
+.risk-chart-point.risk-alto { stroke: var(--high); }
+.risk-chart-point.risk-medio { stroke: var(--medium); }
+.risk-chart-point.risk-bajo { stroke: var(--low); }

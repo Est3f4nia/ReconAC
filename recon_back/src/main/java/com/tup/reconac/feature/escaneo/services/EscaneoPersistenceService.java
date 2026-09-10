@@ -5,12 +5,14 @@ import com.tup.reconac.feature.escaneo.models.EscaneoEstado;
 import com.tup.reconac.feature.escaneo.repositories.EscaneoRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 /**
  * Transacción aparte para persistir el escaneo.
+ * Al crear es el escaneo E iniciar Python,
  * @Transactional no persistía el moduleJobId a tiempo para que las
  * actualizaciones de estado funcionen
  */
@@ -18,14 +20,15 @@ import java.util.UUID;
 @Service
 @AllArgsConstructor
 public class EscaneoPersistenceService {
+
     private final EscaneoRepository repo;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Escaneo crear(
             UUID auditoriaId,
             String[] objetivos,
-            String jobId) {
-
+            String jobId
+    ) {
         Escaneo escaneo = new Escaneo();
 
         escaneo.setAuditoriaId(auditoriaId);
@@ -33,6 +36,6 @@ public class EscaneoPersistenceService {
         escaneo.setModuloJobId(jobId);
         escaneo.setEstado(EscaneoEstado.PENDIENTE);
 
-        return repo.save(escaneo);
+        return repo.saveAndFlush(escaneo);
     }
 }

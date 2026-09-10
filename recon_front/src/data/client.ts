@@ -85,6 +85,8 @@ async function doRefresh(): Promise<boolean> {
 
 /* ---------- apiFetch ---------- */
 
+// Quilombo con el estado de escaneos, de nuevo deben ser los DTO
+
 export async function apiFetch(
   url: string,
   options: RequestInit = {},

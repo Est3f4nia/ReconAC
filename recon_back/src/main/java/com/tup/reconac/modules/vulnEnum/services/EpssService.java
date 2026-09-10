@@ -5,7 +5,7 @@ import com.tup.reconac.cache.CacheService;
 import com.tup.reconac.modules.vulnEnum.dtos.data.EpssData;
 import com.tup.reconac.modules.vulnEnum.models.Cve;
 import com.tup.reconac.modules.vulnEnum.repositories.CveRepository;
-import com.tup.reconac.modules.vulnEnum.services.clients.EpssClient;
+import com.tup.reconac.modules.vulnEnum.clients.EpssClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -22,6 +22,7 @@ public class EpssService {
     private final EpssClient epssClient;
     private final CacheService cacheService;
     private final CveRepository cveRepository;
+    private final VulnerabilityCatalogLock catalogLock;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Map<String, BigDecimal> enrichEpss(
@@ -45,6 +46,7 @@ public class EpssService {
         if (uniqueCveIds.isEmpty()) {
             return Map.of();
         }
+        catalogLock.acquire();
 
         /*
          * Primero buscamos los CVE existentes en BD.
@@ -132,7 +134,7 @@ public class EpssService {
                 cve.setEpss(epss);
 
                 Cve saved =
-                        cacheService.saveCve(cve);
+                        cveRepository.save(cve);
 
                 result.put(
                         cveId,

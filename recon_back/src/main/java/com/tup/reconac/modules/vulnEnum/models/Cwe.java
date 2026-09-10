@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.UUID;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @Table(name = "cwe")
 @RequiredArgsConstructor
 @Getter
+@Setter
 public class Cwe implements Serializable {
 
     @Id

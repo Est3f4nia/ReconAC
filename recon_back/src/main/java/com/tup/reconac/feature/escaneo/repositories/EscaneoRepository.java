@@ -12,17 +12,12 @@ import java.util.UUID;
 
 public interface EscaneoRepository extends JpaRepository<Escaneo, UUID> {
 
-    Optional<Escaneo> findByIdAndAuditoriaId(UUID id, UUID auditoriaId);
+    Optional<Escaneo> findByIdAndAuditoriaId(UUID escaneoId, UUID auditoriaId);
     Optional<Escaneo> findFirstByAuditoriaIdOrderByCreadoADesc(UUID auditoriaId);
+    Optional<Escaneo> findByModuloJobId(String jobId); // esto jode con el seguimiento de progreso
 
-    Optional<Escaneo> findByModuloJobId(String jobId);
-
-    Page<Escaneo> findByAuditoriaIdIn(
-            List<UUID> auditoriaIds,
-            Pageable pageable
-    );
+    Page<Escaneo> findByAuditoriaIdIn(List<UUID> auditoriaIds, Pageable pageable);
 
     // Estadísticas
-
     List<Escaneo> findByAuditoriaIdOrderByCreadoADesc(UUID auditoriaId);
 }

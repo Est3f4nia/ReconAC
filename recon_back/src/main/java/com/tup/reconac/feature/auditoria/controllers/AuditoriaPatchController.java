@@ -1,14 +1,13 @@
 package com.tup.reconac.feature.auditoria.controllers;
 
 import com.tup.reconac.config.BaseResponse;
-import com.tup.reconac.feature.auditoria.dtos.AuditoriaRequestDto;
-import com.tup.reconac.feature.auditoria.dtos.AuditoriaResponse;
+import com.tup.reconac.feature.auditoria.dtos.request.AuditoriaRequestDto;
+import com.tup.reconac.feature.auditoria.dtos.response.AuditoriaResponse;
 import com.tup.reconac.feature.auditoria.services.interfaces.IAuditoriaUpdateService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;

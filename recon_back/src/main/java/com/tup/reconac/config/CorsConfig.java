@@ -12,6 +12,7 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
+    // de nuevo, tomar white list desde config?
     @Value("${app.cors.allowed-origins:http://localhost:3000}")
     private String allowedOrigins;
 

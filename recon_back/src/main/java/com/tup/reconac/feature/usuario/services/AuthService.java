@@ -31,6 +31,7 @@ public class AuthService implements IAuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
+    private final NvdApiKeyEncryptionService encryptionService;
 
     @Transactional
     @Override
@@ -41,6 +42,7 @@ public class AuthService implements IAuthService {
         Usuario usuario = new Usuario();
         usuario.setEmail(request.email());
         usuario.setContrasenia(passwordEncoder.encode(request.contrasenia()));
+        usuario.setNvdApiKey(encryptionService.encrypt(request.apiKey()));
         usuarioRepository.save(usuario);
     }
 
@@ -51,6 +53,7 @@ public class AuthService implements IAuthService {
                     UsernamePasswordAuthenticationToken.unauthenticated(request.email(), request.contrasenia())
             );
             UserDetails principal = (UserDetails) authentication.getPrincipal();
+            assert principal != null;
             var roles = principal.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority).toList();
             String accessToken = jwtService.generateToken(principal.getUsername(), roles);

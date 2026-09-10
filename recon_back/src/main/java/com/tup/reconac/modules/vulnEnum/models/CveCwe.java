@@ -7,15 +7,17 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.UUID;
 
 @Entity
 @Table(name = "cve_cwe")
-@RequiredArgsConstructor
+@NoArgsConstructor
 @Getter
+@Setter
 public class CveCwe implements Serializable {
 
     @Id
@@ -28,4 +30,9 @@ public class CveCwe implements Serializable {
 
     @Column(name = "cwe_id", nullable = false)
     private UUID cweId;
+
+    public CveCwe(UUID cveId, UUID cweId) {
+        this.cveId = cveId;
+        this.cweId = cweId;
+    }
 }

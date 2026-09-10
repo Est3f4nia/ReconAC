@@ -1,8 +1,8 @@
 package com.tup.reconac.feature.activo.mappers;
 
-import com.tup.reconac.feature.activo.dtos.ActivoAgrupadoResponse;
-import com.tup.reconac.feature.activo.dtos.ActivoRequestDto;
-import com.tup.reconac.feature.activo.dtos.ActivoResponse;
+import com.tup.reconac.feature.activo.dtos.response.ActivoAgrupadoResponse;
+import com.tup.reconac.feature.activo.dtos.request.ActivoRequestDto;
+import com.tup.reconac.feature.activo.dtos.response.ActivoResponse;
 import com.tup.reconac.feature.activo.models.Activo;
 import org.springframework.stereotype.Component;
 

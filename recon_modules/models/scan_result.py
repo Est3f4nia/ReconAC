@@ -7,6 +7,7 @@ from typing import List, Optional
 class PortInfo:
     port: int
     protocol: str
+    estado: str
     service: str = ''
     product: str = ''
     version: str = ''

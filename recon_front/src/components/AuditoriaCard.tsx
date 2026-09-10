@@ -1,17 +1,20 @@
 import { Link } from "react-router-dom";
+import { EscaneoResumen } from "@/data/types";
 import "./AuditCard.css";
 
-interface EscaneoResumen {
-  auditoriaId: string | number;
-  auditoriaNombre: string;
-  escaneoId?: string | number | null;
-  completadoA?: string | Date | null;
-  status?: string | null;
-  activos: number;
-  puertos: number;
-  cve: number;
-  cveCriticos: number;
-}
+// interface EscaneoResumen {
+//   auditoriaId: string | number;
+//   auditoriaNombre: string;
+//   escaneoId?: string | number | null;
+//   completadoA?: string | Date | null;
+//   status?: string | null;
+//   activos: number;
+//   puertos: number;    falla?
+//   cve: number;
+//   cveCriticos: number;
+// } 
+
+
 
 interface AuditCardProps {
   audit: EscaneoResumen;
@@ -35,6 +38,9 @@ export function AuditCard({ audit }: AuditCardProps) {
   const statusClass = audit.status
     ? `status-${audit.status}`
     : "status-sin-escaneos";
+  
+  const pluralize = (count: number, singular: string, plural: string): string =>
+    `${count} ${count === 1 ? singular : plural}`;
 
   return (
     <article className="audit-card">
@@ -42,9 +48,9 @@ export function AuditCard({ audit }: AuditCardProps) {
 
       <hr className="audit-card-divider" />
 
-      <div className="audit-card-info console">
-        <p>{audit.activos} activos</p>
-        <p>{audit.puertos} puertos</p>
+      <div className="audit-card-info console card-audit-console">
+        <p>{pluralize(audit.activos, 'activo', 'activos')}</p>
+        <p>{pluralize(audit.puertos, 'puerto', 'puertos')}</p>
 
         <div className="audit-card-scan">
           <p>Último escaneo:</p>
@@ -52,7 +58,7 @@ export function AuditCard({ audit }: AuditCardProps) {
         </div>
 
         <div className="audit-card-status">
-          <p>Status:</p>
+          <p>Estado:</p>
           <span className={`status ${statusClass}`}>
             {statusText}
           </span>

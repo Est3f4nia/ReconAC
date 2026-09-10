@@ -7,7 +7,6 @@ class Config:
     targets: list[str]
     timeout: int
     icmp_timeout: int
-    nvd_api_key: Optional[str] = None
     max_cve_years: Optional[int] = None
     min_cvss_score: Optional[float] = None
 

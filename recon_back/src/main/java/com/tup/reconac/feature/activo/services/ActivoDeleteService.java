@@ -1,13 +1,12 @@
 package com.tup.reconac.feature.activo.services;
 
 import com.tup.reconac.exceptions.activo.ActivoNotFoundException;
-import com.tup.reconac.exceptions.escaneo.EscaneoNotFoundException;
 import com.tup.reconac.feature.activo.models.Activo;
 import com.tup.reconac.feature.activo.repositories.ActivoRepository;
 import com.tup.reconac.feature.activo.services.interfaces.IActivoDeleteService;
 import com.tup.reconac.feature.auditoria.services.domain.AuditoriaConsultService;
 import com.tup.reconac.feature.escaneo.models.Escaneo;
-import com.tup.reconac.feature.escaneo.repositories.EscaneoRepository;
+import com.tup.reconac.feature.escaneo.services.domain.EscaneoConsultService;
 import com.tup.reconac.feature.usuario.models.Usuario;
 import com.tup.reconac.feature.usuario.services.domain.UserDetailsService;
 import lombok.AllArgsConstructor;
@@ -21,36 +20,25 @@ import java.util.UUID;
 public class ActivoDeleteService implements IActivoDeleteService {
 
     private final ActivoRepository repo;
-    private final EscaneoRepository escaneoRepository;
     private final AuditoriaConsultService auditoriaConsult;
+    private final EscaneoConsultService escaneoConsult;
     private final UserDetailsService userService;
 
     @Override
     @Transactional
-    public void deleteById(UUID id) {
+    public void deleteById(UUID activoId) {
 
         Usuario usuario = userService.getAuthenticatedUser();
 
-        Activo activo = repo.findById(id)
+        // hay otra forma de hacer esto?
+        Activo activo = repo.findById(activoId)
                 .orElseThrow(() ->
-                        new ActivoNotFoundException(
-                                "El activo no existe"
-                        )
+                        new ActivoNotFoundException("El activo no existe")
                 );
 
-        Escaneo escaneo = escaneoRepository.findById(
-                activo.getEscaneoId()
-        ).orElseThrow(() ->
-                new EscaneoNotFoundException(
-                        "Escaneo asociado al activo no encontrado"
-                )
-        );
+        Escaneo escaneo = escaneoConsult.findById(activo.getEscaneoId());
 
-        auditoriaConsult.verifyEscaneoOwnership(
-                escaneo,
-                usuario.getId()
-        );
-
+        auditoriaConsult.verifyEscaneoOwnership(escaneo, usuario.getId());
         repo.delete(activo);
     }
 }

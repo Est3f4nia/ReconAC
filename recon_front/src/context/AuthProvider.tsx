@@ -13,7 +13,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, contrasenia: string) => Promise<void>;
-  register: (email: string, contrasenia: string) => Promise<void>;
+  register: (email: string, contrasenia: string, apiKey: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -44,8 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser({ email: res.email, roles: decodeJwt(res.accessToken)?.roles ?? [] });
   }, []);
 
-  const register = useCallback(async (email: string, contrasenia: string) => {
-    await authApi.register(email, contrasenia);
+  const register = useCallback(async (email: string, contrasenia: string, apiKey: string) => {
+    await authApi.register(email, contrasenia, apiKey);
   }, []);
 
   const logout = useCallback(() => {

@@ -1,160 +1,173 @@
-import asyncio
 import aiohttp
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
 
-from cves.utils.parsing.p_normalize_cpes import normalize
-from urllib.parse import quote
-from yarl import URL
-from models.api_result import ApiResult
-from cves.utils.parsing.p_api_nist import parse_single_vuln
+from datetime import datetime
+from typing import Dict, List
 
-NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0/"
+from models.api_result import (
+    ApiResult,
+    Vulnerability,
+    CWE,
+    Reference,
+)
 
-_RESULTS_PER_PAGE = 30
-_MAX_PAGES = 10
 
-_RETRY_DELAY = 6
-_MAX_RETRIES = 5
-_SEMAPHORE = asyncio.Semaphore(8)
+BACKEND_API_URL = "http://localhost:8080"
 
-async def lookup_cves_for_cpes(cpes: List[str], api_key: str, max_cve_years: int, min_cvss_score: float) -> Dict[str, ApiResult]:
-    
-    headers = {"apiKey": api_key}
 
-    async with aiohttp.ClientSession(headers=headers) as session:
-        tasks = [_pipeline_cpe(session, cpe, max_cve_years, min_cvss_score) for cpe in cpes]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+async def lookup_cves_for_cpes(
+    escaneo_id: str,
+    cpes: List[str],
+    max_cve_years: int,
+    min_cvss_score: float,
+) -> Dict[str, ApiResult]:
 
-    return {
-        cpe: result
-        for cpe, result in zip(cpes, results)
-        if isinstance(result, ApiResult)
+    if not cpes:
+        return {}
+
+    payload = {
+        "escaneoId": escaneo_id,
+        "cpes": cpes,
+        "maxCveYears": max_cve_years,
+        "minCvssScore": min_cvss_score,
     }
 
-async def _pipeline_cpe(session: aiohttp.ClientSession, cpe: str, max_cve_years: int, min_cvss_score: float) -> ApiResult:   
-    
-    normalized = normalize(cpe)
-
-    if _is_too_generic(normalized):
-        print(f"[!] Skipping generic CPE: {normalized}")
-        return ApiResult(cpe_string=cpe, vulnerabilities=[])
-
-    raw_vulns: List[Dict[str, Any]] = await _fetch_all_pages(session, normalized)
-
-    if not raw_vulns:
-        print(f"[-] No vulnerabilities found for {cpe}")
-        return ApiResult(cpe_string=cpe, vulnerabilities=[])
-
-    vulnerabilities = parse_single_vuln(raw_vulns)
-    filtered_vulns = _apply_filters(vulnerabilities, max_cve_years, min_cvss_score)
-
-    return ApiResult(
-        cpe_string=cpe,
-        vulnerabilities=filtered_vulns,
-        last_checked=datetime.now()
+    timeout = aiohttp.ClientTimeout(
+        total=300
     )
 
-def _apply_filters(vulnerabilities: List[Any], max_cve_years: int, min_cvss_score: float) -> List[Any]:
+    async with aiohttp.ClientSession(
+        timeout=timeout
+    ) as session:
 
-    if not vulnerabilities:
-        return []
+        async with session.post(
+            f"{BACKEND_API_URL}/api/internal/vulnerabilities/lookup",
+            json=payload,
+        ) as response:
 
-    cutoff_date = None
-    if max_cve_years > 0:
-        cutoff_date = datetime.now() - timedelta(days=max_cve_years * 365)
+            if response.status >= 400:
+                try:
+                    problem = await response.json(content_type=None)
+                    detail = problem.get("detail") if isinstance(problem, dict) else None
+                except (ValueError, aiohttp.ClientError):
+                    detail = None
+                raise RuntimeError(
+                    f"Lookup de vulnerabilidades HTTP {response.status}: "
+                    f"{str(detail)[:500] if detail else 'El backend no devolvió detalles'}"
+                )
 
-    filtered = []
-    for vuln in vulnerabilities:
-        if vuln.cvss_score is None or vuln.cvss_score < min_cvss_score:
-            continue
+            data = await response.json()
 
-        if vuln.published_date and vuln.published_date < cutoff_date:
-            continue
+    return _parse_response(data)
 
-        filtered.append(vuln)
 
-    return filtered
+def _parse_response(
+    data: dict,
+) -> Dict[str, ApiResult]:
 
-# --- FETCHS ---
+    results = {}
 
-async def _fetch_all_pages(session: aiohttp.ClientSession, cpe_normalized: str) -> List[Dict[str, Any]]:
-    
-    all_vulns: List[Dict[str, Any]] = []
-    start_index = 0
-    page = 0
+    for cpe, entry in data.get(
+        "results",
+        {}
+    ).items():
 
-    while page < _MAX_PAGES:
+        vulnerabilities = [
+            _parse_vulnerability(raw)
+            for raw in entry.get(
+                "vulnerabilities",
+                []
+            )
+        ]
 
-        query = (
-            f"?virtualMatchString={quote(cpe_normalized, safe='')}"
-            f"&resultsPerPage={_RESULTS_PER_PAGE}"
-            f"&startIndex={start_index}"
+        results[cpe] = ApiResult(
+            cpe_string=cpe,
+            vulnerabilities=vulnerabilities,
         )
 
-        url = URL(NVD_API_URL + query, encoded=True)
-        data = await _fetch_page(session, url)
+    return results
 
-        if not data:
-            print(f"[!] No data returned from NIST for page {page}")
-            break
 
-        vulns = data.get("vulnerabilities", [])
-        total = data.get("totalResults", 0)
+def _parse_vulnerability(
+    raw: dict,
+) -> Vulnerability:
 
-        if not vulns:
-            print("[-] No vulnerabilities found")
-            break
+    cwes = [
+        CWE(id=cwe)
+        for cwe in raw.get(
+            "cwes",
+            []
+        )
+    ]
 
-        all_vulns.extend(vulns)
+    references = [
+        Reference(
+            url=ref.get("url", ""),
+            source=ref.get("source"),
+            tags=ref.get("tags", []),
+        )
+        for ref in raw.get(
+            "references",
+            []
+        )
+    ]
 
-        if (
-            len(vulns) < _RESULTS_PER_PAGE
-            or start_index + len(vulns) >= total
-        ):
-            break
+    return Vulnerability(
+        cve_id=_required_string(raw, "cveId"),
+        description=_required_string(raw, "description"),
+        severity=_required_string(raw, "severity"),
+        cvss_score=raw.get("cvssScore"),
+        cvss_vector=raw.get("cvssVector"),
+        published_date=_parse_datetime(
+            raw.get("publishedDate")
+        ),
+        last_modified=_parse_datetime(
+            raw.get("lastModified")
+        ),
+        cwes=cwes,
+        references=references,
+        exploit_refs=raw.get(
+            "exploitRefs",
+            []
+        ),
+        mitigation=raw.get(
+            "mitigation"
+        ),
+        fixed_version=raw.get(
+            "fixedVersion"
+        ),
+        vulnerable_versions=raw.get(
+            "vulnerableVersions"
+        ),
+        fix_type=raw.get(
+            "fixType"
+        ),
+        nist_url=raw.get(
+            "nistUrl"
+        ),
+    )
 
-        start_index += _RESULTS_PER_PAGE
-        page += 1
-        await asyncio.sleep(1.2)
 
-    return all_vulns
+def _parse_datetime(
+    value: str | None,
+):
 
-async def _fetch_page(session: aiohttp.ClientSession, url: URL) -> Optional[dict]:
-    
-    for attempt in range(_MAX_RETRIES):
-        try:
-            async with _SEMAPHORE:
-                async with session.get(
-                    url,
-                    timeout=aiohttp.ClientTimeout(total=45),
-                ) as resp:
-                    
-                    if resp.status == 429:
-                        delay = _RETRY_DELAY * (2 ** attempt)
-                        await asyncio.sleep(delay)
-                        continue
+    if not value:
+        return None
 
-                    if resp.status != 200:
-                        print(f"NIST API error {resp.status} for {url}")
-                        if attempt == _MAX_RETRIES - 1:
-                            return None
-                        continue
+    try:
+        return datetime.fromisoformat(
+            value.replace(
+                "Z",
+                "+00:00"
+            )
+        )
+    except ValueError:
+        return None
 
-                    return await resp.json()
+def _required_string(raw: dict[str, object], key: str) -> str:
+    value = raw.get(key)
 
-        except Exception as e:
-            print(f"[!] Error fetching page: {e}")
-            if attempt == _MAX_RETRIES - 1:
-                return None
-            await asyncio.sleep(_RETRY_DELAY)
-    
-    return None
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"Campo requerido inválido: {key}")
 
-def _is_too_generic(cpe: str) -> bool:
-    
-    parts = cpe.split(":")
-    if len(parts) < 6:
-        return True
-    version = parts[5]
-    return version in ("*", "-", "")
+    return value

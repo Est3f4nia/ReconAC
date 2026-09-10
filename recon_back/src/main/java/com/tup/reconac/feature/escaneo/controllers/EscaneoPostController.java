@@ -1,8 +1,8 @@
 package com.tup.reconac.feature.escaneo.controllers;
 
 import com.tup.reconac.config.BaseResponse;
-import com.tup.reconac.feature.escaneo.dtos.EscaneoResponse;
-import com.tup.reconac.feature.escaneo.dtos.ScanStartRequest;
+import com.tup.reconac.feature.escaneo.dtos.response.EscaneoResponse;
+import com.tup.reconac.feature.escaneo.dtos.internal.ScanStartRequest;
 import com.tup.reconac.feature.escaneo.services.interfaces.IEscaneoPostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

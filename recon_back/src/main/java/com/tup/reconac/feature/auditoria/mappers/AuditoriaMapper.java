@@ -1,7 +1,7 @@
 package com.tup.reconac.feature.auditoria.mappers;
 
-import com.tup.reconac.feature.auditoria.dtos.AuditoriaRequestDto;
-import com.tup.reconac.feature.auditoria.dtos.AuditoriaResponse;
+import com.tup.reconac.feature.auditoria.dtos.request.AuditoriaRequestDto;
+import com.tup.reconac.feature.auditoria.dtos.response.AuditoriaResponse;
 import com.tup.reconac.feature.auditoria.models.Auditoria;
 import com.tup.reconac.feature.usuario.models.Usuario;
 import org.springframework.stereotype.Component;

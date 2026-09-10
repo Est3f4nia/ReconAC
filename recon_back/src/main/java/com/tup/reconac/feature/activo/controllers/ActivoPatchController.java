@@ -1,8 +1,8 @@
 package com.tup.reconac.feature.activo.controllers;
 
 import com.tup.reconac.config.BaseResponse;
-import com.tup.reconac.feature.activo.dtos.ActivoRequestDto;
-import com.tup.reconac.feature.activo.dtos.ActivoResponse;
+import com.tup.reconac.feature.activo.dtos.request.ActivoRequestDto;
+import com.tup.reconac.feature.activo.dtos.response.ActivoResponse;
 import com.tup.reconac.feature.activo.services.interfaces.IActivoUpdateService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;

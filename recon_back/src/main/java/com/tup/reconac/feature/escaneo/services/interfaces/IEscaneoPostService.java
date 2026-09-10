@@ -1,9 +1,9 @@
 package com.tup.reconac.feature.escaneo.services.interfaces;
 
-import com.tup.reconac.feature.escaneo.dtos.EscaneoResponse;
-import com.tup.reconac.feature.escaneo.dtos.EscaneoResult;
-import com.tup.reconac.feature.escaneo.dtos.ScanStartRequest;
-import com.tup.reconac.feature.escaneo.dtos.ScanStatusResponse;
+import com.tup.reconac.feature.escaneo.dtos.response.EscaneoResponse;
+import com.tup.reconac.feature.escaneo.dtos.response.EscaneoResult;
+import com.tup.reconac.feature.escaneo.dtos.internal.ScanStartRequest;
+import com.tup.reconac.feature.escaneo.dtos.internal.ScanStatusResponse;
 
 import java.util.UUID;
 

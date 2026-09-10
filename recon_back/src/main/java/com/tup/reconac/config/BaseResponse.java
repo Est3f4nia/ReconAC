@@ -26,7 +26,6 @@ public class BaseResponse<T> {
                 .build();
     }
 
-    // ver utilidad de esto
     public static <T> BaseResponse<T> error(String message, List<String> errors) {
         return BaseResponse.<T>builder()
                 .data(null)

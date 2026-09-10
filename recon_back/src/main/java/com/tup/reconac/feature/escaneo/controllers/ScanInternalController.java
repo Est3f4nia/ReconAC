@@ -1,8 +1,8 @@
 package com.tup.reconac.feature.escaneo.controllers;
 
 import com.tup.reconac.config.BaseResponse;
-import com.tup.reconac.feature.escaneo.dtos.EscaneoResult;
-import com.tup.reconac.feature.escaneo.dtos.ScanStatusResponse;
+import com.tup.reconac.feature.escaneo.dtos.response.EscaneoResult;
+import com.tup.reconac.feature.escaneo.dtos.internal.ScanStatusResponse;
 import com.tup.reconac.feature.escaneo.services.interfaces.IEscaneoPostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -1,7 +1,7 @@
 package com.tup.reconac.feature.auditoria.services.interfaces;
 
-import com.tup.reconac.feature.auditoria.dtos.AuditoriaEstadisticasResponse;
-import com.tup.reconac.feature.auditoria.dtos.AuditoriaResponse;
+import com.tup.reconac.feature.auditoria.dtos.response.AuditoriaEstadisticasResponse;
+import com.tup.reconac.feature.auditoria.dtos.response.AuditoriaResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

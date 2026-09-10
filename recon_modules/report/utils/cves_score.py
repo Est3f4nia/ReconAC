@@ -11,3 +11,10 @@ def get_severity_from_cvss(cvss_score: float | None) -> str:
         return "LOW"
     else:
         return "UNKNOWN"
+
+# reutilizaría esa función en sort_key() y en la presentación para tener una única fuente de verdad.
+def resolve_severity(vuln):
+    if vuln.severity not in (None, "UNKNOWN", ""):
+        return vuln.severity
+
+    return get_severity_from_cvss(vuln.cvss_score)

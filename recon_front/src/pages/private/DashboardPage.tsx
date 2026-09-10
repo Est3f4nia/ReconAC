@@ -120,9 +120,8 @@ export default function DashboardPage() {
             <h2 className="modal-title">Nueva Auditoría</h2>
 
             <form className="modal-form" onSubmit={handleSubmit}>
-              <div className="modal-field">
+              <div className="field">
                 <label htmlFor="nombre">Nombre</label>
-
                 <input
                   id="nombre"
                   type="text"
@@ -133,12 +132,10 @@ export default function DashboardPage() {
                 />
               </div>
 
-              <div className="modal-field">
-                <label htmlFor="objetivo">Objetivo</label>
-
+              <div className="field">
+                <label htmlFor="objetivo">Descripción</label>
                 <textarea
                   id="objetivo"
-                  required
                   value={objetivo}
                   onChange={(e) => setObjetivo(e.target.value)}
                   disabled={enviando}

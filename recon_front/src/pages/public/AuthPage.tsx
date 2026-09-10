@@ -1,10 +1,9 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthError } from "@/data/auth";
-import "@/pages/global.css";
-import "@/components/layout/auth/AuthStyle.css";
 import "@/pages/public/styles/AuthPage.css";
+import "@/components/layout/auth/AuthStyle.css";
 
 export default function AuthPage() {
   const location = useLocation();
@@ -16,11 +15,12 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [apiKey, setApiKey] = useState("");
   const [legal, setLegal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
@@ -32,7 +32,7 @@ export default function AuthPage() {
     setSubmitting(true);
     try {
       if (isRegister) {
-        await register(email, password);
+        await register(email, password, apiKey);
         navigate("/");
       } else {
         await login(email, password);
@@ -56,8 +56,8 @@ export default function AuthPage() {
 
         {error && <p className="auth-error">{error}</p>}
 
-        <form onSubmit={handleSubmit}>
-          <div className="auth-field">
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="field">
             <label htmlFor="email">Email</label>
             <input
               id="email"
@@ -67,10 +67,11 @@ export default function AuthPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={submitting}
             />
           </div>
 
-          <div className="auth-field">
+          <div className="field">
             <label htmlFor="password">Contraseña</label>
             <input
               id="password"
@@ -80,12 +81,28 @@ export default function AuthPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={submitting}
             />
           </div>
 
           {isRegister && (
             <>
-              <div className="auth-field">
+              <div className="field">
+                <label htmlFor="apiKey">NVD API Key</label>
+                <input
+                  id="apiKey"
+                  name="apiKey"
+                  type="text"
+                  autoComplete="off"
+                  required
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  disabled={submitting}
+                  placeholder="Ingresá tu API Key de NVD"
+                />
+              </div>
+
+              <div className="field">
                 <label htmlFor="confirmPassword">Repetir contraseña</label>
                 <input
                   id="confirmPassword"
@@ -95,6 +112,7 @@ export default function AuthPage() {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={submitting}
                 />
               </div>
 
@@ -106,6 +124,7 @@ export default function AuthPage() {
                   required
                   checked={legal}
                   onChange={(e) => setLegal(e.target.checked)}
+                  disabled={submitting}
                 />
                 <label htmlFor="legal">
                   Acepto el <a href="#">Acuerdo Legal</a>
@@ -122,7 +141,7 @@ export default function AuthPage() {
 
           <button
             type="submit"
-            className="auth-button"
+            className="button auth-button"
             disabled={submitting}
           >
             {submitting

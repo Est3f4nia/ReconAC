@@ -68,6 +68,14 @@ public class GlobalExceptionHandler {
                 .body(problem);
     }
 
+    @ExceptionHandler(com.tup.reconac.modules.vulnEnum.clients.NvdLookupException.class)
+    public ResponseEntity<ProblemDetail> handleNvd(
+            com.tup.reconac.modules.vulnEnum.clients.NvdLookupException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON).body(problem);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handleGeneric(Exception ex, HttpServletRequest req) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Ocurrió un error inesperado");

@@ -1,9 +1,8 @@
 package com.tup.reconac.feature.escaneo.controllers;
 
 import com.tup.reconac.config.BaseResponse;
-import com.tup.reconac.feature.escaneo.dtos.EscaneoListadoResponse;
+import com.tup.reconac.feature.escaneo.dtos.response.EscaneoListadoResponse;
 import com.tup.reconac.feature.escaneo.services.domain.EscaneoConsultService;
-import com.tup.reconac.feature.escaneo.services.interfaces.IEscaneoGetService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;

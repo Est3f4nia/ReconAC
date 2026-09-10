@@ -43,10 +43,11 @@ export async function login(
 export async function register(
   email: string,
   contrasenia: string,
+  apiKey: string
 ): Promise<void> {
   const res = await apiFetch("/api/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email, contrasenia }),
+    body: JSON.stringify({ email, contrasenia, apiKey }),
   });
   await parseResponse<BaseResponse<null>>(res);
 }

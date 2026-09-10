@@ -1,14 +1,21 @@
 /* ============================================================
- *  Tipos TS que espejan los DTOs del backend
+ *  DTOs Backend
  * ============================================================ */
 
-export type Estado =
+export type Estado_Escaneo =
   | "PENDIENTE"
   | "EN_PROCESO"
   | "COMPLETADO"
   | "FALLO";
 
-/** Envoltorio estándar del back (BaseResponse) */
+export type Estado_Puerto =
+  | "OPEN"
+  | "CLOSED"
+  | "FILTERED"
+  | "UNFILTERED"
+  | "OPEN_OR_FILTERED"
+  | "CLOSED_OR_FILTERED";
+
 export interface BaseResponse<T> {
   data: T;
   message: string;
@@ -67,9 +74,10 @@ export interface EscaneoResumen {
   auditoriaId: string;
   auditoriaNombre: string;
   activos: number;
+  // ver 
   puertos: number;
   completadoA: string | null;
-  status: Estado | null;
+  status: Estado_Escaneo | null;
   cve: number;
   cveCriticos: number;
 }
@@ -81,17 +89,10 @@ export interface HostResult {
   os: string | null;
 }
 
-export interface EscaneoResult {
-  hosts: HostResult[];
-  apiResults: Record<string, unknown>;
-  nmapVersion: string | null;
-  startTime: string | null;
-  endTime: string | null;
-}
-
 export interface EscaneoResponse {
+  escaneoId: string;
   activos: string[];
-  estado: Estado;
+  estado: Estado_Escaneo;
   progreso: number;
   nmapVersion: string | null;
   mensajeError: string | null;
@@ -103,18 +104,30 @@ export interface EscaneoResponse {
 export interface ScanStartRequest {
   objetivos: string[];
   nvdApiKey?: string;
+
+  // Nota: el back usa (y procesa?) esto
+  timeout?: number;
+  icmpTimeout?: number;
+
+  maxCveYears?: number;
+  minCvssScore?: number;
 }
 
 export interface ScanStatusResponse {
   scanId: string | null;
-  status: Estado;
+  status: Estado_Escaneo;
   progress: number;
   error: string | null;
 }
 
 export interface EscaneoResultResponse {
-  escaneo: EscaneoResponse;
-  resultado: EscaneoResult | null;
+  escaneoId: string;
+  estado: Estado_Escaneo;
+  progreso: number;
+  nmapVersion: string | null;
+  iniciadoA: string | null;
+  completadoA: string | null;
+  activos: ActivoResultadoResponse[];
 }
 
 export interface EscaneoListado {
@@ -122,7 +135,7 @@ export interface EscaneoListado {
   auditoriaId: string;
   auditoriaNombre: string;
   objetivos: string[];
-  estado: Estado;
+  estado: Estado_Escaneo;
   progreso: number;
   nmapVersion: string | null;
   iniciadoA: string | null;
@@ -171,6 +184,29 @@ export interface ActivoRequest {
   soProbab?: number;
   mac?: string;
   descripcion?: string;
+}
+
+export interface ActivoResultadoResponse {
+  activoId: string;
+  host: string;
+  hostname: string | null;
+  so: string | null;
+  soProbab: number | null;
+  mac: string | null;
+  puertos: PuertoResultadoResponse[];
+}
+
+/* ---------- Puertos ---------- */
+
+export interface PuertoResultadoResponse {
+  numero: number;
+  protocolo: string;
+  estado: Estado_Puerto;
+  servicio: string | null;
+  producto: string | null;
+  version: string | null;
+  extrainfo: string | null;
+  cpes: string[];
 }
 
 /* ---------- Métricas ---------- */
@@ -241,10 +277,11 @@ export interface HostDesglose {
 }
 
 export interface EjecucionHistorial {
+  mensajeError?: string | null;
   escaneoId: string;
   fecha: string;
 
-  estado: Estado;
+  estado: Estado_Escaneo;
   progreso: number;
 
   objetivos: string[];

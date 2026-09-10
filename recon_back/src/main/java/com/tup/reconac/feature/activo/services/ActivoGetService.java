@@ -1,16 +1,14 @@
 package com.tup.reconac.feature.activo.services;
 
-import com.tup.reconac.exceptions.escaneo.EscaneoNotFoundException;
-import com.tup.reconac.feature.activo.dtos.ActivoAgrupadoResponse;
-import com.tup.reconac.feature.activo.dtos.ActivoResponse;
+import com.tup.reconac.feature.activo.dtos.response.ActivoAgrupadoResponse;
+import com.tup.reconac.feature.activo.dtos.response.ActivoResponse;
 import com.tup.reconac.feature.activo.mappers.ActivoMapper;
 import com.tup.reconac.feature.activo.models.Activo;
 import com.tup.reconac.feature.activo.repositories.ActivoRepository;
 import com.tup.reconac.feature.activo.services.interfaces.IActivoGetService;
 import com.tup.reconac.feature.auditoria.models.Auditoria;
 import com.tup.reconac.feature.auditoria.services.domain.AuditoriaConsultService;
-import com.tup.reconac.feature.escaneo.models.Escaneo;
-import com.tup.reconac.feature.escaneo.repositories.EscaneoRepository;
+import com.tup.reconac.feature.escaneo.services.domain.EscaneoConsultService;
 import com.tup.reconac.feature.usuario.models.Usuario;
 import com.tup.reconac.feature.usuario.services.domain.UserDetailsService;
 import lombok.AllArgsConstructor;
@@ -32,7 +30,7 @@ public class ActivoGetService implements IActivoGetService {
     private final ActivoRepository repo;
     private final UserDetailsService userService;
     private final AuditoriaConsultService auditoriaConsult;
-    private final EscaneoRepository escaneoRepository;
+    private final EscaneoConsultService escaneoConsult;
 
     @Override
     @Transactional(readOnly = true)
@@ -40,23 +38,15 @@ public class ActivoGetService implements IActivoGetService {
 
         Usuario usuario = userService.getAuthenticatedUser();
 
-        List<Auditoria> auditorias =
-                auditoriaConsult.findAllByUsuarioId(usuario.getId());
-
+        List<Auditoria> auditorias = auditoriaConsult.findAllByUsuarioId(usuario.getId());
         if (auditorias.isEmpty()) {
             return Page.empty(pageable);
         }
-
         List<UUID> auditoriaIds = auditorias.stream()
                 .map(Auditoria::getId)
                 .toList();
 
-        List<UUID> escaneoIds = escaneoRepository
-                .findByAuditoriaIdIn(auditoriaIds, Pageable.unpaged())
-                .stream()
-                .map(Escaneo::getId)
-                .toList();
-
+        List<UUID> escaneoIds = escaneoConsult.getEscaneoIds(auditoriaIds);
         if (escaneoIds.isEmpty()) {
             return Page.empty(pageable);
         }
@@ -66,13 +56,7 @@ public class ActivoGetService implements IActivoGetService {
         List<Activo> activos = repo.findByEscaneoIdIn(escaneoIds);
 
         Map<ActivoKey, List<Activo>> grupos = activos.stream()
-                .collect(Collectors.groupingBy(activo ->
-                        new ActivoKey(
-                                activo.getHost(),
-                                activo.getHostname(),
-                                activo.getSo()
-                        )
-                ));
+                .collect(Collectors.groupingBy(ActivoGetService::toActivoKey));
 
         List<ActivoAgrupadoResponse> agrupados = grupos.values()
                 .stream()
@@ -98,32 +82,30 @@ public class ActivoGetService implements IActivoGetService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ActivoResponse> getByEscaneoId(
-            UUID escaneoId,
-            Pageable pageable
-    ) {
+    public Page<ActivoResponse> getByEscaneoId(UUID escaneoId, Pageable pageable) {
 
         Usuario usuario = userService.getAuthenticatedUser();
-
-        Escaneo escaneo = escaneoRepository.findById(escaneoId)
-                .orElseThrow(() ->
-                        new EscaneoNotFoundException(
-                                "Escaneo no encontrado"
-                        )
-                );
-
-        auditoriaConsult.verifyEscaneoOwnership(
-                escaneo,
-                usuario.getId()
-        );
+        escaneoConsult.findEscaneoForUsuario(escaneoId, usuario.getId());
 
         return repo.findByEscaneoId(escaneoId, pageable)
                 .map(ActivoMapper::toResponse);
     }
 
+    // ===== DTO interno ======
+
+    // Solo disponible para este service
     private record ActivoKey(
             String host,
             String hostname,
             String so
     ) {}
+
+    // Mapper
+    private static ActivoKey toActivoKey(Activo activo) {
+        return new ActivoKey(
+                activo.getHost(),
+                activo.getHostname(),
+                activo.getSo()
+        );
+    }
 }

@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
@@ -16,8 +17,10 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "cpe")
-@RequiredArgsConstructor
+@NoArgsConstructor
+// (access = AccessLevel.PROTECTED)
 @Getter
+@Setter
 public class Cpe implements Serializable {
 
     @Id
@@ -43,7 +46,8 @@ public class Cpe implements Serializable {
     @Column(name = "version")
     private String version;
 
-    @Column(name = "ultimo_check", nullable = false)
+    @Column(name = "ultimo_check")
     private LocalDateTime ultimoCheck;
 
 }
+

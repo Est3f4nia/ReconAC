@@ -1,7 +1,7 @@
 package com.tup.reconac.feature.auditoria.controllers;
 
-import com.tup.reconac.feature.auditoria.dtos.AuditoriaEstadisticasResponse;
-import com.tup.reconac.feature.auditoria.dtos.AuditoriaResponse;
+import com.tup.reconac.feature.auditoria.dtos.response.AuditoriaEstadisticasResponse;
+import com.tup.reconac.feature.auditoria.dtos.response.AuditoriaResponse;
 import com.tup.reconac.feature.auditoria.services.interfaces.IAuditoriaGetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

@@ -32,17 +32,12 @@ public class EscaneoPatchService implements IEscaneoPatchService {
 
         Escaneo escaneo = repo.findById(escaneoId)
                 .orElseThrow(() ->
-                        new EscaneoNotFoundException("Escaneo no encontrado"));
+                        new EscaneoNotFoundException("Escaneo no encontrado (patch)")
+                );
 
-        // Verificar que la auditoría actual del escaneo
-        // pertenece al usuario autenticado.
         auditoriaConsult.verifyEscaneoOwnership(escaneo, usuario.getId());
+        Auditoria nuevaAuditoria = auditoriaConsult.findId(nuevaAuditoriaId);
 
-        Auditoria nuevaAuditoria =
-                auditoriaConsult.findId(nuevaAuditoriaId);
-
-        // Verificar que la nueva auditoría también
-        // pertenece al usuario autenticado.
         if (!nuevaAuditoria.getUsuarioId().equals(usuario.getId())) {
             throw new BadRequestException(
                     "La auditoría no pertenece al usuario autenticado"

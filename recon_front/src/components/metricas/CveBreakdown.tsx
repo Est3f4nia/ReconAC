@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type {
   CveDesglose,
   CveResumen,
@@ -5,15 +6,35 @@ import type {
 
 interface Props {
   data: CveDesglose | null;
+  pageSize?: number;
 }
 
-function CveList({
+function formatearCvss(score: number | null) {
+  return score != null ? score.toFixed(1) : "—";
+}
+
+function formatearEpss(score: number | null) {
+  return score != null
+    ? `${(score * 100).toFixed(1)}%`
+    : "—";
+}
+
+function CveRanking({
   items,
   emptyMessage,
+  pageSize = 5,
 }: {
   items: CveResumen[];
   emptyMessage: string;
+  pageSize?: number;
 }) {
+  const [page, setPage] = useState(0);
+
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const safePage = Math.min(page, totalPages - 1);
+  const start = safePage * pageSize;
+  const visible = items.slice(start, start + pageSize);
+
   if (items.length === 0) {
     return (
       <div className="dashboard-empty">
@@ -23,47 +44,76 @@ function CveList({
   }
 
   return (
-    <ul className="cve-list">
-      {items.map((cve) => (
-        <li key={cve.cveId}>
-          <div>
-            <strong>{cve.cveId}</strong>
+    <>
+      <ol className="cve-ranking">
+        {visible.map((cve, index) => (
+          <li className="cve-ranking-item" key={cve.cveId}>
+            <div className="cve-ranking-position">
+              #{start + index + 1}
+            </div>
 
-            <span>
-              Frecuencia: {cve.frecuencia}
-            </span>
-          </div>
+            <div className="cve-ranking-content">
+              <div className="cve-ranking-header">
+                <strong>{cve.cveId}</strong>
+                {cve.explotacionActiva && (
+                  <span className="cve-badge cve-badge-kev">
+                    KEV
+                  </span>
+                )}
+              </div>
 
-          <div className="cve-metrics">
-            <span>
-              CVSS:{" "}
-              {cve.cvssScore != null
-                ? cve.cvssScore.toFixed(1)
-                : "—"}
-            </span>
+              <div className="cve-ranking-main">
+                <span>
+                  CVSS:{" "}
+                  <strong>{formatearCvss(cve.cvssScore)}</strong>
+                </span>
+                <span>
+                  EPSS:{" "}
+                  <strong>{formatearEpss(cve.epssScore)}</strong>
+                </span>
+              </div>
 
-            <span>
-              EPSS:{" "}
-              {cve.epssScore != null
-                ? `${(
-                    cve.epssScore * 100
-                  ).toFixed(1)}%`
-                : "—"}
-            </span>
+              <div className="cve-ranking-secondary">
+                <span>Frecuencia: {cve.frecuencia}</span>
+                {cve.cwes.length > 0 && (
+                  <span>CWE: {cve.cwes.join(", ")}</span>
+                )}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
 
-            {cve.explotacionActiva && (
-              <span className="cve-exploited">
-                KEV
-              </span>
-            )}
-          </div>
-        </li>
-      ))}
-    </ul>
+      {items.length > pageSize && (
+        <div className="listado-pagination cve-ranking-pagination">
+          <button
+            type="button"
+            className="button"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={safePage === 0}
+          >
+            Anterior
+          </button>
+          <span>
+            Página {safePage + 1} de {totalPages}
+          </span>
+          <button
+            type="button"
+            className="button"
+            onClick={() =>
+              setPage((p) => Math.min(totalPages - 1, p + 1))
+            }
+            disabled={safePage >= totalPages - 1}
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
+    </>
   );
 }
 
-export function CveBreakdown({ data }: Props) {
+export function CveBreakdown({ data, pageSize = 5 }: Props) {
   return (
     <section
       className="dashboard-section"
@@ -73,58 +123,47 @@ export function CveBreakdown({ data }: Props) {
         <p className="dashboard-section-eyebrow">
           Vulnerabilidades
         </p>
-
-        <h2 id="cve-breakdown-title">
-          Desglose de CVEs
-        </h2>
-
+        <h2 id="cve-breakdown-title">Desglose de CVEs</h2>
         <p>
-          Vulnerabilidades priorizadas según frecuencia,
-          explotación, criticidad y probabilidad.
+          Vulnerabilidades priorizadas por criticidad,
+          probabilidad de explotación y frecuencia.
         </p>
       </div>
 
       <div className="cve-breakdown-grid">
         <article className="dashboard-card">
-          <h3>Más comunes</h3>
-
-          <CveList
-            items={data?.masComunes ?? []}
-            emptyMessage="Todavía no hay datos."
-          />
-        </article>
-
-        <article className="dashboard-card">
-          <h3>Explotación activa</h3>
-
-          <CveList
-            items={
-              data?.explotacionActiva ?? []
-            }
-            emptyMessage="No hay datos de explotación activa."
-          />
-        </article>
-
-        <article className="dashboard-card">
           <h3>Mayor criticidad</h3>
-
-          <CveList
-            items={
-              data?.mayorCriticidad ?? []
-            }
+          <CveRanking
+            items={data?.mayorCriticidad ?? []}
             emptyMessage="Todavía no hay datos."
+            pageSize={pageSize}
           />
         </article>
 
         <article className="dashboard-card">
           <h3>Mayor probabilidad de explotación</h3>
-
-          <CveList
-            items={
-              data?.mayorProbabilidadExplotacion ??
-              []
-            }
+          <CveRanking
+            items={data?.mayorProbabilidadExplotacion ?? []}
             emptyMessage="Todavía no hay datos de EPSS."
+            pageSize={pageSize}
+          />
+        </article>
+
+        <article className="dashboard-card">
+          <h3>Más frecuentes</h3>
+          <CveRanking
+            items={data?.masComunes ?? []}
+            emptyMessage="Todavía no hay datos."
+            pageSize={pageSize}
+          />
+        </article>
+
+        <article className="dashboard-card">
+          <h3>Explotación activa</h3>
+          <CveRanking
+            items={data?.explotacionActiva ?? []}
+            emptyMessage="No hay vulnerabilidades catalogadas como explotación activa."
+            pageSize={pageSize}
           />
         </article>
       </div>

@@ -1,4 +1,4 @@
-import { DashboardKpis } from "@/data/types";
+import type { DashboardKpis } from "@/data/types";
 
 interface Props {
   data: DashboardKpis | null;
@@ -28,10 +28,7 @@ export function DashboardKpiGrid({ data }: Props) {
     },
     {
       label: "CVSS promedio",
-      value:
-        data?.cvssPromedio != null
-          ? data.cvssPromedio.toFixed(2)
-          : "—",
+      value: data?.cvssPromedio != null ? data.cvssPromedio.toFixed(2) : "—",
     },
     {
       label: "Explotación activa",
@@ -48,25 +45,17 @@ export function DashboardKpiGrid({ data }: Props) {
 
   return (
     <section
-      className="dashboard-section"
+      className="dashboard-section dashboard-summary"
       aria-labelledby="dashboard-kpis-title"
     >
       <div className="dashboard-section-heading">
-        <p className="dashboard-section-eyebrow">
-          Proyecto
-        </p>
-
-        <h2 id="dashboard-kpis-title">
-          Estadísticas generales
-        </h2>
+        <p className="dashboard-section-eyebrow">Métricas</p>
+        <h2 id="dashboard-kpis-title">Resumen</h2>
+        <p>CVE únicas entre los escaneos. EPSS y KEV según los últimos datos persistidos; “—” indica un dato no disponible.</p>
       </div>
-
       <div className="dashboard-kpi-grid">
         {kpis.map((kpi) => (
-          <article
-            className="dashboard-kpi"
-            key={kpi.label}
-          >
+          <article className="dashboard-kpi" key={kpi.label}>
             <span>{kpi.label}</span>
             <strong>{kpi.value}</strong>
           </article>

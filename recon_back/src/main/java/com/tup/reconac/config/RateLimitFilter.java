@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -17,11 +18,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Rate limiting por IP sobre los endpoints públicos de autenticación, para mitigar
- * brute force (T7). Usa Bucket4j en memoria (por instancia). Para un entorno
+ * brute force. Usa Bucket4J en memoria (por instancia). Para un entorno
  * distribuido (varias réplicas) convendría respaldar los buckets en Redis.
- *
  * Se registra como servlet filter solo para "/api/auth/*" vía FilterRegistrationBean.
  */
+
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimitProperties props;
@@ -40,9 +41,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
         if (!props.enabled()) {
             filterChain.doFilter(request, response);
             return;

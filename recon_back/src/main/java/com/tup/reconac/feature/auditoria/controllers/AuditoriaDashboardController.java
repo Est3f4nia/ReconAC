@@ -1,7 +1,7 @@
 package com.tup.reconac.feature.auditoria.controllers;
 
 import com.tup.reconac.config.BaseResponse;
-import com.tup.reconac.feature.auditoria.dtos.AuditoriaResumenDto;
+import com.tup.reconac.feature.auditoria.dtos.response.AuditoriaResumenResponseDto;
 import com.tup.reconac.feature.auditoria.services.AuditoriaResumenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Controller página principal: obtiene los datos de las cards de auditoría
+ */
+
 @RestController
 @RequestMapping("/api/auditorias")
 @RequiredArgsConstructor
@@ -19,8 +23,8 @@ public class AuditoriaDashboardController {
     private final AuditoriaResumenService resumenService;
 
     @GetMapping("/resumen")
-    public ResponseEntity<BaseResponse<List<AuditoriaResumenDto>>> getResumen() {
-        List<AuditoriaResumenDto> resumen = resumenService.getResumen();
+    public ResponseEntity<BaseResponse<List<AuditoriaResumenResponseDto>>> getResumen() {
+        List<AuditoriaResumenResponseDto> resumen = resumenService.getResumen();
         return ResponseEntity.ok(BaseResponse.ok(resumen, "Resumen de auditorías obtenido"));
     }
 }

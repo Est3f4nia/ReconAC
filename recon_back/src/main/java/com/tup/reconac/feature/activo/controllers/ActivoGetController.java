@@ -1,7 +1,7 @@
 package com.tup.reconac.feature.activo.controllers;
 
-import com.tup.reconac.feature.activo.dtos.ActivoAgrupadoResponse;
-import com.tup.reconac.feature.activo.dtos.ActivoResponse;
+import com.tup.reconac.feature.activo.dtos.response.ActivoAgrupadoResponse;
+import com.tup.reconac.feature.activo.dtos.response.ActivoResponse;
 import com.tup.reconac.feature.activo.services.interfaces.IActivoGetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

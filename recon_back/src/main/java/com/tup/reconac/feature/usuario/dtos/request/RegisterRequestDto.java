@@ -12,5 +12,8 @@ public record RegisterRequestDto(
 
         @NotBlank(message = "La contraseña es obligatoria")
         @Size(min = 8, max = 70, message = "La contraseña debe tener entre 8 y 70 caracteres")
-        String contrasenia
+        String contrasenia,
+
+        @NotBlank(message = "La NVD API KEY es obligatoria")
+        String apiKey
 ) {}

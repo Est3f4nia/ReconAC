@@ -12,7 +12,7 @@
 
     background: var(--acc1);
 }
-
+ 
 
 /* ======= BRAND ======= */
 
@@ -20,6 +20,10 @@
     font-family: var(--font-title);
     font-size: 1.1rem;
     font-weight: 700;
+}
+
+.navbar-brand:hover {
+    text-decoration: none;
     color: var(--font);
 }
 
@@ -33,16 +37,15 @@
 
 .navbar-link {
     font-size: 0.85rem;
-    color: var(--font);
+    font-weight: 400;
     opacity: 0.85;
 
     transition: color var(--transition);
 }
 
 .navbar-link:hover {
-    color: var(--button-link);
     text-decoration: none;
-    opacity: 1;
+    font-weight: 400;
 }
 
 
@@ -62,6 +65,8 @@
     width: 32px;
     height: 32px;
 
+    margin-right: 10px;
+
     border-radius: 50%;
 
     background: var(--border-big);
@@ -73,22 +78,5 @@
 
 .navbar-logout {
     padding: 4px 12px;
-
-    border: 1px solid var(--button-link);
-    border-radius: 4px;
-
-    background: transparent;
-    color: var(--button-link);
-
-    font-size: 0.75rem;
-    cursor: pointer;
-
-    transition:
-        background var(--transition),
-        color var(--transition);
 }
 
-.navbar-logout:hover {
-    background: var(--button-link);
-    color: var(--bg);
-}

@@ -1,8 +1,8 @@
 package com.tup.reconac.feature.escaneo.controllers;
 
 import com.tup.reconac.config.BaseResponse;
-import com.tup.reconac.feature.escaneo.dtos.EscaneoResultResponse;
-import com.tup.reconac.feature.escaneo.dtos.ScanStatusResponse;
+import com.tup.reconac.feature.escaneo.dtos.response.EscaneoResult;
+import com.tup.reconac.feature.escaneo.dtos.internal.ScanStatusResponse;
 import com.tup.reconac.feature.escaneo.services.interfaces.IEscaneoGetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -30,10 +30,10 @@ public class EscaneoGetController {
     }
 
     @GetMapping("/{escaneoId}/resultado")
-    public ResponseEntity<BaseResponse<EscaneoResultResponse>> getResultado(
+    public ResponseEntity<BaseResponse<EscaneoResult.EscaneoResultResponse>> getResultado(
             @PathVariable UUID auditoriaId,
             @PathVariable UUID escaneoId) {
-        EscaneoResultResponse response = escaneoGet.getResultado(auditoriaId, escaneoId);
+        EscaneoResult.EscaneoResultResponse response = escaneoGet.getResultado(auditoriaId, escaneoId);
         return ResponseEntity.ok(BaseResponse.ok(response, "Resultado del escaneo: "));
     }
 

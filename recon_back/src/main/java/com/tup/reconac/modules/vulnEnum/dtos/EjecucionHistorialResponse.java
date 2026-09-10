@@ -15,5 +15,6 @@ public record EjecucionHistorialResponse(
         long puertos,
         long cves,
         long cvesCriticos,
-        BigDecimal cvssPromedio
+        BigDecimal cvssPromedio,
+        String mensajeError
 ) {}

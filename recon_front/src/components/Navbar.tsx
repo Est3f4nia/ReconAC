@@ -38,7 +38,7 @@ export function Navbar({ items = [] }: NavbarProps) {
         <span className="navbar-avatar">
           {user?.email.charAt(0).toUpperCase() ?? "U"}
         </span>
-        <button className="navbar-logout" onClick={handleLogout}>
+        <button className="button navbar-logout" onClick={handleLogout}>
           Salir
         </button>
       </div>

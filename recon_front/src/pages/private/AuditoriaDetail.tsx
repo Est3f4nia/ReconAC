@@ -1,24 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-
-import {
-  fetchAuditoria,
-  fetchEscaneoStatus,
-  fetchEscaneos,
-  startEscaneo,
-} from "@/data/escaneos";
-
+import { useCallback, useEffect, useRef, useState } from "react";
+import { fetchAuditoria, fetchEscaneoStatus, startEscaneo } from "@/data/escaneos";
 import { fetchDashboardAuditoria } from "@/data/auditorias";
-
-import type {
-  AuditoriaResponse,
-  DashboardAuditoria,
-  Estado,
-  EscaneoListado,
-  ScanStartRequest,
-  ScanStatusResponse,
-} from "@/data/types";
-
 import { AuditoriaHeader } from "@/components/metricas/AuditoriaHeader";
 import { ScanForm } from "@/components/metricas/ScanForm";
 import { DashboardKpiGrid } from "@/components/metricas/DashboardKpiGrid";
@@ -28,472 +10,340 @@ import { CveBreakdown } from "@/components/metricas/CveBreakdown";
 import { HostBreakdown } from "@/components/metricas/HostBreakdown";
 import { ScanComparison } from "@/components/metricas/ScanComparison";
 import { ReportGenerator } from "@/components/metricas/ReportGenerator";
-
+import type { AuditoriaResponse, DashboardAuditoria, ScanStartRequest, ScanStatusResponse } from "@/data/types";
 import "@/pages/private/styles/AuditoriaDetail.css";
 
-const POLL_INTERVAL_MS = 3_000;
+const esEscaneoActivo = (scan: ScanStatusResponse) => ["PENDIENTE", "EN_PROCESO"].includes(scan.status);
 
-function esEstadoFinal(estado: Estado) {
-  return estado === "COMPLETADO" || estado === "FALLO";
-}
-
-function ordenarPorCreadoDesc(
-  escaneos: EscaneoListado[],
-): EscaneoListado[] {
-  return [...escaneos].sort(
-    (a, b) =>
-      new Date(b.creadoA).getTime() -
-      new Date(a.creadoA).getTime(),
-  );
-}
-
-export default function AuditoriaDetailPage() {
-  const { auditoriaId } = useParams<{
-    auditoriaId: string;
-    escaneoId?: string;
-  }>();
-
-  const [auditoria, setAuditoria] =
-    useState<AuditoriaResponse | null>(null);
-
-  const [dashboard, setDashboard] =
-    useState<DashboardAuditoria | null>(null);
-
-  const [escaneoActivo, setEscaneoActivo] =
-    useState<string | null>(null);
-
-  const [estado, setEstado] =
-    useState<ScanStatusResponse | null>(null);
-
+export default function AuditoriaDetail({ id }: { id: string }) {
+  const [auditoria, setAuditoria] = useState<AuditoriaResponse | null>(null);
+  const [dashboard, setDashboard] = useState<DashboardAuditoria | null>(null);
+  const [estadosEscaneos, setEstadosEscaneos] = useState<Record<string, ScanStatusResponse>>({});
+  const estadosRef = useRef(estadosEscaneos);
+  const alive = useRef(true);
+  const requestVersion = useRef(0);
   const [cargando, setCargando] = useState(true);
-  const [cargandoDashboard, setCargandoDashboard] = useState(false);
   const [iniciandoEscaneo, setIniciandoEscaneo] = useState(false);
-
+  const [preferredScanId, setPreferredScanId] = useState<string>();
   const [error, setError] = useState("");
-  const [errorEscaneo, setErrorEscaneo] = useState("");
 
-  const cargarDashboard = useCallback(async () => {
-    if (!auditoriaId) {
-      return;
-    }
+  const actualizarEstados = useCallback((next: Record<string, ScanStatusResponse>) => {
+    estadosRef.current = next;
+    setEstadosEscaneos(next);
+  }, []);
 
-    const id = auditoriaId;
-
+  const cargarDatos = useCallback(async () => {
+    const version = ++requestVersion.current;
     try {
-      setCargandoDashboard(true);
-
-      const data = await fetchDashboardAuditoria(id);
-
+      const [audit, data] = await Promise.all([fetchAuditoria(id), fetchDashboardAuditoria(id)]);
+      if (!alive.current || version !== requestVersion.current) return;
+      setAuditoria(audit);
       setDashboard(data);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "No se pudo cargar el dashboard.",
-      );
-    } finally {
-      setCargandoDashboard(false);
-    }
-  }, [auditoriaId]);
-
-  const cargarEscaneoActivo = useCallback(async () => {
-    if (!auditoriaId) {
-      return;
-    }
-
-    const id = auditoriaId;
-
-    const response = await fetchEscaneos(0, 100);
-
-    const deEstaAuditoria =
-      response.content.filter(
-        (escaneo) => escaneo.auditoriaId === id,
-      );
-
-    const ordenados =
-      ordenarPorCreadoDesc(deEstaAuditoria);
-
-    const ultimo = ordenados[0];
-
-    if (!ultimo) {
-      setEscaneoActivo(null);
-      setEstado(null);
-      return;
-    }
-
-    setEscaneoActivo(ultimo.escaneoId);
-
-    setEstado({
-      scanId: ultimo.escaneoId,
-      status: ultimo.estado,
-      progress: ultimo.progreso,
-      error: null,
-    });
-  }, [auditoriaId]);
-
-  useEffect(() => {
-    if (!auditoriaId) {
-      setError("No se indicó una auditoría.");
-      setCargando(false);
-      return;
-    }
-
-    const id = auditoriaId;
-    let cancelled = false;
-
-    async function load() {
-      try {
-        setCargando(true);
-        setError("");
-
-        const [
-          auditoriaData,
-          escaneosResponse,
-          dashboardData,
-        ] = await Promise.all([
-          fetchAuditoria(id),
-          fetchEscaneos(0, 100),
-          fetchDashboardAuditoria(id),
-        ]);
-
-        if (cancelled) {
-          return;
-        }
-
-        setAuditoria(auditoriaData);
-        setDashboard(dashboardData);
-
-        const deEstaAuditoria =
-          escaneosResponse.content.filter(
-            (escaneo) =>
-              escaneo.auditoriaId === id,
-          );
-
-        const ordenados =
-          ordenarPorCreadoDesc(deEstaAuditoria);
-
-        const ultimo = ordenados[0];
-
-        if (ultimo) {
-          setEscaneoActivo(ultimo.escaneoId);
-
-          setEstado({
-            scanId: ultimo.escaneoId,
-            status: ultimo.estado,
-            progress: ultimo.progreso,
-            error: null,
-          });
-        } else {
-          setEscaneoActivo(null);
-          setEstado(null);
-        }
-      } catch (err) {
-        if (cancelled) {
-          return;
-        }
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : "No se pudo cargar la auditoría.",
-        );
-      } finally {
-        if (!cancelled) {
-          setCargando(false);
-        }
+      setError("");
+      const next = { ...estadosRef.current };
+      for (const scan of data.historial) {
+        const saved: ScanStatusResponse = { scanId: scan.escaneoId, status: scan.estado,
+          progress: scan.progreso, error: scan.mensajeError ?? null };
+        const live = next[scan.escaneoId];
+        next[scan.escaneoId] = live && !esEscaneoActivo(live) ? live
+          : !esEscaneoActivo(saved) ? saved : live ?? saved;
       }
+      actualizarEstados(next);
+    } catch (err) {
+      if (alive.current && version === requestVersion.current)
+        setError(err instanceof Error ? err.message : "No se pudo actualizar la auditoría.");
+    } finally {
+      if (alive.current && version === requestVersion.current) setCargando(false);
     }
-
-    load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [auditoriaId]);
+  }, [id, actualizarEstados]);
 
   useEffect(() => {
-    if (!auditoriaId || !escaneoActivo) {
-      return;
-    }
-
-    const id = auditoriaId;
-    const scanId = escaneoActivo;
-
+    alive.current = true;
     let cancelled = false;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
+    let timer: ReturnType<typeof setTimeout>;
+    let ticks = 0;
+    void cargarDatos();
     async function poll() {
       try {
-        const status =
-          await fetchEscaneoStatus(id, scanId);
-
-        if (cancelled) {
-          return;
-        }
-
-        setEstado(status);
-
-        if (esEstadoFinal(status.status)) {
-          if (status.status === "FALLO") {
-            setErrorEscaneo(
-              status.error ??
-                "La ejecución terminó con errores.",
-            );
-          } else {
-            setErrorEscaneo("");
+        const active = Object.values(estadosRef.current).filter(esEscaneoActivo);
+        const results = await Promise.allSettled(active.map(scan => fetchEscaneoStatus(id, scan.scanId!)));
+        if (cancelled) return;
+        // Mezclar al finalizar la consulta: puede haberse creado otro escaneo mientras tanto.
+        const next = { ...estadosRef.current };
+        let finished = false;
+        for (const result of results) {
+          if (result.status === "fulfilled" && result.value.scanId) {
+            next[result.value.scanId] = result.value;
+            finished ||= !esEscaneoActivo(result.value);
           }
-
-          await cargarDashboard();
-
-          if (!cancelled) {
-            setEscaneoActivo(null);
-          }
-
-          return;
         }
-
-        timeoutId = setTimeout(
-          poll,
-          POLL_INTERVAL_MS,
-        );
-      } catch (err) {
-        if (cancelled) {
-          return;
-        }
-
-        setErrorEscaneo(
-          err instanceof Error
-            ? err.message
-            : "No se pudo consultar el estado del escaneo.",
-        );
-
-        timeoutId = setTimeout(
-          poll,
-          POLL_INTERVAL_MS,
-        );
+        actualizarEstados(next);
+        if (results.some(result => result.status === "rejected"))
+          setError("No se pudo actualizar algún escaneo. Reintentando la conexión…");
+        if (finished || ++ticks % 5 === 0) await cargarDatos();
+      } finally {
+        if (!cancelled) timer = setTimeout(poll, 3000);
       }
     }
-
-    poll();
-
+    timer = setTimeout(poll, 3000);
     return () => {
       cancelled = true;
-
-      if (timeoutId !== null) {
-        clearTimeout(timeoutId);
-      }
+      alive.current = false;
+      requestVersion.current++;
+      clearTimeout(timer);
     };
-  }, [
-    auditoriaId,
-    escaneoActivo,
-    cargarDashboard,
-  ]);
+  }, [id, cargarDatos, actualizarEstados]);
 
-  async function handleStartScan(
-    request: ScanStartRequest,
-  ) {
-    if (!auditoriaId) {
-      return;
-    }
-
-    const id = auditoriaId;
-
+  async function handleStartScan(request: ScanStartRequest) {
+    if (iniciandoEscaneo) return;
+    setIniciandoEscaneo(true);
+    setError("");
     try {
-      setIniciandoEscaneo(true);
-      setErrorEscaneo("");
-
-      await startEscaneo(id, request);
-
-      const response =
-        await fetchEscaneos(0, 100);
-
-      const deEstaAuditoria =
-        response.content.filter(
-          (escaneo) =>
-            escaneo.auditoriaId === id,
-        );
-
-      const ordenados =
-        ordenarPorCreadoDesc(deEstaAuditoria);
-
-      const nuevoEscaneo = ordenados[0];
-
-      if (!nuevoEscaneo) {
-        throw new Error(
-          "El escaneo fue iniciado pero no se pudo localizar su ejecución.",
-        );
-      }
-
-      setEscaneoActivo(
-        nuevoEscaneo.escaneoId,
-      );
-
-      setEstado({
-        scanId: nuevoEscaneo.escaneoId,
-        status: nuevoEscaneo.estado,
-        progress: nuevoEscaneo.progreso,
-        error: null,
-      });
-
-      await cargarDashboard();
+      const scan = await startEscaneo(id, request);
+      if (!alive.current) return;
+      if (!scan.escaneoId) throw new Error("El backend no devolvió el identificador del escaneo.");
+      actualizarEstados({ ...estadosRef.current, [scan.escaneoId]: {
+        scanId: scan.escaneoId, status: scan.estado, progress: scan.progreso, error: scan.mensajeError,
+      }});
+      setPreferredScanId(scan.escaneoId);
+      await cargarDatos();
     } catch (err) {
-      setErrorEscaneo(
-        err instanceof Error
-          ? err.message
-          : "No se pudo iniciar el escaneo.",
-      );
-    } finally {
-      setIniciandoEscaneo(false);
-    }
+      if (alive.current) setError(err instanceof Error ? err.message : "No se pudo iniciar el escaneo.");
+    } finally { if (alive.current) setIniciandoEscaneo(false); }
   }
 
-  if (cargando) {
-    return (
-      <main className="dashboard-page auditoria-detail">
-        <section className="dashboard-section">
-          <p>Cargando auditoría...</p>
-        </section>
-      </main>
-    );
-  }
-
-  if (error && !auditoria) {
-    return (
-      <main className="dashboard-page auditoria-detail">
-        <section className="dashboard-section">
-          <div className="dashboard-card">
-            <h2>Error</h2>
-            <p>{error}</p>
-
-            <Link
-              to="/dashboard"
-              className="button"
-            >
-              Volver al dashboard
-            </Link>
-          </div>
-        </section>
-      </main>
-    );
-  }
-
-  if (!auditoria) {
-    return (
-      <main className="dashboard-page auditoria-detail">
-        <section className="dashboard-section">
-          <p>No se encontró la auditoría.</p>
-        </section>
-      </main>
-    );
-  }
-
+  const escaneos = (dashboard?.historial ?? []).map(scan => ({
+    ...scan, estado: estadosEscaneos[scan.escaneoId]?.status ?? scan.estado,
+    progreso: estadosEscaneos[scan.escaneoId]?.progress ?? scan.progreso,
+    mensajeError: estadosEscaneos[scan.escaneoId]?.error ?? scan.mensajeError,
+  }));
+  const escaneosActivos = Object.values(estadosEscaneos).filter(esEscaneoActivo);
+  if (cargando) return <main className="dashboard-page auditoria-detail"><div className="dashboard-empty" role="status">Cargando auditoría…</div></main>;
+  if (!auditoria) return <main className="dashboard-page auditoria-detail"><div className="dashboard-error" role="alert">
+    {error || "Auditoría no encontrada."}
+    <button className="button button-page" onClick={() => void cargarDatos()}>Reintentar</button>
+  </div></main>;
   return (
     <main className="dashboard-page auditoria-detail">
-      <AuditoriaHeader auditoria={auditoria} />
+      {/* =====================================================
+          1. HEADER
+          ===================================================== */}
 
-      <section className="dashboard-section">
+      <AuditoriaHeader
+        auditoria={auditoria}
+      />
+
+      {error && (
+        <div
+          className="dashboard-error"
+          role="alert"
+        >
+          {error}
+        </div>
+      )}
+
+      {/* =====================================================
+          2. NUEVO ESCANEO
+          ===================================================== */}
+
+      <section className="auditoria-section scan-form-section">
         <ScanForm
           onSubmit={handleStartScan}
           loading={iniciandoEscaneo}
+          auditoriaId={id}
+          scans={Object.values(estadosEscaneos)}
+          preferredScanId={preferredScanId}
         />
-
-        {errorEscaneo && (
-          <div className="dashboard-error">
-            {errorEscaneo}
-          </div>
-        )}
-
-        {estado &&
-          !esEstadoFinal(estado.status) && (
-            <div className="scan-progress">
-              <div className="scan-progress-header">
-                <span>
-                  Estado:{" "}
-                  <strong>{estado.status}</strong>
-                </span>
-
-                <span>
-                  {estado.progress}%
-                </span>
-              </div>
-
-              <div className="scan-progress-bar">
-                <div
-                  className="scan-progress-value"
-                  style={{
-                    width: `${Math.max(
-                      0,
-                      Math.min(
-                        100,
-                        estado.progress,
-                      ),
-                    )}%`,
-                  }}
-                />
-              </div>
-            </div>
-          )}
       </section>
 
-      {error && (
-        <section className="dashboard-section">
-          <div className="dashboard-error">
-            {error}
+      {/* =====================================================
+          4. ESCANEOS EN PROGRESO
+          ===================================================== */}
+
+      {escaneosActivos.length > 0 && (
+        <section
+          className="auditoria-section dashboard-section"
+          aria-labelledby="active-scans-title"
+        >
+          <div className="dashboard-section-heading">
+            <p className="dashboard-section-eyebrow">
+              Ejecución
+            </p>
+
+            <h2 id="active-scans-title">
+              Escaneos en progreso
+            </h2>
+
+            <p>
+              ReconAC está procesando
+              las ejecuciones
+              actualmente activas.
+            </p>
+          </div>
+
+          <div className="scan-progress-list">
+            {escaneosActivos.map(
+              (estado) => {
+                const progreso =
+                  Math.min(
+                    100,
+                    Math.max(
+                      0,
+                      estado.progress ??
+                        0,
+                    ),
+                  );
+
+                return (
+                  <div
+                    className="scan-progress"
+                    key={
+                      estado.scanId ??
+                      "scan-progress"
+                    }
+                  >
+                    <div className="scan-progress-header">
+                      <span>
+                        Escaneo{" "}
+                        {estado.scanId
+                          ? estado.scanId.slice(
+                              0,
+                              8,
+                            )
+                          : "—"}
+                      </span>
+
+                      <span>
+                        {progreso}%
+                      </span>
+                    </div>
+
+                    <div
+                      className="scan-progress-bar"
+                      role="progressbar"
+                      aria-valuenow={
+                        progreso
+                      }
+                      aria-valuemin={
+                        0
+                      }
+                      aria-valuemax={
+                        100
+                      }
+                    >
+                      <div
+                        className="scan-progress-value"
+                        style={{
+                          width: `${progreso}%`,
+                        }}
+                      />
+                    </div>
+
+                    <div className="scan-progress-status">
+                      {estado.status ===
+                      "PENDIENTE"
+                        ? "Pendiente de ejecución"
+                        : "Procesando"}
+                    </div>
+                  </div>
+                );
+              },
+            )}
           </div>
         </section>
       )}
 
+      {/* =====================================================
+          5. KPIs
+          ===================================================== */}
+
       {dashboard && (
-        <>
-          <section className="dashboard-section">
-            <DashboardKpiGrid
-              data={dashboard.kpis}
-            />
-          </section>
-
-          <section className="dashboard-section">
-            <ScanHistory
-              escaneos={dashboard.historial}
-            />
-          </section>
-
-          <section className="dashboard-section">
-            <RiskTimeline
-              data={dashboard.riesgoTemporal}
-            />
-          </section>
-
-          <section className="dashboard-section">
-            <CveBreakdown
-              data={dashboard.vulnerabilidades}
-            />
-          </section>
-
-          <section className="dashboard-section">
-            <HostBreakdown
-              data={dashboard.hosts}
-            />
-          </section>
-
-          <section className="dashboard-section">
-            <ScanComparison
-              escaneos={dashboard.historial}
-            />
-          </section>
-
-          <section className="dashboard-section">
-            <ReportGenerator
-              auditoriaId={auditoria.id}
-            />
-          </section>
-        </>
+        <section className="auditoria-section">
+          <DashboardKpiGrid
+            data={dashboard.kpis}
+          />
+        </section>
       )}
 
-      {cargandoDashboard && (
-        <section className="dashboard-section">
-          <p>Actualizando métricas...</p>
+      {/* =====================================================
+          6. TIMELINE DE RIESGO
+          ===================================================== */}
+
+      {dashboard && (
+        <section className="auditoria-section risk-section">
+          <RiskTimeline
+            data={
+              dashboard.riesgoTemporal
+            }
+          />
+        </section>
+      )}
+
+      {/* =====================================================
+          7. HOSTS + CVEs
+          ===================================================== */}
+
+      {dashboard && (
+        <section className="auditoria-section breakdown-row">
+          <div className="breakdown-col">
+            <HostBreakdown
+              data={dashboard.hosts}
+              pageSize={5}
+            />
+          </div>
+
+          <div className="breakdown-col">
+            <CveBreakdown
+              data={
+                dashboard.vulnerabilidades
+              }
+              pageSize={5}
+            />
+          </div>
+        </section>
+      )}
+
+      {/* =====================================================
+          8. COMPARACIÓN
+          ===================================================== */}
+
+      {dashboard && (
+        <section className="auditoria-section">
+          <ScanComparison
+            auditoriaId={id}
+            escaneos={escaneos}
+          />
+        </section>
+      )}
+
+      {/* =====================================================
+          9. HISTORIAL
+          ===================================================== */}
+
+      {dashboard && (
+        <section className="auditoria-section">
+          <ScanHistory
+            auditoriaId={id}
+            escaneos={escaneos}
+            pageSize={6}
+          />
+        </section>
+      )}
+
+      {/* =====================================================
+          10. REPORTES
+          ===================================================== */}
+
+      {dashboard && (
+        <section className="auditoria-section report-section">
+          <ReportGenerator
+            auditoriaId={id}
+            escaneos={escaneos}
+          />
         </section>
       )}
     </main>
   );
 }
+
+

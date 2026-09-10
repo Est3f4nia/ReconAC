@@ -1,9 +1,9 @@
 package com.tup.reconac.feature.activo;
 
 import com.tup.reconac.exceptions.activo.ActivoNotFoundException;
-import com.tup.reconac.feature.activo.dtos.ActivoAgrupadoResponse;
-import com.tup.reconac.feature.activo.dtos.ActivoRequestDto;
-import com.tup.reconac.feature.activo.dtos.ActivoResponse;
+import com.tup.reconac.feature.activo.dtos.response.ActivoAgrupadoResponse;
+import com.tup.reconac.feature.activo.dtos.request.ActivoRequestDto;
+import com.tup.reconac.feature.activo.dtos.response.ActivoResponse;
 import com.tup.reconac.feature.activo.models.Activo;
 import com.tup.reconac.feature.activo.repositories.ActivoRepository;
 import com.tup.reconac.feature.activo.services.ActivoCreateService;
