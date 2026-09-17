@@ -2,11 +2,19 @@ package com.tup.reconac.modules.vulnEnum.services;
 
 import com.tup.reconac.feature.activo.models.Activo;
 import com.tup.reconac.feature.activo.repositories.ActivoRepository;
+import com.tup.reconac.feature.auditoria.services.domain.AuditoriaConsultService;
 import com.tup.reconac.feature.escaneo.models.Escaneo;
 import com.tup.reconac.feature.escaneo.repositories.EscaneoRepository;
 import com.tup.reconac.feature.puerto.models.Puerto;
 import com.tup.reconac.feature.puerto.repositories.PuertoRepository;
 import com.tup.reconac.modules.vulnEnum.dtos.*;
+import com.tup.reconac.modules.vulnEnum.models.Cpe;
+import com.tup.reconac.modules.vulnEnum.models.CpeCve;
+import com.tup.reconac.modules.vulnEnum.models.PuertoCpe;
+import com.tup.reconac.modules.vulnEnum.repositories.CpeCveRepository;
+import com.tup.reconac.modules.vulnEnum.repositories.CpeRepository;
+import com.tup.reconac.modules.vulnEnum.repositories.CveRepository;
+import com.tup.reconac.modules.vulnEnum.repositories.PuertoCpeRepository;
 import com.tup.reconac.modules.vulnEnum.services.interfaces.IMetricasAuditoriaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,116 +31,183 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class MetricasAuditoriaService
-        implements IMetricasAuditoriaService {
+public class MetricasAuditoriaService implements IMetricasAuditoriaService {
 
     private final EscaneoRepository escaneoRepository;
     private final ActivoRepository activoRepository;
     private final PuertoRepository puertoRepository;
-    private final EpssService epssService;
-    private final KevService kevService;
     private final ObjectMapper objectMapper;
-    private final com.tup.reconac.modules.vulnEnum.repositories.CveRepository cveRepository;
-    private final com.tup.reconac.feature.auditoria.services.domain.AuditoriaConsultService auditoriaConsult;
+    private final CveRepository cveRepository;
+    private final AuditoriaConsultService auditoriaConsult;
+    private final PuertoCpeRepository puertoCpeRepository;
+    private final CpeRepository cpeRepository;
+    private final CpeCveRepository cpeCveRepository;
 
     @Override
     public DashboardAuditoriaResponse getDashboard(UUID auditoriaId) {
+
         auditoriaConsult.verifyAuditoriaOwnership(auditoriaId);
 
-        List<Escaneo> escaneos =
-                escaneoRepository
-                        .findByAuditoriaIdOrderByCreadoADesc(auditoriaId);
+        List<Escaneo> escaneos = escaneoRepository.findByAuditoriaIdOrderByCreadoADesc(auditoriaId);
+        if (escaneos.isEmpty()) return emptyDashboard();
 
-        if (escaneos.isEmpty()) {
-            return emptyDashboard();
-        }
 
-        List<UUID> escaneoIds = escaneos.stream()
+        Map<UUID, Escaneo> escaneosPorId =  escaneos
+                .stream()
+                .collect(Collectors.toMap(Escaneo::getId, escaneo -> escaneo));
+
+        List<UUID> escaneoIds = escaneos
+                .stream()
                 .map(Escaneo::getId)
                 .toList();
 
-        List<Activo> activos =
-                activoRepository.findByEscaneoIdIn(escaneoIds);
+        /*
+         * ========================================================
+         * Activos
+         * ========================================================
+         */
 
-        Map<UUID, List<Activo>> activosPorEscaneo =
+        List<Activo> activos = activoRepository.findByEscaneoIdIn(escaneoIds);
+
+        Map<UUID, List<Activo>> activosPorEscaneo = activos
+                .stream()
+                .collect(Collectors.groupingBy(Activo::getEscaneoId));
+
+        List<UUID> activoIds =
                 activos.stream()
-                        .collect(Collectors.groupingBy(
-                                Activo::getEscaneoId
-                        ));
+                        .map(Activo::getId)
+                        .toList();
 
-        List<UUID> activoIds = activos.stream()
-                .map(Activo::getId)
-                .toList();
+        /*
+         * ========================================================
+         * Puertos
+         * ========================================================
+         */
 
         List<Puerto> puertos = activoIds.isEmpty()
-                ? List.of()
-                : puertoRepository.findByActivoIdIn(activoIds);
+                ? List.of() : puertoRepository.findByActivoIdIn(activoIds);
 
-        Map<UUID, Long> puertosPorActivo =
-                puertos.stream()
-                        .collect(Collectors.groupingBy(
-                                Puerto::getActivoId,
-                                Collectors.counting()
-                        ));
+        Map<UUID, Long> puertosPorActivo = puertos
+                .stream()
+                .collect(Collectors.groupingBy(Puerto::getActivoId, Collectors.counting()));
 
-        List<ScanMetrics> metrics = escaneos.stream()
+        /*
+         * ========================================================
+         * Métricas por ejecución
+         * ========================================================
+         */
+
+        List<ScanMetrics> metrics = escaneos
+                .stream()
                 .map(escaneo ->
-                        calculateScanMetrics(
-                                escaneo,
-                                activosPorEscaneo,
-                                puertosPorActivo
-                        )
+                                calculateScanMetrics(
+                                        escaneo,
+                                        activosPorEscaneo,
+                                        puertosPorActivo
+                                )
                 )
                 .toList();
 
-        DashboardKpisResponse kpis =
-                calculateKpis(
-                        escaneos,
-                        activos,
-                        metrics
-                );
+        /*
+         * ========================================================
+         * KPIs globales
+         * ========================================================
+         */
 
-        List<EjecucionHistorialResponse> historial =
-                metrics.stream()
-                        .map(metric ->
-                                new EjecucionHistorialResponse(
-                                        metric.escaneoId(),
-                                        metric.fecha(),
-                                        metric.estado(),
-                                        metric.progreso(),
-                                        metric.objetivos(),
-                                        metric.activos(),
-                                        metric.puertos(),
-                                        metric.cves(),
-                                        metric.cvesCriticos(),
-                                        metric.cvssPromedio(),
-                                        escaneos.stream().filter(e -> e.getId().equals(metric.escaneoId()))
-                                                .findFirst().map(Escaneo::getMensajeError).orElse(null)
-                                )
-                        )
+        DashboardKpisResponse kpis = calculateKpis(
+                escaneos,
+                activos,
+                metrics
+        );
+
+        /*
+         * ========================================================
+         * Historial
+         * ========================================================
+         */
+
+        List<EjecucionHistorialResponse> historial = metrics
+                .stream()
+                .map(metric -> {
+
+                            Escaneo escaneo =
+                                    escaneosPorId.get(
+                                            metric.escaneoId()
+                                    );
+
+                            return new EjecucionHistorialResponse(
+                                    metric.escaneoId(),
+                                    metric.fecha(),
+                                    metric.estado(),
+                                    metric.progreso(),
+                                    metric.objetivos(),
+                                    metric.activos(),
+                                    metric.puertos(),
+                                    metric.cves(),
+                                    metric.cvesCriticos(),
+                                    metric.cvssPromedio(),
+
+                                    escaneo != null
+                                            ? escaneo.getMensajeError()
+                                            : null
+                            );
+                        })
                         .toList();
+
+        /*
+         * ========================================================
+         * Evolución temporal del riesgo
+         * ========================================================
+         */
 
         List<RiesgoTemporalResponse> riesgoTemporal =
                 metrics.stream()
-                        .map(metric ->
-                                new RiesgoTemporalResponse(
-                                        metric.escaneoId(),
-                                        metric.fecha(),
-                                        calcularNivelRiesgo(
-                                                metric.cvssPromedio()
-                                        ),
-                                        metric.cvssPromedio(),
-                                        metric.cves(),
-                                        metric.cvesCriticos(),
-                                        metric.cvesExplotados()
-                                )
+                        .map(
+                                metric ->
+                                        new RiesgoTemporalResponse(
+                                                metric.escaneoId(),
+                                                metric.fecha(),
+
+                                                calcularNivelRiesgo(
+                                                        metric.cvssPromedio()
+                                                ),
+
+                                                metric.cvssPromedio(),
+                                                metric.cves(),
+                                                metric.cvesCriticos(),
+                                                metric.cvesExplotados()
+                                        )
                         )
                         .toList();
 
-        CveDesgloseResponse vulnerabilidades =
-                buildCveDesglose(metrics);
+        /*
+         * ========================================================
+         * Desglose de vulnerabilidades
+         * ========================================================
+         */
 
-        HostDesgloseResponse hosts = buildHostDesglose(escaneos, metrics);
+        CveDesgloseResponse vulnerabilidades = buildCveDesglose(
+                metrics,
+                activos,
+                puertos
+        );
+
+        /*
+         * ========================================================
+         * Desglose de hosts
+         * ========================================================
+         */
+
+        HostDesgloseResponse hosts = buildHostDesglose(
+                activos,
+                puertos
+        );
+
+        /*
+         * ========================================================
+         * Respuesta final
+         * ========================================================
+         */
 
         return new DashboardAuditoriaResponse(
                 kpis,
@@ -192,7 +267,7 @@ public class MetricasAuditoriaService
                     String cveId =
                             vulnerability
                                     .path("cve_id")
-                                    .asText(null);
+                                    .asString(null);
 
                     if (cveId == null || cveId.isBlank()) {
                         continue;
@@ -202,8 +277,7 @@ public class MetricasAuditoriaService
 
                     BigDecimal cvss =
                             decimal(
-                                    vulnerability,
-                                    "cvss_score"
+                                    vulnerability
                             );
 
                     Set<String> cwes =
@@ -216,9 +290,7 @@ public class MetricasAuditoriaService
 
                         for (JsonNode cwe : cweNodes) {
 
-                            String id =
-                                    cwe.path("id")
-                                            .asText(null);
+                            String id = cwe.path("id").asString(null);
 
                             if (id != null && !id.isBlank()) {
                                 cwes.add(id);
@@ -256,40 +328,53 @@ public class MetricasAuditoriaService
             List<String> cveIds = cvesData.stream()
                     .map(CveData::id)
                     .filter(Objects::nonNull)
+                    .map(this::normalizeCveId)
                     .distinct()
                     .toList();
 
-            // Una lectura del dashboard no dispara llamadas externas ni escrituras.
-            Map<String, com.tup.reconac.modules.vulnEnum.models.Cve> catalog = cveIds.isEmpty()
-                    ? Map.of() : cveRepository.findAllByCveIn(cveIds).stream()
-                    .collect(Collectors.toMap(com.tup.reconac.modules.vulnEnum.models.Cve::getCve, c -> c));
-            cvesData = cvesData.stream().map(cve -> {
-                var saved = catalog.get(cve.id());
-                return new CveData(cve.id(), cve.cvss(), saved == null ? null : saved.getEpss(),
-                        saved != null && Boolean.TRUE.equals(saved.getKev()), cve.cwes());
-            }).toList();
-            long cves = cvesData.size();
+            Map<String, com.tup.reconac.modules.vulnEnum.models.Cve> catalog =
+                    cveIds.isEmpty()
+                            ? Map.of()
+                            : cveRepository.findAllByCveIn(cveIds)
+                            .stream()
+                            .filter(cve -> cve.getCve() != null)
+                            .collect(
+                                    Collectors.toMap(
+                                            cve -> normalizeCveId(cve.getCve()),
+                                            cve -> cve,
+                                            (actual, duplicado) -> actual
+                                    )
+                            );
 
+            cvesData = cvesData.stream()
+                    .map(cve -> {
+                        var saved = catalog.get(normalizeCveId(cve.id()));
+                        return new CveData(
+                                cve.id(),
+                                cve.cvss(),
+                                saved != null
+                                        ? saved.getEpss()
+                                        : null,
+                                saved != null &&
+                                        Boolean.TRUE.equals(saved.getKev()),
+                                cve.cwes()
+                        );
+                    })
+                    .toList();
+
+            long cves = cvesData.size();
             long criticos = 0;
             long altos = 0;
             long medios = 0;
             long bajos = 0;
             long explotados = 0;
-
-            BigDecimal sumaCvss =
-                    BigDecimal.ZERO;
-
+            BigDecimal sumaCvss = BigDecimal.ZERO;
             long cvssCount = 0;
 
             for (CveData cve : cvesData) {
-
                 BigDecimal cvss = cve.cvss();
-
                 if (cvss != null) {
-
-                    sumaCvss =
-                            sumaCvss.add(cvss);
-
+                    sumaCvss = sumaCvss.add(cvss);
                     cvssCount++;
 
                     if (cvss.compareTo(
@@ -357,6 +442,12 @@ public class MetricasAuditoriaService
         }
     }
 
+    private String normalizeCveId(String id) {
+        return id == null
+                ? null
+                : id.trim().toUpperCase(Locale.ROOT);
+    }
+
     private JsonNode vulnerabilityNodes(JsonNode apiResults) {
         if (apiResults.path("vulnerabilities").isArray()) return apiResults.path("vulnerabilities");
         var result = objectMapper.createArrayNode();
@@ -368,47 +459,379 @@ public class MetricasAuditoriaService
         return result;
     }
 
-    private HostDesgloseResponse buildHostDesglose(List<Escaneo> scans, List<ScanMetrics> metrics) {
-        Map<String, Map<String, CveData>> byHost = new LinkedHashMap<>();
-        Map<String, String> names = new HashMap<>();
-        for (Escaneo scan : scans) {
-            if (scan.getResultado() == null || scan.getResultado().isBlank()) continue;
-            JsonNode root = objectMapper.readTree(scan.getResultado());
-            JsonNode byCpe = root.path("apiResults");
-            // Los registros antiguos planos no permiten atribuir CVEs a un host.
-            if (byCpe.path("vulnerabilities").isArray()) continue;
-            var scanMetrics = metrics.stream().filter(m -> m.escaneoId().equals(scan.getId())).findFirst().orElseThrow();
-            var byId = scanMetrics.cvesData().stream().collect(Collectors.toMap(CveData::id, c -> c));
-            for (JsonNode host : root.path("hosts")) {
-                String ip = host.path("ip").asText(null);
-                if (ip == null) continue;
-                names.putIfAbsent(ip, host.path("hostname").asText(null));
-                var found = byHost.computeIfAbsent(ip, ignored -> new HashMap<>());
-                for (JsonNode port : host.path("puertos")) {
-                    for (JsonNode cpe : port.path("cpes")) {
-                        for (JsonNode vulnerability : byCpe.path(cpe.asText()).path("vulnerabilities")) {
-                            String id = vulnerability.path("cve_id").asText("").toUpperCase(Locale.ROOT);
-                            CveData value = byId.get(id);
-                            if (value != null) found.merge(id, value, this::mergeCveData);
-                        }
+    private HostDesgloseResponse buildHostDesglose(
+            List<Activo> activos,
+            List<Puerto> puertos
+    ) {
+
+        if (activos.isEmpty() || puertos.isEmpty()) {
+            return new HostDesgloseResponse(
+                    List.of(),
+                    List.of()
+            );
+        }
+
+        /*
+         * ========================================================
+         * 1. Activos por ID
+         * ========================================================
+         */
+
+        Map<UUID, Activo> activosPorId =
+                activos.stream()
+                        .collect(
+                                Collectors.toMap(
+                                        Activo::getId,
+                                        activo -> activo
+                                )
+                        );
+
+        /*
+         * ========================================================
+         * 2. Puertos por ID
+         * ========================================================
+         */
+
+        Map<UUID, Puerto> puertosPorId =
+                puertos.stream()
+                        .collect(
+                                Collectors.toMap(
+                                        Puerto::getId,
+                                        puerto -> puerto
+                                )
+                        );
+
+        List<UUID> puertoIds =
+                puertos.stream()
+                        .map(Puerto::getId)
+                        .toList();
+
+        /*
+         * ========================================================
+         * 3. Puerto -> CPE
+         * ========================================================
+         */
+
+        List<PuertoCpe> puertoCpes =
+                puertoIds.isEmpty()
+                        ? List.of()
+                        : puertoCpeRepository
+                        .findByPuertoIdIn(
+                                puertoIds
+                        );
+
+        if (puertoCpes.isEmpty()) {
+            return new HostDesgloseResponse(
+                    List.of(),
+                    List.of()
+            );
+        }
+
+        Set<UUID> cpeIds =
+                puertoCpes.stream()
+                        .map(PuertoCpe::getCpeId)
+                        .collect(
+                                Collectors.toSet()
+                        );
+
+        /*
+         * ========================================================
+         * 4. CPEs
+         * ========================================================
+         */
+
+        Map<UUID, Cpe> cpesPorId =
+                cpeRepository
+                        .findAllById(cpeIds)
+                        .stream()
+                        .collect(
+                                Collectors.toMap(
+                                        Cpe::getId,
+                                        cpe -> cpe
+                                )
+                        );
+
+        /*
+         * ========================================================
+         * 5. CPE -> CVE
+         * ========================================================
+         */
+
+        List<CpeCve> cpeCves =
+                cpeIds.isEmpty()
+                        ? List.of()
+                        : cpeCveRepository
+                        .findByCpeIdIn(
+                                cpeIds
+                        );
+
+        if (cpeCves.isEmpty()) {
+            return new HostDesgloseResponse(
+                    List.of(),
+                    List.of()
+            );
+        }
+
+        Set<UUID> cveIds =
+                cpeCves.stream()
+                        .map(CpeCve::getCveId)
+                        .collect(
+                                Collectors.toSet()
+                        );
+
+        /*
+         * ========================================================
+         * 6. Catálogo CVE
+         * ========================================================
+         */
+
+        Map<UUID, com.tup.reconac.modules.vulnEnum.models.Cve>
+                cvesPorId =
+                cveRepository
+                        .findAllById(cveIds)
+                        .stream()
+                        .collect(
+                                Collectors.toMap(
+                                        com.tup.reconac.modules.vulnEnum.models.Cve
+                                                ::getId,
+                                        cve -> cve
+                                )
+                        );
+
+        /*
+         * ========================================================
+         * 7. CPE -> CVEs
+         * ========================================================
+         */
+
+        Map<UUID, List<CpeCve>> cvesPorCpe =
+                cpeCves.stream()
+                        .collect(
+                                Collectors.groupingBy(
+                                        CpeCve::getCpeId
+                                )
+                        );
+
+        /*
+         * ========================================================
+         * 8. Puerto -> CPEs
+         * ========================================================
+         */
+
+        Map<UUID, List<PuertoCpe>> cpesPorPuerto =
+                puertoCpes.stream()
+                        .collect(
+                                Collectors.groupingBy(
+                                        PuertoCpe::getPuertoId
+                                )
+                        );
+
+        /*
+         * ========================================================
+         * 9. Acumulador por host
+         * ========================================================
+         */
+
+        Map<String, HostAccumulator> hosts =
+                new LinkedHashMap<>();
+
+        for (Puerto puerto : puertos) {
+
+            Activo activo =
+                    activosPorId.get(
+                            puerto.getActivoId()
+                    );
+
+            if (activo == null ||
+                    activo.getHost() == null ||
+                    activo.getHost().isBlank()) {
+
+                continue;
+            }
+
+            String hostIp =
+                    activo.getHost().trim();
+
+            HostAccumulator host =
+                    hosts.computeIfAbsent(
+                            hostIp,
+                            ignored ->
+                                    new HostAccumulator(
+                                            hostIp,
+                                            activo.getHostname()
+                                    )
+                    );
+
+            /*
+             * Si el mismo host aparece en varios
+             * escaneos y uno tiene hostname,
+             * conservamos el dato disponible.
+             */
+            if ((host.hostname == null ||
+                    host.hostname.isBlank()) &&
+                    activo.getHostname() != null &&
+                    !activo.getHostname().isBlank()) {
+
+                host.hostname =
+                        activo.getHostname();
+            }
+
+            List<PuertoCpe> relaciones =
+                    cpesPorPuerto.getOrDefault(
+                            puerto.getId(),
+                            List.of()
+                    );
+
+            for (PuertoCpe puertoCpe : relaciones) {
+
+                UUID cpeId =
+                        puertoCpe.getCpeId();
+
+                Cpe cpe =
+                        cpesPorId.get(cpeId);
+
+                if (cpe == null) {
+                    continue;
+                }
+
+                List<CpeCve> relacionesCve =
+                        cvesPorCpe.getOrDefault(
+                                cpeId,
+                                List.of()
+                        );
+
+                for (CpeCve cpeCve : relacionesCve) {
+
+                    var cve =
+                            cvesPorId.get(
+                                    cpeCve.getCveId()
+                            );
+
+                    if (cve == null ||
+                            cve.getCve() == null) {
+
+                        continue;
                     }
+
+                    host.addCve(
+                            cve,
+                            cpe.getUri()
+                    );
                 }
             }
         }
-        var hosts = byHost.entrySet().stream().map(entry -> {
-            var values = entry.getValue().values();
-            return new HostVulnerabilidadResponse(entry.getKey(), names.get(entry.getKey()), values.size(),
-                    values.stream().filter(v -> v.cvss() != null && v.cvss().compareTo(BigDecimal.valueOf(9)) >= 0).count(),
-                    values.stream().map(CveData::cvss).filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(null),
-                    values.stream().map(CveData::epss).filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(null));
-        }).toList();
+
+        /*
+         * ========================================================
+         * 10. Convertimos acumuladores en DTOs
+         * ========================================================
+         */
+
+        List<HostVulnerabilidadResponse> all =
+                hosts.values()
+                        .stream()
+                        /*
+                         * Un host sin CVEs no debe formar
+                         * parte de los rankings de riesgo.
+                         */
+                        .filter(
+                                host ->
+                                        !host.cves.isEmpty()
+                        )
+                        .map(
+                                HostAccumulator::toResponse
+                        )
+                        .toList();
+
+        /*
+         * ========================================================
+         * 11. Más vulnerabilidades críticas
+         * ========================================================
+         */
+
+        List<HostVulnerabilidadResponse>
+                masVulnerabilidadesCriticas =
+                all.stream()
+                        /*
+                         * Corrige el bug:
+                         * los hosts con 0 críticas
+                         * ya no aparecen.
+                         */
+                        .filter(
+                                host ->
+                                        host.vulnerabilidadesCriticas()
+                                                > 0
+                        )
+                        .sorted(
+                                Comparator
+                                        .comparingLong(
+                                                HostVulnerabilidadResponse
+                                                        ::vulnerabilidadesCriticas
+                                        )
+                                        .reversed()
+                                        .thenComparing(
+                                                HostVulnerabilidadResponse
+                                                        ::cvssMaximo,
+                                                Comparator.nullsLast(
+                                                        Comparator.reverseOrder()
+                                                )
+                                        )
+                                        .thenComparing(
+                                                HostVulnerabilidadResponse
+                                                        ::ip
+                                        )
+                        )
+                        .limit(10)
+                        .toList();
+
+        /*
+         * ========================================================
+         * 12. Mayor riesgo de explotación
+         *
+         * Prioridad:
+         *
+         * KEV > CVSS > EPSS
+         * ========================================================
+         */
+
+        List<HostVulnerabilidadResponse>
+                mayorRiesgoExplotacion =
+                all.stream()
+                        .sorted(
+                                Comparator
+                                        .comparing(
+                                                HostVulnerabilidadResponse
+                                                        ::kev
+                                        )
+                                        .reversed()
+                                        .thenComparing(
+                                                HostVulnerabilidadResponse
+                                                        ::cvssMaximo,
+                                                Comparator.nullsLast(
+                                                        Comparator.reverseOrder()
+                                                )
+                                        )
+                                        .thenComparing(
+                                                HostVulnerabilidadResponse
+                                                        ::epssMaximo,
+                                                Comparator.nullsLast(
+                                                        Comparator.reverseOrder()
+                                                )
+                                        )
+                                        .thenComparing(
+                                                HostVulnerabilidadResponse
+                                                        ::ip
+                                        )
+                        )
+                        .limit(10)
+                        .toList();
+
         return new HostDesgloseResponse(
-                hosts.stream().sorted(Comparator.comparingLong(HostVulnerabilidadResponse::vulnerabilidadesCriticas)
-                        .reversed().thenComparing(HostVulnerabilidadResponse::ip)).toList(),
-                hosts.stream().filter(h -> h.epssMaximo() != null)
-                        .sorted(Comparator.comparing(HostVulnerabilidadResponse::epssMaximo).reversed()
-                                .thenComparing(HostVulnerabilidadResponse::ip)).toList());
+                masVulnerabilidadesCriticas,
+                mayorRiesgoExplotacion
+        );
     }
+
     private DashboardKpisResponse calculateKpis(
             List<Escaneo> escaneos,
             List<Activo> activos,
@@ -564,7 +987,9 @@ public class MetricasAuditoriaService
     }
 
     private CveDesgloseResponse buildCveDesglose(
-            List<ScanMetrics> metrics
+            List<ScanMetrics> metrics,
+            List<Activo> activos,
+            List<Puerto> puertos
     ) {
 
         Map<String, CveAccumulator> accumulator =
@@ -620,6 +1045,204 @@ public class MetricasAuditoriaService
                 current.cwes.addAll(
                         cve.cwes()
                 );
+            }
+        }
+
+        /*
+         * ========================================================
+         * Enriquecimiento desde entidades persistidas
+         *
+         * Activo -> Puerto -> PuertoCpe -> CpeCve -> Cve
+         *
+         * Escaneo.resultado puede no contener todas las CVE que
+         * posteriormente fueron asociadas mediante el catálogo.
+         * ========================================================
+         */
+
+        Map<UUID, UUID> escaneoPorActivo =
+                activos.stream()
+                        .collect(
+                                Collectors.toMap(
+                                        Activo::getId,
+                                        Activo::getEscaneoId
+                                )
+                        );
+
+        Map<UUID, UUID> activoPorPuerto =
+                puertos.stream()
+                        .collect(
+                                Collectors.toMap(
+                                        Puerto::getId,
+                                        Puerto::getActivoId
+                                )
+                        );
+
+        List<UUID> puertoIds =
+                puertos.stream()
+                        .map(Puerto::getId)
+                        .toList();
+
+        List<PuertoCpe> puertoCpes =
+                puertoIds.isEmpty()
+                        ? List.of()
+                        : puertoCpeRepository.findByPuertoIdIn(
+                        puertoIds
+                );
+
+        /*
+         * CPE -> escaneos donde fue observado.
+         */
+        Map<UUID, Set<UUID>> escaneosPorCpe =
+                new HashMap<>();
+
+        for (PuertoCpe relacion : puertoCpes) {
+
+            UUID activoId =
+                    activoPorPuerto.get(
+                            relacion.getPuertoId()
+                    );
+
+            if (activoId == null) {
+                continue;
+            }
+
+            UUID escaneoId =
+                    escaneoPorActivo.get(
+                            activoId
+                    );
+
+            if (escaneoId == null) {
+                continue;
+            }
+
+            escaneosPorCpe
+                    .computeIfAbsent(
+                            relacion.getCpeId(),
+                            ignored -> new HashSet<>()
+                    )
+                    .add(escaneoId);
+        }
+
+        Set<UUID> cpeIds =
+                puertoCpes.stream()
+                        .map(PuertoCpe::getCpeId)
+                        .collect(Collectors.toSet());
+
+        List<CpeCve> cpeCves =
+                cpeIds.isEmpty()
+                        ? List.of()
+                        : cpeCveRepository.findByCpeIdIn(
+                        cpeIds
+                );
+
+        Set<UUID> cveEntityIds =
+                cpeCves.stream()
+                        .map(CpeCve::getCveId)
+                        .collect(Collectors.toSet());
+
+        Map<UUID, com.tup.reconac.modules.vulnEnum.models.Cve> cvesPorId =
+                cveRepository.findAllById(cveEntityIds)
+                        .stream()
+                        .collect(
+                                Collectors.toMap(
+                                        com.tup.reconac.modules.vulnEnum.models.Cve::getId,
+                                        cve -> cve
+                                )
+                        );
+
+        /*
+         * CVE -> escaneos distintos donde aparece.
+         *
+         * Evita contar varias veces una CVE por estar asociada
+         * a varios puertos/CPE dentro del mismo escaneo.
+         */
+        Map<String, Set<UUID>> escaneosPorCve =
+                new HashMap<>();
+
+        for (CpeCve relacion : cpeCves) {
+
+            var saved =
+                    cvesPorId.get(
+                            relacion.getCveId()
+                    );
+
+            if (saved == null ||
+                    saved.getCve() == null ||
+                    saved.getCve().isBlank()) {
+
+                continue;
+            }
+
+            String cveId =
+                    saved.getCve()
+                            .trim()
+                            .toUpperCase(Locale.ROOT);
+
+            CveAccumulator current =
+                    accumulator.computeIfAbsent(
+                            cveId,
+                            CveAccumulator::new
+                    );
+
+            /*
+             * El catálogo persistido es la fuente de verdad
+             * para CVSS, EPSS y KEV.
+             */
+            if (saved.getCvss() != null &&
+                    (current.cvss == null ||
+                            saved.getCvss()
+                                    .compareTo(current.cvss) > 0)) {
+
+                current.cvss =
+                        saved.getCvss();
+            }
+
+            if (saved.getEpss() != null &&
+                    (current.epss == null ||
+                            saved.getEpss()
+                                    .compareTo(current.epss) > 0)) {
+
+                current.epss =
+                        saved.getEpss();
+            }
+
+            current.explotacionActiva |=
+                    Boolean.TRUE.equals(
+                            saved.getKev()
+                    );
+
+            Set<UUID> scanIds =
+                    escaneosPorCpe.getOrDefault(
+                            relacion.getCpeId(),
+                            Set.of()
+                    );
+
+            escaneosPorCve
+                    .computeIfAbsent(
+                            cveId,
+                            ignored -> new HashSet<>()
+                    )
+                    .addAll(scanIds);
+        }
+
+        /*
+         * La frecuencia representa cantidad de ejecuciones
+         * distintas en las que apareció la CVE.
+         */
+        for (Map.Entry<String, Set<UUID>> entry :
+                escaneosPorCve.entrySet()) {
+
+            CveAccumulator current =
+                    accumulator.get(
+                            entry.getKey()
+                    );
+
+            if (current != null) {
+                current.frecuencia =
+                        Math.max(
+                                current.frecuencia,
+                                entry.getValue().size()
+                        );
             }
         }
 
@@ -828,24 +1451,13 @@ public class MetricasAuditoriaService
         return "BAJO";
     }
 
-    private BigDecimal decimal(
-            JsonNode node,
-            String field
-    ) {
+    private BigDecimal decimal(JsonNode node) {
 
-        JsonNode value = node.get(field);
+        JsonNode value = node.get("cvss_score");
 
-        if (value == null ||
-                !value.isNumber()) {
+        if (value == null || !value.isNumber()) return null;
 
-            return null;
-        }
-
-        return value.decimalValue()
-                .setScale(
-                        2,
-                        RoundingMode.HALF_UP
-                );
+        return value.decimalValue().setScale(2, RoundingMode.HALF_UP);
     }
 
     private DashboardAuditoriaResponse emptyDashboard() {
@@ -966,6 +1578,265 @@ public class MetricasAuditoriaService
                     cwes.stream()
                             .sorted()
                             .toList()
+            );
+        }
+    }
+
+    /* ============================================================
+     * Host accumulator
+     * ============================================================ */
+
+    private static class HostAccumulator {
+
+        private final String ip;
+
+        private String hostname;
+
+        /*
+         * CVE ID -> CVE detectada en el host.
+         */
+        private final Map<String, HostCveAccumulator>
+                cves =
+                new HashMap<>();
+
+        private HostAccumulator(
+                String ip,
+                String hostname
+        ) {
+            this.ip = ip;
+            this.hostname = hostname;
+        }
+
+        private void addCve(
+                com.tup.reconac.modules.vulnEnum.models.Cve cve,
+                String cpe
+        ) {
+
+            String cveId =
+                    cve.getCve()
+                            .trim()
+                            .toUpperCase(
+                                    Locale.ROOT
+                            );
+
+            HostCveAccumulator current = cves.computeIfAbsent(
+                            cveId,
+                            ignored ->
+                                    new HostCveAccumulator(
+                                            cveId
+                                    )
+                    );
+
+            current.merge(
+                    cve,
+                    cpe
+            );
+        }
+
+        private HostVulnerabilidadResponse toResponse() {
+
+            List<HostCveResponse> all =
+                    cves.values()
+                            .stream()
+                            .map(
+                                    HostCveAccumulator
+                                            ::toResponse
+                            )
+                            .toList();
+
+            long criticas =
+                    all.stream()
+                            .filter(
+                                    cve ->
+                                            cve.cvssScore() != null &&
+                                                    cve.cvssScore()
+                                                            .compareTo(
+                                                                    BigDecimal.valueOf(
+                                                                            9
+                                                                    )
+                                                            ) >= 0
+                            )
+                            .count();
+
+            BigDecimal cvssMaximo =
+                    all.stream()
+                            .map(
+                                    HostCveResponse
+                                            ::cvssScore
+                            )
+                            .filter(
+                                    Objects::nonNull
+                            )
+                            .max(
+                                    BigDecimal::compareTo
+                            )
+                            .orElse(null);
+
+            BigDecimal epssMaximo =
+                    all.stream()
+                            .map(
+                                    HostCveResponse
+                                            ::epssScore
+                            )
+                            .filter(
+                                    Objects::nonNull
+                            )
+                            .max(
+                                    BigDecimal::compareTo
+                            )
+                            .orElse(null);
+
+            boolean kev =
+                    all.stream()
+                            .anyMatch(
+                                    HostCveResponse::kev
+                            );
+
+            /*
+             * CVEs críticas del host.
+             */
+            List<HostCveResponse> cvesCriticas =
+                    all.stream()
+                            .filter(
+                                    cve ->
+                                            cve.cvssScore() != null &&
+                                                    cve.cvssScore()
+                                                            .compareTo(
+                                                                    BigDecimal.valueOf(
+                                                                            9
+                                                                    )
+                                                            ) >= 0
+                            )
+                            .sorted(
+                                    Comparator
+                                            .comparing(
+                                                    HostCveResponse
+                                                            ::cvssScore,
+                                                    Comparator.nullsLast(
+                                                            Comparator.reverseOrder()
+                                                    )
+                                            )
+                                            .thenComparing(
+                                                    HostCveResponse
+                                                            ::cveId
+                                            )
+                            )
+                            .toList();
+
+            /*
+             * Priorización:
+             *
+             * KEV > CVSS > EPSS.
+             */
+            List<HostCveResponse> cvesPrioritarias =
+                    all.stream()
+                            .sorted(
+                                    Comparator
+                                            .comparing(
+                                                    HostCveResponse
+                                                            ::kev
+                                            )
+                                            .reversed()
+                                            .thenComparing(
+                                                    HostCveResponse
+                                                            ::cvssScore,
+                                                    Comparator.nullsLast(
+                                                            Comparator.reverseOrder()
+                                                    )
+                                            )
+                                            .thenComparing(
+                                                    HostCveResponse
+                                                            ::epssScore,
+                                                    Comparator.nullsLast(
+                                                            Comparator.reverseOrder()
+                                                    )
+                                            )
+                                            .thenComparing(
+                                                    HostCveResponse
+                                                            ::cveId
+                                            )
+                            )
+                            .toList();
+
+            return new HostVulnerabilidadResponse(
+                    ip,
+                    hostname,
+                    all.size(),
+                    criticas,
+                    cvssMaximo,
+                    epssMaximo,
+                    kev,
+                    cvesCriticas,
+                    cvesPrioritarias
+            );
+        }
+    }
+
+    /* ============================================================
+     * Host-CVE accumulator
+     * ============================================================ */
+
+    private static class HostCveAccumulator {
+
+        private final String cveId;
+        private BigDecimal cvss;
+        private BigDecimal epss;
+        private boolean kev;
+        private final Set<String> cpes = new TreeSet<>();
+
+        private HostCveAccumulator(String cveId) {
+            this.cveId = cveId;
+        }
+
+        private void merge(
+                com.tup.reconac.modules.vulnEnum.models.Cve cve,
+                String cpe
+        ) {
+
+            if (cve.getCvss() != null) {
+
+                if (cvss == null ||
+                        cve.getCvss()
+                                .compareTo(cvss) > 0) {
+
+                    cvss =
+                            cve.getCvss();
+                }
+            }
+
+            if (cve.getEpss() != null) {
+
+                if (epss == null ||
+                        cve.getEpss()
+                                .compareTo(epss) > 0) {
+
+                    epss =
+                            cve.getEpss();
+                }
+            }
+
+            kev |=
+                    Boolean.TRUE.equals(
+                            cve.getKev()
+                    );
+
+            if (cpe != null &&
+                    !cpe.isBlank()) {
+
+                cpes.add(
+                        cpe.trim()
+                );
+            }
+        }
+
+        private HostCveResponse toResponse() {
+
+            return new HostCveResponse(
+                    cveId,
+                    cvss,
+                    epss,
+                    kev,
+                    List.copyOf(cpes)
             );
         }
     }

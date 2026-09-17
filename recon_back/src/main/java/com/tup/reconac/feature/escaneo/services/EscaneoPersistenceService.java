@@ -1,5 +1,6 @@
 package com.tup.reconac.feature.escaneo.services;
 
+import com.tup.reconac.feature.auditoria.services.domain.AuditoriaConsultService;
 import com.tup.reconac.feature.escaneo.models.Escaneo;
 import com.tup.reconac.feature.escaneo.models.EscaneoEstado;
 import com.tup.reconac.feature.escaneo.repositories.EscaneoRepository;
@@ -22,13 +23,12 @@ import java.util.UUID;
 public class EscaneoPersistenceService {
 
     private final EscaneoRepository repo;
+    private final AuditoriaConsultService auditoriaConsult;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Escaneo crear(
-            UUID auditoriaId,
-            String[] objetivos,
-            String jobId
-    ) {
+    public Escaneo crear(UUID auditoriaId,  String[] objetivos,  String jobId) {
+        auditoriaConsult.verifyAuditoriaOwnership(auditoriaId);
+
         Escaneo escaneo = new Escaneo();
 
         escaneo.setAuditoriaId(auditoriaId);

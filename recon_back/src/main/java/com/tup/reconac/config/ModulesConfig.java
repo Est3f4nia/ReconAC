@@ -19,7 +19,9 @@ public class ModulesConfig {
     public ModuleEndpoint getEndpoint(String name) {
         ModuleEndpoint endpoint = endpoints.get(name);
         if (endpoint == null || endpoint.getUrl() == null || endpoint.getUrl().isBlank()) {
-            throw new IllegalStateException("No hay endpoint configurado para el módulo: " + name);
+            throw new IllegalStateException(
+                    "No hay endpoint configurado para el módulo: " + name
+            );
         }
         return endpoint;
     }

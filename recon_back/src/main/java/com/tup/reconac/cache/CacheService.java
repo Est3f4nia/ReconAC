@@ -39,16 +39,14 @@ public class CacheService {
     private final CveCweRepository cveCweRepository;
     private final ReferenciaRepository referenciaRepository;
 
-    @Value("${cache.ttl-hours:24}")
+    @Value("${cache.ttl-hours}")
     private long ttlHours;
 
     // Read Through
     public Optional<NvdCacheEntry> getNvd(String cpeUri) {
-        System.out.println("[CacheService] getNvd(" + cpeUri + ")");
         NvdCacheEntry cached = getFromRedis(cpeUri);
 
         if (cached != null) {
-            System.out.println("[CacheService] Se obtuvo: " + cached);
             return Optional.of(cached);
         }
 
@@ -56,18 +54,17 @@ public class CacheService {
     }
 
     public void putNvd(NvdCacheEntry entry) {
-        System.out.println("[CacheService] putNvd(" + entry.cpe() + ")");
         redis.opsForValue().set(
                 PREFIX_NVD + entry.cpe(),
                 entry,
                 Duration.ofHours(ttlHours)
         );
-        System.out.println("[CacheService] Almacenamiento exitoso de: " + entry.cpe());
     }
 
     public boolean isFresh(NvdCacheEntry entry) {
 
         if (entry == null || entry.lastChecked() == null) return false;
+
         return entry.lastChecked()
                 .plusHours(ttlHours)
                 .isAfter(LocalDateTime.now());
@@ -78,24 +75,22 @@ public class CacheService {
     }
 
     private NvdCacheEntry getFromRedis(String cpeUri) {
-        System.out.println("[CacheService] getFromRedis(" + cpeUri + ")");
 
         Object value = redis.opsForValue().get(PREFIX_NVD + cpeUri);
         if (value instanceof NvdCacheEntry entry) {
-            System.out.println("[CacheService] Se obtuvo: " + entry.cpe());
             return entry;
         }
         return null;
     }
 
     private Optional<NvdCacheEntry> loadFromDatabase(String cpeUri) {
-        System.out.println("[CacheService] loadFromDatabase(" + cpeUri + ")");
 
         Optional<Cpe> cpeOptional = cpeRepository.findByUri(cpeUri);
         if (cpeOptional.isEmpty()) return Optional.empty();
 
         Cpe cpe = cpeOptional.get();
         if (cpe.getUltimoCheck() == null) return Optional.empty();
+
         List<CpeCve> relations = cpeCveRepository.findByCpeId(cpe.getId());
         List<NvdVulnerabilityData> vulnerabilities = new ArrayList<>();
 
@@ -105,7 +100,7 @@ public class CacheService {
             if (cveOptional.isEmpty()) continue;
 
             Cve cve = cveOptional.get();
-            List<String> cwes =cveCweRepository
+            List<String> cwes = cveCweRepository
                     .findByCveId(cve.getId())
                     .stream()
                     .map(CveCwe::getCweId)

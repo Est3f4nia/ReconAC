@@ -62,6 +62,9 @@
     align-items: center;
     justify-content: center;
 
+    border: 0;
+    padding: 0;
+
     width: 32px;
     height: 32px;
 
@@ -74,6 +77,8 @@
 
     font-size: 0.8rem;
     font-weight: 600;
+
+    cursor: pointer;
 }
 
 .navbar-logout {

@@ -1,4 +1,4 @@
-package com.tup.reconac.config;
+package com.tup.reconac.config.server;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

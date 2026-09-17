@@ -1,6 +1,7 @@
 package com.tup.reconac.modules.vulnEnum.dtos;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record HostVulnerabilidadResponse(
         String ip,
@@ -8,5 +9,9 @@ public record HostVulnerabilidadResponse(
         long vulnerabilidades,
         long vulnerabilidadesCriticas,
         BigDecimal cvssMaximo,
-        BigDecimal epssMaximo
-) {}
+        BigDecimal epssMaximo,
+        boolean kev,
+        List<HostCveResponse> cvesCriticas,
+        List<HostCveResponse> cvesPrioritarias
+) {
+}

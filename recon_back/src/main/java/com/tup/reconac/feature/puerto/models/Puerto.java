@@ -35,6 +35,15 @@ public class Puerto implements Serializable {
     @Column(name = "servicio_fallback")
     private String servicioFallback;
 
+    @Column(name = "producto")
+    private String producto;
+
+    @Column(name = "version")
+    private String version;
+
+    @Column(name = "extrainfo")
+    private String extrainfo;
+
     @Column(name = "numero", nullable = false)
     private Integer numero;
 

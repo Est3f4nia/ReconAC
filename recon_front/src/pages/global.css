@@ -12,6 +12,7 @@
     --border-big: #4682b4;
     --border-acc: #40e0d0;
     --button-link: #ff1493;
+    --modal-bg: #0009;
 
     /* CVSS */
     --critical: #ff3131;
@@ -31,11 +32,50 @@
 
     --font-title: "Quantico", sans-serif;
     --font-body: "IBM Plex Mono", monospace;
-    --font-console: "Ubuntu Mono", monospace;  /* "salidas" por consola */
+  --font-console: "Ubuntu Mono", monospace;  /* "salidas" por consola */
+
+  --motion-enter: 350ms;
+  --motion-ease: cubic-bezier(.2, .7, .2, 1);
+  --surface: color-mix(in srgb, var(--acc1) 55%, var(--bg));
+  --muted: color-mix(in srgb, var(--font) 72%, var(--bg));
+}
+
+:where(
+  button, 
+  input, 
+  select, 
+  textarea, 
+  a
+) {
+  transition: 
+    color var(--transition), 
+    background-color var(--transition),
+    border-color var(--transition), 
+    box-shadow var(--transition);
+}
+
+:where(
+  button, 
+  a, 
+  input, 
+  select, 
+  textarea, 
+  [tabindex]
+):focus-visible {
+  outline: 2px solid var(--border-acc);
+  outline-offset: 3px;
+}
+
+:where(
+  .auth-page,
+  .dashboard-page, 
+  .listado-page
+) { 
+  animation: fadeIn var(--motion-enter) var(--motion-ease); 
 }
 
 .status {
-    font-weight: 600;
+  font-weight: 600;
 }
 
 .status-PENDIENTE {
@@ -45,33 +85,26 @@
 .status-EN-PROCESO {
     color: var(--en-proceso);
 }
-.status-EN_PROCESO { color: var(--en-proceso); }
 
 /* Movimiento compartido: una sola política para toda la aplicación. */
-:root {
-  --motion-enter: 350ms;
-  --motion-ease: cubic-bezier(.2, .7, .2, 1);
-  --surface: color-mix(in srgb, var(--acc1) 55%, var(--bg));
-  --muted: color-mix(in srgb, var(--font) 72%, var(--bg));
-}
-:where(button, input, select, textarea, a) {
-  transition: color var(--transition), background-color var(--transition),
-    border-color var(--transition), box-shadow var(--transition);
-}
-:where(button, a, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--border-acc);
-  outline-offset: 3px;
-}
-:where(.dashboard-page, .listado-page) { animation: fadeIn var(--motion-enter) var(--motion-ease); }
+
+
 .auditoria-section { animation: slideUp var(--motion-enter) var(--motion-ease) both; }
 .scan-submit:not(:disabled) .scan-submit-ring { animation: scanPulse 2.4s ease-in-out infinite; }
 .scan-submit.is-loading .scan-submit-ring { animation: scanSpin 1.2s linear infinite; }
 .scan-submit-dots { animation: scanBlink 1s steps(2, end) infinite; }
 .scan-progress-value { transition: width 450ms var(--motion-ease); }
 * { scrollbar-color: var(--border-big) var(--bg); scrollbar-width: thin; }
+
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html { 
+    scroll-behavior: auto; 
+  }
+
+  *, *::before, *::after { 
+    animation: none !important; 
+    transition: none !important; 
+  }
 }
 
 .status-COMPLETADO {
@@ -130,6 +163,8 @@ select {
     font-weight: 600;
     text-align: center;
 
+    padding: 10px 15px;
+
     cursor: pointer;
     transition:
         background var(--transition),
@@ -145,18 +180,26 @@ select {
 .button-error {
     margin-top: 10px;
     padding: 10px 15px;
-    border-color: var(--border-acc);
-    color: var(--border-acc);
+    border-color: var(--fallo);
+    color: var(--fallo);
+    margin: 20px 20px;
 }
 
 .button-error:hover {
-    background: var(--border-acc);
+    background: var(--fallo);
     color: var(--bg);
     text-decoration: none;
 }
 
-.button-page {
-    padding: 10px 15px;
+.button-danger {
+  border-color: var(--critical);
+  color: var(--critical);
+  padding: 10px 15px;
+}
+
+.button-danger:hover {
+  background: var(--critical);
+  color: var(--acc1)
 }
 
 img {
@@ -228,8 +271,87 @@ a:hover {
   cursor: not-allowed;
 }
 
+/* ======= MODAL ======= */
 
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
 
+  gap: 16px;
+}
+
+.modal-section-eyebrow {
+    font-family: var(--font-console);
+    color: var(--border-acc);
+    font-size: .8rem;
+    letter-spacing: .12em;
+    text-transform: uppercase; 
+}
+
+.modal-header h2 {
+  margin: 4px 0 0;
+}
+
+.modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 30px;
+  height: 30px;
+
+  padding: 0;
+
+  border: 2px solid var(--border-big);
+  border-radius: 3px;
+
+  background: transparent;
+  color: var(--font);
+
+  cursor: pointer;
+}
+
+.modal-close:hover {
+    border-color: var(--border-acc);
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+
+  margin-top: 16px;
+
+  font-size: .9rem;
+  line-height: 1.55;
+}
+
+.modal-body p {
+  margin: 0;
+}
+
+.auditoria-delete-warning {
+  padding: 9px 10px;
+
+  margin-top: 10px;
+  margin-bottom: 5px;
+
+  border: 1px solid var(--critical);
+  border-radius: var(--br-radius);
+
+  color: var(--critical);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+
+  gap: 8px;
+
+  margin-top: 18px;
+}
 
 
 /* ======= LISTADOS COMPARTIDOS ======= */

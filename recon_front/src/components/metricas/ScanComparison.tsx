@@ -7,6 +7,8 @@ import type {
   PuertoResultadoResponse,
 } from "@/data/types";
 
+import "./styles/ScanComparison.css"
+
 interface Props {
   auditoriaId: string;
   escaneos: EjecucionHistorial[];
@@ -314,135 +316,248 @@ export function ScanComparison({ auditoriaId, escaneos }: Props) {
       )}
 
       {seleccionValida &&
-        !cargando &&
-        datosA &&
-        datosB &&
-        comparacion && (
-          <>
-            <div className="comparison-metrics">
-              <article className="dashboard-card">
+      !cargando &&
+      datosA &&
+      datosB &&
+      comparacion && (
+        <div className="comparison-result">
+          {/* ==================================================
+              Resumen entre ejecuciones
+              ================================================== */}
+
+          <div className="comparison-group">
+            <div className="comparison-group-heading">
+              <h3>Resumen</h3>
+
+              <p>
+                Variación general entre ambas ejecuciones.
+              </p>
+            </div>
+
+            <div className="comparison-metrics comparison-metrics-summary">
+              <article className="comparison-metric">
                 <span>Activos</span>
+
                 <strong>
-                  {datosA.activos} → {datosB.activos}
+                  {datosA.activos}
+                  <small>→</small>
+                  {datosB.activos}
                 </strong>
               </article>
 
-              <article className="dashboard-card">
+              <article className="comparison-metric">
                 <span>Puertos</span>
+
                 <strong>
-                  {datosA.puertos} → {datosB.puertos}
+                  {datosA.puertos}
+                  <small>→</small>
+                  {datosB.puertos}
                 </strong>
               </article>
 
-              <article className="dashboard-card">
+              <article className="comparison-metric">
                 <span>CVEs</span>
+
                 <strong>
-                  {datosA.cves} → {datosB.cves}
+                  {datosA.cves}
+                  <small>→</small>
+                  {datosB.cves}
                 </strong>
               </article>
 
-              <article className="dashboard-card">
-                <span>CVEs críticos</span>
+              <article className="comparison-metric">
+                <span>CVEs críticas</span>
+
                 <strong>
-                  {datosA.cvesCriticos} → {datosB.cvesCriticos}
+                  {datosA.cvesCriticos}
+                  <small>→</small>
+                  {datosB.cvesCriticos}
                 </strong>
               </article>
 
-              <article className="dashboard-card">
+              <article className="comparison-metric">
                 <span>CVSS promedio</span>
+
                 <strong>
-                  {formatearNumero(datosA.cvssPromedio, 2)}
-                  {" → "}
-                  {formatearNumero(datosB.cvssPromedio, 2)}
+                  {formatearNumero(
+                    datosA.cvssPromedio,
+                    2,
+                  )}
+
+                  <small>→</small>
+
+                  {formatearNumero(
+                    datosB.cvssPromedio,
+                    2,
+                  )}
                 </strong>
               </article>
             </div>
+          </div>
 
-            <div className="comparison-metrics">
-              <article className="dashboard-card">
+          {/* ==================================================
+              Cambios
+              ================================================== */}
+
+          <div className="comparison-group">
+            <div className="comparison-group-heading">
+              <h3>Cambios detectados</h3>
+
+              <p>
+                Elementos incorporados o ausentes respecto
+                de la primera ejecución.
+              </p>
+            </div>
+
+            <div className="comparison-metrics comparison-metrics-changes">
+              <article className="comparison-metric comparison-metric-added">
                 <span>Activos nuevos</span>
                 <strong>
                   +{comparacion.activosNuevos.length}
                 </strong>
               </article>
 
-              <article className="dashboard-card">
+              <article className="comparison-metric comparison-metric-removed">
                 <span>Activos eliminados</span>
                 <strong>
                   -{comparacion.activosEliminados.length}
                 </strong>
               </article>
 
-              <article className="dashboard-card">
+              <article className="comparison-metric comparison-metric-added">
                 <span>Puertos nuevos</span>
                 <strong>
                   +{comparacion.puertosNuevos}
                 </strong>
               </article>
 
-              <article className="dashboard-card">
+              <article className="comparison-metric comparison-metric-removed">
                 <span>Puertos eliminados</span>
                 <strong>
                   -{comparacion.puertosEliminados}
                 </strong>
               </article>
 
-              <article className="dashboard-card">
+              <article className="comparison-metric comparison-metric-added">
                 <span>CPE nuevos</span>
                 <strong>
                   +{comparacion.cpesNuevos}
                 </strong>
               </article>
+
+              <article className="comparison-metric comparison-metric-removed">
+                <span>CPE eliminados</span>
+                <strong>
+                  -{comparacion.cpesEliminados}
+                </strong>
+              </article>
+            </div>
+          </div>
+
+          {/* ==================================================
+              Activos agregados / eliminados
+              ================================================== */}
+
+          <div className="comparison-group">
+            <div className="comparison-group-heading">
+              <h3>Activos</h3>
+
+              <p>
+                Hosts que aparecen o dejan de aparecer entre
+                ambas ejecuciones.
+              </p>
             </div>
 
-            <div className="comparison-hosts">
-              <article className="dashboard-card">
-                <h3>Activos nuevos</h3>
+            <div className="comparison-assets-grid">
+              <article className="dashboard-card comparison-list-card">
+                <div className="comparison-card-heading">
+                  <h4>Activos nuevos</h4>
+
+                  <span>
+                    {comparacion.activosNuevos.length}
+                  </span>
+                </div>
 
                 {comparacion.activosNuevos.length === 0 ? (
-                  <p>No se detectaron activos nuevos.</p>
+                  <p className="comparison-empty">
+                    No se detectaron activos nuevos.
+                  </p>
                 ) : (
-                  <ul>
-                    {comparacion.activosNuevos.map((host) => (
-                      <li key={host}>{host}</li>
-                    ))}
+                  <ul className="comparison-simple-list">
+                    {comparacion.activosNuevos.map(
+                      (host) => (
+                        <li key={host}>
+                          <code>{host}</code>
+                        </li>
+                      ),
+                    )}
                   </ul>
                 )}
               </article>
 
-              <article className="dashboard-card">
-                <h3>Activos eliminados</h3>
+              <article className="dashboard-card comparison-list-card">
+                <div className="comparison-card-heading">
+                  <h4>Activos eliminados</h4>
 
-                {comparacion.activosEliminados.length === 0 ? (
-                  <p>
+                  <span>
+                    {comparacion.activosEliminados.length}
+                  </span>
+                </div>
+
+                {comparacion.activosEliminados.length ===
+                0 ? (
+                  <p className="comparison-empty">
                     No se detectaron activos eliminados.
                   </p>
                 ) : (
-                  <ul>
-                    {comparacion.activosEliminados.map((host) => (
-                      <li key={host}>{host}</li>
-                    ))}
+                  <ul className="comparison-simple-list">
+                    {comparacion.activosEliminados.map(
+                      (host) => (
+                        <li key={host}>
+                          <code>{host}</code>
+                        </li>
+                      ),
+                    )}
                   </ul>
                 )}
               </article>
             </div>
+          </div>
 
-            <div className="comparison-hosts">
-              <article className="dashboard-card">
-                <h3>Cambios por host</h3>
+          {/* ==================================================
+              Cambios por host
+              ================================================== */}
 
-                {comparacion.hosts.length === 0 ? (
-                  <p>
-                    No hay activos compartidos para comparar.
-                  </p>
-                ) : (
-                  <div className="comparison-host-list">
-                    {comparacion.hosts.map((host) => (
+          <div className="comparison-group">
+            <div className="comparison-group-heading">
+              <h3>Cambios por host</h3>
+
+              <p>
+                Diferencias de puertos y CPE para los hosts
+                presentes en ambas ejecuciones.
+              </p>
+            </div>
+
+            <article className="dashboard-card comparison-host-card">
+              {comparacion.hosts.length === 0 ? (
+                <p className="comparison-empty">
+                  No hay activos compartidos para comparar.
+                </p>
+              ) : (
+                <div className="comparison-host-list">
+                  {comparacion.hosts.map((host) => {
+                    const sinCambios =
+                      host.puertosNuevos.length === 0 &&
+                      host.puertosEliminados.length === 0 &&
+                      host.cpesNuevos.length === 0 &&
+                      host.cpesEliminados.length === 0;
+
+                    return (
                       <div
                         className="comparison-host-row"
                         key={host.host}
                       >
-                        <div className="host-breakdown-main">
+                        <div className="comparison-host-identity">
                           <strong>{host.host}</strong>
 
                           <span>
@@ -452,35 +567,65 @@ export function ScanComparison({ auditoriaId, escaneos }: Props) {
                           </span>
                         </div>
 
-                        <div className="host-breakdown-metrics">
-                          <span>
-                            Puertos nuevos:{" "}
-                            {host.puertosNuevos.length}
+                        {sinCambios ? (
+                          <span className="comparison-host-unchanged">
+                            Sin cambios
                           </span>
+                        ) : (
+                          <div className="comparison-host-metrics">
+                            <span>
+                              Puertos +
+                              <strong>
+                                {
+                                  host
+                                    .puertosNuevos
+                                    .length
+                                }
+                              </strong>
+                            </span>
 
-                          <span>
-                            Puertos eliminados:{" "}
-                            {host.puertosEliminados.length}
-                          </span>
+                            <span>
+                              Puertos −
+                              <strong>
+                                {
+                                  host
+                                    .puertosEliminados
+                                    .length
+                                }
+                              </strong>
+                            </span>
 
-                          <span>
-                            CPE nuevos:{" "}
-                            {host.cpesNuevos.length}
-                          </span>
+                            <span>
+                              CPE +
+                              <strong>
+                                {
+                                  host.cpesNuevos
+                                    .length
+                                }
+                              </strong>
+                            </span>
 
-                          <span>
-                            CPE eliminados:{" "}
-                            {host.cpesEliminados.length}
-                          </span>
-                        </div>
+                            <span>
+                              CPE −
+                              <strong>
+                                {
+                                  host
+                                    .cpesEliminados
+                                    .length
+                                }
+                              </strong>
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </article>
-            </div>
-          </>
-        )}
+                    );
+                  })}
+                </div>
+              )}
+            </article>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

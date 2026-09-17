@@ -1,4 +1,4 @@
-package com.tup.reconac.config.jwt;
+package com.tup.reconac.config.security.jwt;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

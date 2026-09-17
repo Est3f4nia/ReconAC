@@ -1,5 +1,10 @@
 package com.tup.reconac.feature.escaneo.controllers;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.tup.reconac.config.ModulesConfig;
 import com.tup.reconac.feature.escaneo.services.domain.EscaneoConsultService;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +14,7 @@ import org.springframework.web.client.RestClientException;
 import java.util.List;
 import java.util.UUID;
 
+@Tag(name = "Escaneos")
 @RestController
 @RequestMapping("/api/auditorias/{auditoriaId}/escaneos")
 @RequiredArgsConstructor
@@ -17,6 +23,9 @@ public class ScanLogsController {
     private final ModulesConfig modules;
     private final RestClient.Builder clients;
 
+    @Operation(summary = "Leer salida incremental del módulo", description = "Consulta logs por ID persistido del escaneo. available=false indica que el módulo o la salida no están disponibles; sigue siendo HTTP 200. Los logs son temporales y se pierden al reiniciar Python.")
+    @ApiResponse(responseCode = "200", description = "Operación completada", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "404", ref = "#/components/responses/Error404")
     @GetMapping("/{escaneoId}/logs")
     public Logs logs(@PathVariable UUID auditoriaId, @PathVariable UUID escaneoId,
                      @RequestParam(defaultValue = "0") long after) {
@@ -37,7 +46,11 @@ public class ScanLogsController {
         }
     }
     public record Line(long seq, String timestamp, String text) {}
-    public record Logs(boolean available, List<Line> lines, long nextCursor, boolean truncated) {
+    public record Logs(
+            @Schema(description = "false si la salida expiró, el módulo reinició o no pudo consultarse") boolean available,
+            List<Line> lines,
+            @Schema(description = "Cursor que se debe enviar como after en la próxima consulta") long nextCursor,
+            @Schema(description = "Se descartaron líneas anteriores al cursor por el límite del buffer") boolean truncated) {
         static Logs unavailable(long after) { return new Logs(false, List.of(), Math.max(0, after), false); }
     }
 }

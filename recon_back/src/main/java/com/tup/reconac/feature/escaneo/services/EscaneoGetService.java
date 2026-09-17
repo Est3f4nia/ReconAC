@@ -151,14 +151,11 @@ public class EscaneoGetService implements IEscaneoGetService {
         );
     }
 
-    private PuertoResultadoResponse toPuertoResultado(
-            Puerto puerto
-    ) {
-        List<PuertoCpe> relaciones =
-                puertoCpeRepo.findByPuertoId(puerto.getId());
+    private PuertoResultadoResponse toPuertoResultado(Puerto puerto) {
 
         List<String> cpes =
-                relaciones.stream()
+                puertoCpeRepo.findByPuertoId(puerto.getId())
+                        .stream()
                         .map(PuertoCpe::getCpeId)
                         .map(cpeRepo::findById)
                         .flatMap(Optional::stream)
@@ -170,10 +167,9 @@ public class EscaneoGetService implements IEscaneoGetService {
                 puerto.getProtocolo(),
                 puerto.getEstado(),
                 puerto.getServicioFallback(),
-                // ver esto para linkear cpes a puerto
-                null,
-                null,
-                null,
+                puerto.getProducto(),
+                puerto.getVersion(),
+                puerto.getExtrainfo(),
                 cpes
         );
     }

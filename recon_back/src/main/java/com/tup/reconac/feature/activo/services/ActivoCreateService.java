@@ -10,6 +10,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
+// el módulo consulta este endpoint?
 @Service
 @AllArgsConstructor
 public class ActivoCreateService implements IActivoCreateService {

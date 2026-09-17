@@ -93,23 +93,34 @@ export default function EscaneosListadoPage() {
     }
   };
 
-  const handleEliminar = async (escaneo: EscaneoListado) => {
-    const confirmar = window.confirm(
-      `¿Eliminar el escaneo de la auditoría "${escaneo.auditoriaNombre}"?`
-    );
-    if (!confirmar) return;
-
+  const handleEliminar = async (
+    escaneo: EscaneoListado,
+  ) => {
     try {
-      await deleteEscaneo(escaneo.auditoriaId, escaneo.escaneoId);
-      setEscaneos((actuales) =>
-        actuales.filter((item) => item.escaneoId !== escaneo.escaneoId)
+      await deleteEscaneo(
+        escaneo.auditoriaId,
+        escaneo.escaneoId,
       );
-      setTotalElements((prev) => Math.max(0, prev - 1));
+
+      setEscaneos((actuales) =>
+        actuales.filter(
+          (item) =>
+            item.escaneoId !==
+            escaneo.escaneoId,
+        ),
+      );
+
+      setTotalElements((prev) =>
+        Math.max(
+          0,
+          prev - 1,
+        ),
+      );
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "No se pudo eliminar el escaneo."
+          : "No se pudo eliminar el escaneo.",
       );
     }
   };
@@ -161,15 +172,17 @@ export default function EscaneosListadoPage() {
 
   if (loading) {
     return (
-      <section className="listado-page">
-        <div className="listado-header">
-          <div>
-            <h1>Escaneos</h1>
-            <p>Cargando escaneos...</p>
+      <div className="dashboard-page">
+        <section className="listado-page">
+          <div className="listado-header">
+            <div>
+              <h1>Escaneos</h1>
+              <p>Cargando escaneos...</p>
+            </div>
           </div>
-        </div>
-        <div className="listado-loading">Cargando...</div>
-      </section>
+          <div className="listado-loading">Cargando...</div>
+        </section>
+      </div>
     );
   }
 

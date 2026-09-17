@@ -22,7 +22,7 @@ export function ScanOutput({ auditoriaId, scans, preferredId }: {
   useEffect(() => { if (preferredId) setSelection(preferredId); }, [preferredId]);
   useEffect(() => {
     setLines([]);
-    setNotice(selected ? "Conectando con la salida del módulo…" : "Iniciá un escaneo para ver la salida de Python.");
+    setNotice(selected ? "Conectando con la salida del módulo…" : "Iniciá un escaneo para ver la salida del módulo de reconocimiento.");
     follow.current = true;
     if (!selected) return;
     const abort = new AbortController();
@@ -67,7 +67,7 @@ export function ScanOutput({ auditoriaId, scans, preferredId }: {
   }, [lines]);
 
   return <div className="scan-terminal-preview">
-    <label className="scan-output-label" htmlFor="scan-output-selection">Salida del módulo Python</label>
+    <label className="scan-output-label" htmlFor="scan-output-selection">Salida del módulo</label>
     {scans.length > 0 && <select id="scan-output-selection" value={selected}
       onChange={event => setSelection(event.target.value)}>
       {scans.map(scan => <option key={scan.scanId} value={scan.scanId ?? ""}>

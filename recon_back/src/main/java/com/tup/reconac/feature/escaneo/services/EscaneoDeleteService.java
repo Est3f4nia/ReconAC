@@ -3,6 +3,7 @@ package com.tup.reconac.feature.escaneo.services;
 import com.tup.reconac.exceptions.escaneo.EscaneoNotFoundException;
 import com.tup.reconac.feature.activo.models.Activo;
 import com.tup.reconac.feature.activo.repositories.ActivoRepository;
+import com.tup.reconac.feature.auditoria.services.domain.AuditoriaConsultService;
 import com.tup.reconac.feature.escaneo.models.Escaneo;
 import com.tup.reconac.feature.escaneo.repositories.EscaneoRepository;
 import com.tup.reconac.feature.escaneo.services.domain.EscaneoConsultService;
@@ -25,18 +26,32 @@ public class EscaneoDeleteService {
     private final ActivoRepository activoRepository;
     private final PuertoRepository puertoRepository;
     private final PuertoCpeRepository puertoCpeRepository;
+    private final AuditoriaConsultService auditoriaConsultService;
 
     @Transactional
     public void eliminar(UUID escaneoId) {
 
-        // meter validaciones de ownership a la auditoria y al usuario
-
         Escaneo escaneo = escaneoRepository.findById(escaneoId)
                 .orElseThrow(() ->
                         new EscaneoNotFoundException(
-                                "Escaneo no encontrado (deleteservice)"
+                                "Escaneo no encontrado: " + escaneoId
                         )
                 );
+
+        /*
+         * Verifica indirectamente que el escaneo
+         * pertenezca a una auditoría del usuario autenticado.
+         */
+        auditoriaConsultService.verifyAuditoriaOwnership(
+                escaneo.getAuditoriaId()
+        );
+
+        /*
+         * escaneo
+         *   └─ activo
+         *       └─ puerto
+         *           └─ puerto_cpe
+         */
 
         List<Activo> activos =
                 activoRepository.findByEscaneoId(escaneoId);
@@ -56,18 +71,38 @@ public class EscaneoDeleteService {
                         .map(Puerto::getId)
                         .toList();
 
-                // puerto_cpe depende de puerto
-                puertoCpeRepository.deleteByPuertoIdIn(puertoIds);
+                /*
+                 * 1. puerto_cpe depende de puerto
+                 */
+                puertoCpeRepository.deleteByPuertoIdIn(
+                        puertoIds
+                );
 
-                // puerto depende de activo
-                puertoRepository.deleteAllByIdInBatch(puertoIds);
+                /*
+                 * Fuerza la eliminación antes del DELETE
+                 * batch sobre puerto.
+                 */
+                puertoCpeRepository.flush();
+
+                /*
+                 * 2. puerto depende de activo
+                 */
+                puertoRepository.deleteAllByIdInBatch(
+                        puertoIds
+                );
             }
 
-            // activo depende de escaneo
-            activoRepository.deleteAllByIdInBatch(activoIds);
+            /*
+             * 3. activo depende de escaneo
+             */
+            activoRepository.deleteAllByIdInBatch(
+                    activoIds
+            );
         }
 
-        // Finalmente se puede eliminar el escaneo
+        /*
+         * 4. finalmente, escaneo
+         */
         escaneoRepository.delete(escaneo);
     }
 }

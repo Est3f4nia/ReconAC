@@ -1,7 +1,7 @@
 package com.tup.reconac.feature.usuario.services;
 
-import com.tup.reconac.config.jwt.JwtProperties;
-import com.tup.reconac.config.jwt.JwtService;
+import com.tup.reconac.config.security.jwt.JwtProperties;
+import com.tup.reconac.config.security.jwt.JwtService;
 import com.tup.reconac.exceptions.jwt.InvalidCredentialsException;
 import com.tup.reconac.exceptions.usuario.UserAlreadyExistsException;
 import com.tup.reconac.feature.usuario.dtos.request.*;

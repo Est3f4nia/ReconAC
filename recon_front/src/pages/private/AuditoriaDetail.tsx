@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { fetchAuditoria, fetchEscaneoStatus, startEscaneo } from "@/data/escaneos";
 import { fetchDashboardAuditoria } from "@/data/auditorias";
 import { AuditoriaHeader } from "@/components/metricas/AuditoriaHeader";
@@ -6,8 +7,7 @@ import { ScanForm } from "@/components/metricas/ScanForm";
 import { DashboardKpiGrid } from "@/components/metricas/DashboardKpiGrid";
 import { ScanHistory } from "@/components/metricas/ScanHistory";
 import { RiskTimeline } from "@/components/metricas/RiskTimeline";
-import { CveBreakdown } from "@/components/metricas/CveBreakdown";
-import { HostBreakdown } from "@/components/metricas/HostBreakdown";
+import { SecurityBreakdown } from "@/components/metricas/SecurityBreakdown";
 import { ScanComparison } from "@/components/metricas/ScanComparison";
 import { ReportGenerator } from "@/components/metricas/ReportGenerator";
 import type { AuditoriaResponse, DashboardAuditoria, ScanStartRequest, ScanStatusResponse } from "@/data/types";
@@ -16,6 +16,8 @@ import "@/pages/private/styles/AuditoriaDetail.css";
 const esEscaneoActivo = (scan: ScanStatusResponse) => ["PENDIENTE", "EN_PROCESO"].includes(scan.status);
 
 export default function AuditoriaDetail({ id }: { id: string }) {
+  const navigate = useNavigate();
+  
   const [auditoria, setAuditoria] = useState<AuditoriaResponse | null>(null);
   const [dashboard, setDashboard] = useState<DashboardAuditoria | null>(null);
   const [estadosEscaneos, setEstadosEscaneos] = useState<Record<string, ScanStatusResponse>>({});
@@ -131,6 +133,11 @@ export default function AuditoriaDetail({ id }: { id: string }) {
 
       <AuditoriaHeader
         auditoria={auditoria}
+        onDeleted={() => {
+          navigate("/dashboard", {
+            replace: true,
+          });
+        }}
       />
 
       {error && (
@@ -264,7 +271,7 @@ export default function AuditoriaDetail({ id }: { id: string }) {
           />
         </section>
       )}
-
+      
       {/* =====================================================
           6. TIMELINE DE RIESGO
           ===================================================== */}
@@ -285,21 +292,13 @@ export default function AuditoriaDetail({ id }: { id: string }) {
 
       {dashboard && (
         <section className="auditoria-section breakdown-row">
-          <div className="breakdown-col">
-            <HostBreakdown
-              data={dashboard.hosts}
-              pageSize={5}
-            />
-          </div>
-
-          <div className="breakdown-col">
-            <CveBreakdown
-              data={
-                dashboard.vulnerabilidades
-              }
-              pageSize={5}
-            />
-          </div>
+          <SecurityBreakdown
+            auditoriaId={id}
+            escaneos={escaneos}
+            cves={dashboard.vulnerabilidades}
+            hosts={dashboard.hosts}
+            pageSize={5}
+          />
         </section>
       )}
 

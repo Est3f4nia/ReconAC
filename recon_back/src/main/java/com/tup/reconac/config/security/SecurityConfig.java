@@ -1,6 +1,8 @@
-package com.tup.reconac.config;
+package com.tup.reconac.config.security;
 
-import com.tup.reconac.config.jwt.JwtAuthFilter;
+import com.tup.reconac.config.server.rateLimit.RateLimitFilter;
+import com.tup.reconac.config.server.rateLimit.RateLimitProperties;
+import com.tup.reconac.config.security.jwt.JwtAuthFilter;
 import com.tup.reconac.exceptions.jwt.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -44,16 +46,19 @@ public class SecurityConfig {
                         .contentTypeOptions(Customizer.withDefaults())
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                         .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
-                        .contentSecurityPolicy(csp ->
-                                csp.policyDirectives("default-src 'none'; frame-ancestors 'none'; base-uri 'none'"))
+                        .addHeaderWriter((request, response) -> {
+                            boolean swagger = request.getServletPath().startsWith("/swagger-ui");
+                            response.setHeader("Content-Security-Policy", swagger
+                                    ? "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'"
+                                    : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+                        })
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
                         .requestMatchers("/api/internal/**").permitAll()  // esto aplica?
                         .requestMatchers("/actuator/health").permitAll() // sacar en prod
                         .anyRequest().authenticated()

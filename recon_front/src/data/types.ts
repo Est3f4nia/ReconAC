@@ -105,7 +105,6 @@ export interface ScanStartRequest {
   objetivos: string[];
   nvdApiKey?: string;
 
-  // Nota: el back usa (y procesa?) esto
   timeout?: number;
   icmpTimeout?: number;
 
@@ -211,6 +210,8 @@ export interface PuertoResultadoResponse {
 
 /* ---------- Métricas ---------- */
 
+/* ---------- Métricas ---------- */
+
 export interface DashboardKpis {
   escaneos: number;
   activos: number;
@@ -232,7 +233,13 @@ export interface RiesgoTemporal {
   escaneoId: string;
   fecha: string;
 
-  nivel: "BAJO" | "MEDIO" | "ALTO" | "CRITICO" | "DESCONOCIDO";
+  nivel:
+    | "BAJO"
+    | "MEDIO"
+    | "ALTO"
+    | "CRITICO"
+    | "DESCONOCIDO";
+
   cvssPromedio: number | null;
 
   cves: number;
@@ -253,11 +260,47 @@ export interface CveResumen {
   cwes: string[];
 }
 
+export interface CveDetalle {
+  cveId: string;
+
+  descripcion: string | null;
+  severidad: string | null;
+
+  cvssScore: number | null;
+  cvssVector: string | null;
+
+  epssScore: number | null;
+  explotacionActiva: boolean;
+
+  versionesVulnerables: string | null;
+  mitigacion: string | null;
+
+  versionParche: string | null;
+  tipoParche: string | null;
+
+  exploitRefs: string[];
+  nistUrl: string | null;
+
+  fechaPublicacion: string | null;
+  ultimaModificacion: string | null;
+}
+
 export interface CveDesglose {
   masComunes: CveResumen[];
   explotacionActiva: CveResumen[];
   mayorCriticidad: CveResumen[];
   mayorProbabilidadExplotacion: CveResumen[];
+}
+
+export interface HostCve {
+  cveId: string;
+
+  cvssScore: number | null;
+  epssScore: number | null;
+
+  kev: boolean;
+
+  cpes: string[];
 }
 
 export interface HostVulnerabilidad {
@@ -269,15 +312,24 @@ export interface HostVulnerabilidad {
 
   cvssMaximo: number | null;
   epssMaximo: number | null;
+
+  kev: boolean;
+
+  cvesCriticas: HostCve[];
+  cvesPrioritarias: HostCve[];
 }
 
 export interface HostDesglose {
-  masVulnerabilidadesCriticas: HostVulnerabilidad[];
-  mayorProbabilidadExplotacion: HostVulnerabilidad[];
+  masVulnerabilidadesCriticas:
+    HostVulnerabilidad[];
+
+  mayorRiesgoExplotacion:
+    HostVulnerabilidad[];
 }
 
 export interface EjecucionHistorial {
   mensajeError?: string | null;
+
   escaneoId: string;
   fecha: string;
 
@@ -329,11 +381,15 @@ export interface ComparacionResultado {
 export interface DashboardAuditoria {
   kpis: DashboardKpis;
 
-  historial: EjecucionHistorial[];
+  historial:
+    EjecucionHistorial[];
 
-  riesgoTemporal: RiesgoTemporal[];
+  riesgoTemporal:
+    RiesgoTemporal[];
 
-  vulnerabilidades: CveDesglose;
+  vulnerabilidades:
+    CveDesglose;
 
-  hosts: HostDesglose;
+  hosts:
+    HostDesglose;
 }

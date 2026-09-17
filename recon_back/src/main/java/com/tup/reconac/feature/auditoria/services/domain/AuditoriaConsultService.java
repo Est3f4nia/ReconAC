@@ -31,6 +31,20 @@ public class AuditoriaConsultService {
         return repo.findByUsuarioIdOrderByFechaGeneracionDesc(usuarioId);
     }
 
+    public Auditoria findOwnedAuditoria(
+            UUID auditoriaId,
+            UUID usuarioId
+    ) {
+        return repo.findByIdAndUsuarioId(
+                auditoriaId,
+                usuarioId
+        ).orElseThrow(() ->
+                new AuditoriaNotFoundException(
+                        "Auditoría no encontrada"
+                )
+        );
+    }
+
     // Verifiers ---
 
     public void verifyAuditoriaOwnership(UUID auditoriaId) {

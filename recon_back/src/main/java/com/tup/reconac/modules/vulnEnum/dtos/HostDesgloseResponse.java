@@ -4,5 +4,6 @@ import java.util.List;
 
 public record HostDesgloseResponse(
         List<HostVulnerabilidadResponse> masVulnerabilidadesCriticas,
-        List<HostVulnerabilidadResponse> mayorProbabilidadExplotacion
-) {}
+        List<HostVulnerabilidadResponse> mayorRiesgoExplotacion
+) {
+}

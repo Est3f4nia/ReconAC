@@ -1,9 +1,8 @@
-import type {
-  EscaneoListado as EscaneoListadoType,
-  EscaneoResultResponse,
-  AuditoriaResponse,
-} from "@/data/types";
+import type { EscaneoListado as EscaneoListadoType, EscaneoResultResponse, AuditoriaResponse } from "@/data/types";
+import { useState } from "react";
+import { X } from "lucide-react";
 import "@/pages/private/styles/EscaneosListado.css";
+
 
 interface Props {
   escaneos: EscaneoListadoType[];
@@ -51,8 +50,16 @@ export default function EscaneosListado({
   onCancelarMover,
   moving,
 }: Props) {
+  
+  const [ escaneoEliminar, setEscaneoEliminar ] = useState<EscaneoListadoType | null>(null);
+  const [error] = useState("");
+
   if (escaneos.length === 0) {
-    return <div className="empty-state">No hay escaneos registrados.</div>;
+    return (
+      <div className="empty-state">
+        No hay escaneos registrados.
+      </div>
+    );
   }
 
   return (
@@ -110,8 +117,10 @@ export default function EscaneosListado({
                     </button>
                     <button
                       type="button"
-                      className="button"
-                      onClick={() => onEliminar(escaneo)}
+                      className="button button-danger"
+                      onClick={() =>
+                        setEscaneoEliminar(escaneo)
+                      }
                     >
                       Eliminar
                     </button>
@@ -146,36 +155,75 @@ export default function EscaneosListado({
       </div>
 
       {/* Modal detalle */}
-      {/* {escaneoDetalle && (
-        <div className="escaneo-modal-overlay" onClick={onCerrarDetalle}>
+
+      {escaneoDetalle && (
+        <div
+          className="escaneo-modal-overlay"
+          onClick={onCerrarDetalle}
+        >
           <div
             className="escaneo-modal"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="escaneo-modal-header">
               <h2>Detalles del escaneo</h2>
+
               <button
                 type="button"
-                className="escaneo-modal-close"
+                className="modal-close"
                 onClick={onCerrarDetalle}
                 aria-label="Cerrar"
               >
-                ×
+                <X size={18} />
               </button>
             </div>
+
             <div className="escaneo-modal-body">
               {loadingDetalle ? (
                 <p>Cargando...</p>
               ) : (
-                <pre className="console">
-                  {JSON.stringify(escaneoDetalle.resultado, null, 2)}
-                </pre>
+                <>
+                  <div className="scan-delete-summary">
+                    <span>
+                      Estado: <strong>{escaneoDetalle.estado}</strong>
+                    </span>
+
+                    <span>
+                      Progreso: <strong>{escaneoDetalle.progreso}%</strong>
+                    </span>
+
+                    <span>
+                      Nmap:{" "}
+                      <strong>{escaneoDetalle.nmapVersion ?? "—"}</strong>
+                    </span>
+
+                    <span>
+                      Iniciado:{" "}
+                      <strong>{formatDate(escaneoDetalle.iniciadoA)}</strong>
+                    </span>
+
+                    <span>
+                      Completado:{" "}
+                      <strong>{formatDate(escaneoDetalle.completadoA)}</strong>
+                    </span>
+
+                    <span>
+                      Activos:{" "}
+                      <strong>{escaneoDetalle.activos.length}</strong>
+                    </span>
+                  </div>
+
+                  <pre className="console">
+                    {JSON.stringify(escaneoDetalle.activos, null, 2)}
+                  </pre>
+                </>
               )}
             </div>
+
             <div className="escaneo-modal-footer">
               <button
                 type="button"
-                className="button"
+                className="button button-modal-cerrar"
                 onClick={onCerrarDetalle}
               >
                 Cerrar
@@ -183,7 +231,7 @@ export default function EscaneosListado({
             </div>
           </div>
         </div>
-      )} */}
+      )}
 
       {/* Modal mover */}
       {escaneoMover && (
@@ -196,7 +244,7 @@ export default function EscaneosListado({
               <h2>Mover escaneo</h2>
               <button
                 type="button"
-                className="escaneo-modal-close"
+                className="modal-close"
                 onClick={onCancelarMover}
                 aria-label="Cerrar"
               >
@@ -243,6 +291,146 @@ export default function EscaneosListado({
                 }
               >
                 {moving ? "Moviendo..." : "Mover"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {escaneoEliminar && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={() =>
+            setEscaneoEliminar(null)
+          }
+        >
+          <div
+            className="auditoria-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-scan-title"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="modal-header">
+              <div>
+                <p className="modal-section-eyebrow">
+                  Confirmación
+                </p>
+
+                <h2 id="delete-scan-title">
+                  Eliminar escaneo
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className="button"
+                aria-label="Cerrar"
+                onClick={() =>
+                  setEscaneoEliminar(null)
+                }
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <p>
+                Vas a eliminar: escaneo{" "}
+                <strong>
+                  {escaneoEliminar.escaneoId.slice(
+                    0,
+                    8,
+                  )}
+                </strong>
+                .
+              </p>
+
+              <p>
+                Se eliminarán también los
+                activos, puertos y asociaciones
+                dependientes de esta ejecución.
+              </p>
+
+              <div className="modal-delete-warning">
+                <p>
+                Esta acción es irreversible.
+                </p>
+              </div>
+
+              <div className="scan-delete-summary">
+                <span>
+                  Auditoría:{" "}
+                  <strong>
+                    {
+                      escaneoEliminar.auditoriaNombre
+                    }
+                  </strong>
+                </span>
+
+                <span>
+                  Fecha:{" "}
+                  <strong>
+                    {formatDate(
+                      escaneoEliminar.iniciadoA,
+                    )}
+                  </strong>
+                </span>
+
+                <span>
+                  Estado:{" "}
+                  <strong>
+                    {escaneoEliminar.estado}
+                  </strong>
+                </span>
+
+                <span>
+                  Objetivos:{" "}
+                  <strong>
+                    {escaneoEliminar.objetivos.join(
+                      ", ",
+                    )}
+                  </strong>
+                </span>
+              </div>
+              
+              {error && (
+                <div
+                  className="dashboard-error"
+                  role="alert"
+                >
+                  {error}
+                </div>
+              )}
+
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="button button-audit-header"
+                onClick={() =>
+                  setEscaneoEliminar(null)
+                }
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                className="button button-danger"
+                onClick={() => {
+                  onEliminar(
+                    escaneoEliminar,
+                  );
+
+                  setEscaneoEliminar(null);
+                }}
+              >
+                Eliminar escaneo
               </button>
             </div>
           </div>

@@ -27,6 +27,15 @@ public class UsuarioKeyService {
         return encryptionService.decrypt(encryptedKey);
     }
 
+    public void updateKey(
+            Usuario usuario,
+            String apiKey
+    ) {
+        usuario.setNvdApiKey(
+                encryptionService.encrypt(apiKey)
+        );
+    }
+
     @Transactional
     public void updateNvdApiKey(String nvdApiKey) {
         Usuario usuario = userService.getAuthenticatedUser();

@@ -30,15 +30,14 @@ public class ActivoDeleteService implements IActivoDeleteService {
 
         Usuario usuario = userService.getAuthenticatedUser();
 
-        // hay otra forma de hacer esto?
         Activo activo = repo.findById(activoId)
                 .orElseThrow(() ->
                         new ActivoNotFoundException("El activo no existe")
                 );
 
         Escaneo escaneo = escaneoConsult.findById(activo.getEscaneoId());
-
         auditoriaConsult.verifyEscaneoOwnership(escaneo, usuario.getId());
+
         repo.delete(activo);
     }
 }

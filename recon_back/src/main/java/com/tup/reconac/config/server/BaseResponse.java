@@ -1,4 +1,4 @@
-package com.tup.reconac.config;
+package com.tup.reconac.config.server;
 
 import lombok.Builder;
 import lombok.Getter;

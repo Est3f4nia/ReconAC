@@ -1,4 +1,4 @@
-package com.tup.reconac.config;
+package com.tup.reconac.config.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

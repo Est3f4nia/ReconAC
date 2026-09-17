@@ -1,6 +1,10 @@
 package com.tup.reconac.feature.usuario.controllers;
 
-import com.tup.reconac.config.BaseResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+import com.tup.reconac.config.server.BaseResponse;
 import com.tup.reconac.feature.usuario.dtos.request.LoginRequestDto;
 import com.tup.reconac.feature.usuario.dtos.request.RefreshRequestDto;
 import com.tup.reconac.feature.usuario.dtos.request.RegisterRequestDto;
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Auth / Usuario")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -29,6 +34,10 @@ public class AuthController {
     @Value("${app.cookies.secure:true}")
     private boolean cookieSecure;
 
+    @Operation(summary = "Registrar un usuario", description = "Público. Requiere email, contrasenia y apiKey NVD según las validaciones actuales. La clave se almacena cifrada.")
+    @ApiResponse(responseCode = "201", description = "Creado", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "409", ref = "#/components/responses/Error409")
+    @ApiResponse(responseCode = "429", ref = "#/components/responses/Error429")
     @PostMapping("/register")
     public ResponseEntity<BaseResponse<Void>> register(@Valid @RequestBody RegisterRequestDto request) {
         authService.register(request);
@@ -36,6 +45,10 @@ public class AuthController {
                 .body(BaseResponse.ok(null, "Usuario registrado correctamente"));
     }
 
+    @Operation(summary = "Iniciar sesión", description = "Público. Devuelve tokens y establece cookies access_token, refresh_token y XSRF-TOKEN. Para escrituras con cookie access_token, enviar X-XSRF-TOKEN con el valor de XSRF-TOKEN.")
+    @ApiResponse(responseCode = "200", description = "Operación completada", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "401", ref = "#/components/responses/Error401")
+    @ApiResponse(responseCode = "429", ref = "#/components/responses/Error429")
     @PostMapping("/login")
     public ResponseEntity<BaseResponse<AuthResponseDto>> login(
             @Valid @RequestBody LoginRequestDto request,
@@ -47,6 +60,10 @@ public class AuthController {
         return ResponseEntity.ok(BaseResponse.ok(body, "Autenticación correcta"));
     }
 
+    @Operation(summary = "Renovar el access token", description = "Público. Requiere refreshToken en el cuerpo, incluso si existe una cookie refresh_token. Renueva access_token y XSRF-TOKEN.")
+    @ApiResponse(responseCode = "200", description = "Operación completada", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "401", ref = "#/components/responses/Error401")
+    @ApiResponse(responseCode = "429", ref = "#/components/responses/Error429")
     @PostMapping("/refresh")
     public ResponseEntity<BaseResponse<RefreshResponseDto>> refresh(
             @Valid @RequestBody RefreshRequestDto request,
@@ -70,7 +87,7 @@ public class AuthController {
     private void addCsrfCookie(HttpServletResponse response, String value) {
         Cookie cookie = new Cookie("XSRF-TOKEN", value);
         cookie.setHttpOnly(false);
-        cookie.setSecure(true);
+        cookie.setSecure(cookieSecure);
         cookie.setPath("/");
         cookie.setMaxAge(86400);
         cookie.setAttribute("SameSite", "Strict");

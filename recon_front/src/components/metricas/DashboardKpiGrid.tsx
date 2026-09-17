@@ -1,4 +1,5 @@
 import type { DashboardKpis } from "@/data/types";
+import "./styles/KpiGrid.css"
 
 interface Props {
   data: DashboardKpis | null;
@@ -19,11 +20,11 @@ export function DashboardKpiGrid({ data }: Props) {
       value: data?.puertos ?? "—",
     },
     {
-      label: "CVEs",
+      label: "CVE",
       value: data?.cves ?? "—",
     },
     {
-      label: "CVEs críticos",
+      label: "CVE críticas",
       value: data?.cvesCriticos ?? "—",
     },
     {
@@ -31,7 +32,7 @@ export function DashboardKpiGrid({ data }: Props) {
       value: data?.cvssPromedio != null ? data.cvssPromedio.toFixed(2) : "—",
     },
     {
-      label: "Explotación activa",
+      label: "En CISA KEV",
       value: data?.cvesExplotados ?? "—",
     },
     {
@@ -51,7 +52,7 @@ export function DashboardKpiGrid({ data }: Props) {
       <div className="dashboard-section-heading">
         <p className="dashboard-section-eyebrow">Métricas</p>
         <h2 id="dashboard-kpis-title">Resumen</h2>
-        <p>CVE únicas entre los escaneos. EPSS y KEV según los últimos datos persistidos; “—” indica un dato no disponible.</p>
+        <p>“—” indica un dato no disponible.</p>
       </div>
       <div className="dashboard-kpi-grid">
         {kpis.map((kpi) => (

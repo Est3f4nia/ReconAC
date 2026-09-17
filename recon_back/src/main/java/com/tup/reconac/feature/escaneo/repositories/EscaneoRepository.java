@@ -18,6 +18,7 @@ public interface EscaneoRepository extends JpaRepository<Escaneo, UUID> {
 
     Page<Escaneo> findByAuditoriaIdIn(List<UUID> auditoriaIds, Pageable pageable);
 
+    List<Escaneo> findAllByAuditoriaId(UUID auditoriaId);
     // Estadísticas
     List<Escaneo> findByAuditoriaIdOrderByCreadoADesc(UUID auditoriaId);
 }

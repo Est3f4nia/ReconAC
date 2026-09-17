@@ -17,6 +17,7 @@ export async function fetchResumen(): Promise<EscaneoResumen[]> {
   return parseResponse<EscaneoResumen[]>(res);
 }
 
+// ??????????????????????????????????????????
 export async function createAuditoria(
   nombre: string,
   objetivo: string,
@@ -112,7 +113,16 @@ export async function deleteEscaneo(
     },
   );
 
-  await parseResponse<void>(res);
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+
+    const detail =
+      body?.detail ??
+      body?.message ??
+      "No se pudo eliminar el escaneo.";
+
+    throw new Error(detail);
+  }
 }
 
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { descargarReporte } from "@/data/escaneos";
 import type { EjecucionHistorial } from "@/data/types";
+import "./styles/ReportGenerator.css"
 
 interface Props {
   auditoriaId: string;
@@ -57,7 +58,7 @@ export function ReportGenerator({ auditoriaId, escaneos }: Props) {
 
   return (
     <section
-      className="dashboard-section"
+      className="dashboard-section report-generator-section"
       aria-labelledby="report-generator-title"
     >
       <div className="dashboard-section-heading">
@@ -77,60 +78,68 @@ export function ReportGenerator({ auditoriaId, escaneos }: Props) {
         </div>
       ) : (
         <>
-          <div className="report-form">
-            <label htmlFor="report-scan">Ejecución</label>
+          <div className="report-generator-controls">
+            <div className="report-form">
+              <label htmlFor="report-scan">
+                Ejecución
+              </label>
 
-            <select
-              id="report-scan"
-              value={escaneoId}
-              onChange={(event) => {
-                setEscaneoId(event.target.value);
-                setError("");
-              }}
-              disabled={generando !== null}
-            >
-              <option value="">Seleccioná una ejecución</option>
-
-              {escaneosCompletados.map((escaneo) => (
-                <option
-                  key={escaneo.escaneoId}
-                  value={escaneo.escaneoId}
-                >
-                  {new Date(escaneo.fecha).toLocaleString()}{" "}
-                  — {escaneo.escaneoId.slice(0, 8)}
+              <select
+                id="report-scan"
+                value={escaneoId}
+                onChange={(event) => {
+                  setEscaneoId(event.target.value);
+                  setError("");
+                }}
+                disabled={generando !== null}
+              >
+                <option value="">
+                  Seleccioná una ejecución
                 </option>
-              ))}
-            </select>
-          </div>
 
-          {error && (
-            <div className="dashboard-error" role="alert">
-              {error}
+                {escaneosCompletados.map((escaneo) => (
+                  <option
+                    key={escaneo.escaneoId}
+                    value={escaneo.escaneoId}
+                  >
+                    {new Date(
+                      escaneo.fecha,
+                    ).toLocaleString()}{" "}
+                    — {escaneo.escaneoId.slice(0, 8)}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
 
-          <div className="report-actions">
-            <button
-              className="button"
-              type="button"
-              onClick={() => generarReporte("MD")}
-              disabled={!escaneoId || generando !== null}
-            >
-              {generando === "MD"
-                ? "Generando..."
-                : "Exportar Markdown"}
-            </button>
+            <div className="report-actions">
+              <button
+                className="button"
+                type="button"
+                onClick={() => generarReporte("MD")}
+                disabled={
+                  !escaneoId ||
+                  generando !== null
+                }
+              >
+                {generando === "MD"
+                  ? "Generando..."
+                  : "Exportar Markdown"}
+              </button>
 
-            <button
-              className="button"
-              type="button"
-              onClick={() => generarReporte("CSV")}
-              disabled={!escaneoId || generando !== null}
-            >
-              {generando === "CSV"
-                ? "Generando..."
-                : "Exportar CSV"}
-            </button>
+              <button
+                className="button"
+                type="button"
+                onClick={() => generarReporte("CSV")}
+                disabled={
+                  !escaneoId ||
+                  generando !== null
+                }
+              >
+                {generando === "CSV"
+                  ? "Generando..."
+                  : "Exportar CSV"}
+              </button>
+            </div>
           </div>
         </>
       )}

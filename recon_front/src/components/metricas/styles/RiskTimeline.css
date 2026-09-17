@@ -1,100 +1,517 @@
 /* =========================================================
-   Gráfico de riesgo
+   Risk timeline
    ========================================================= */
+
+.risk-timeline-section {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  grid-column: 1 / -1;
+}
 
 .risk-chart {
   display: flex;
   flex-direction: column;
+
   gap: 18px;
+
+  width: 100%;
+  min-width: 0;
 }
 
-.risk-chart-plot {
+/* =========================================================
+   Chart
+   ========================================================= */
+
+.risk-chart-container {
   width: 100%;
-  overflow: hidden;
-  border: 1px solid var(--border-big);
-  border-radius: var(--br-radius);
+  height: 430px;
+  min-width: 0;
+
+  padding:
+    12px 10px
+    2px;
+
+  border:
+    1px solid
+    var(--border-big);
+
+  border-radius:
+    var(--br-radius);
+
+  box-sizing: border-box;
+
   background: var(--bg);
 }
 
-.risk-chart-plot svg {
-  display: block;
-  width: 100%;
-  height: 260px;
+/*
+ * Texto de los ejes generado
+ * internamente por Recharts.
+ */
+.risk-chart-axis {
+  font-family:
+    var(--font-console);
+
+  font-size: 0.85rem;
+
+  opacity: 0.7;
 }
 
-.risk-chart-grid {
-  stroke: var(--border-big);
-  stroke-width: 1;
-}
-
-.risk-chart-label {
+/*
+ * Recharts genera <text>.
+ */
+.risk-chart-container
+  .recharts-cartesian-axis-tick-value {
   fill: var(--font);
-  font-family: var(--font-console);
-  font-size: 12px;
-  opacity: 0.45;
+
+  font-family:
+    var(--font-console);
+
+  font-size: 0.82rem;
+
+  opacity: 0.65;
 }
 
-.risk-chart-line {
-  stroke: var(--border-acc);
-  stroke-width: 2.5;
-  vector-effect: non-scaling-stroke;
+/* =========================================================
+   Points
+   ========================================================= */
+
+.risk-chart-dot {
+  stroke: var(--bg);
+  stroke-width: 2px;
+
+  cursor: pointer;
+
+  transition:
+    r 0.15s ease;
 }
 
-.risk-chart-point {
-  fill: var(--bg);
-  stroke: var(--border-acc);
-  stroke-width: 2;
-  vector-effect: non-scaling-stroke;
+.risk-chart-dot-halo {
+  fill: transparent;
+
+  stroke:
+    var(--border-acc);
+
+  stroke-width: 1.5px;
+
+  opacity: 0.65;
 }
 
-.risk-chart-value {
+.risk-bajo {
+  fill: var(--low);
+}
+
+.risk-medio {
+  fill: var(--medium);
+}
+
+.risk-alto {
+  fill: var(--high);
+}
+
+.risk-critico {
+  fill: var(--critical);
+}
+
+.risk-desconocido {
   fill: var(--font);
-  font-family: var(--font-title);
-  font-size: 12px;
+
+  opacity: 0.5;
+}
+
+/* =========================================================
+   Tooltip
+   ========================================================= */
+
+.risk-chart-tooltip {
+  width: 300px;
+  max-width:
+    calc(100vw - 30px);
+
+  padding: 13px 14px;
+
+  border:
+    1px solid
+    var(--border-acc);
+
+  border-radius:
+    var(--br-radius);
+
+  background: var(--bg);
+  color: var(--font);
+
+  box-shadow:
+    0 8px 28px
+    rgb(0 0 0 / 30%);
+
+  font-size: 0.9rem;
+}
+
+.risk-chart-tooltip-header {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content:
+    space-between;
+
+  gap: 14px;
+}
+
+.risk-chart-tooltip-header
+  > div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.risk-chart-tooltip-header
+  span {
+  font-size: 0.8rem;
+
+  opacity: 0.6;
+}
+
+.risk-chart-tooltip-header
+  strong {
+  font-family:
+    var(--font-console);
+
+  font-size: 1rem;
+}
+
+.risk-chart-tooltip-risk {
+  padding: 3px 7px;
+
+  border:
+    1px solid
+    currentColor;
+
+  border-radius: 3px;
+
+  font-size: 0.78rem !important;
   font-weight: 700;
+
+  opacity: 1 !important;
 }
+
+.risk-chart-tooltip-date {
+  margin-top: 9px;
+
+  font-family:
+    var(--font-console);
+
+  font-size: 0.85rem;
+
+  opacity: 0.6;
+}
+
+/* =========================================================
+   Tooltip metrics
+   ========================================================= */
+
+.risk-chart-tooltip-metrics {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
+  gap: 6px;
+
+  margin-top: 12px;
+}
+
+.risk-chart-tooltip-metrics
+  > div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+
+  min-width: 0;
+
+  padding: 7px;
+
+  border:
+    1px solid
+    var(--border-big);
+
+  border-radius: 3px;
+}
+
+.risk-chart-tooltip-metrics
+  span,
+.risk-chart-tooltip-detail
+  span {
+  font-size: 0.78rem;
+
+  opacity: 0.52;
+}
+
+.risk-chart-tooltip-metrics
+  strong {
+  font-family:
+    var(--font-console);
+
+  font-size: 0.95rem;
+}
+
+/* =========================================================
+   Tooltip scan detail
+   ========================================================= */
+
+.risk-chart-tooltip-detail {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap: 6px;
+
+  margin-top: 8px;
+  padding-top: 8px;
+
+  border-top:
+    1px solid
+    var(--border-big);
+}
+
+.risk-chart-tooltip-detail
+  > div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+
+  min-width: 0;
+}
+
+.risk-chart-tooltip-detail
+  strong {
+  overflow-wrap: anywhere;
+
+  font-family:
+    var(--font-console);
+
+  font-size: 0.85rem;
+}
+
+.risk-chart-tooltip-wide {
+  grid-column:
+    1 / -1;
+}
+
+/* =========================================================
+   Cards
+   ========================================================= */
 
 .risk-chart-events {
-  display: flex;
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
+  gap: 8px;
+
+  width: 100%;
   min-width: 0;
-  max-width: 100%;
-  overflow-x: auto;
-  padding-bottom: 12px;
-  scroll-snap-type: x proximity;
-  gap: 10px;
 }
 
 .risk-chart-event {
-  flex: 0 0 200px;
-  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 12px;
-  border: 1px solid var(--border-big);
-  border-radius: var(--br-radius);
+
+  gap: 7px;
+
+  min-width: 0;
+
+  padding: 11px 12px;
+
+  border:
+    1px solid
+    var(--border-big);
+
+  border-radius:
+    var(--br-radius);
+
   background: var(--bg);
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.risk-chart-event strong {
-  font-family: var(--font-title);
-  font-size: 0.8rem;
+.risk-chart-event:hover,
+.risk-chart-event:focus,
+.risk-chart-event-active {
+  border-color:
+    var(--border-acc);
+
+  outline: none;
 }
 
-.risk-chart-event > span {
-  font-size: 0.65rem;
-  opacity: 0.55;
+.risk-chart-event-active {
+  box-shadow:
+    0 0 0 1px
+    var(--border-acc);
 }
 
-.risk-chart-event div {
+.risk-chart-event-header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 4px;
-  font-size: 0.68rem;
-  opacity: 0.7;
+
+  align-items: flex-start;
+  justify-content:
+    space-between;
+
+  gap: 10px;
 }
-.risk-chart-point.risk-critico { stroke: var(--critical); }
-.risk-chart-point.risk-alto { stroke: var(--high); }
-.risk-chart-point.risk-medio { stroke: var(--medium); }
-.risk-chart-point.risk-bajo { stroke: var(--low); }
+
+.risk-chart-event-header
+  > div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+
+  min-width: 0;
+}
+
+.risk-chart-event-header
+  strong {
+  font-family:
+    var(--font-title);
+
+  font-size: 0.95rem;
+}
+
+.risk-chart-event-header
+  span {
+  overflow: hidden;
+
+  font-family:
+    var(--font-console);
+
+  font-size: 0.78rem;
+
+  opacity: 0.55;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.risk-chart-event-status {
+  flex: 0 0 auto;
+
+  padding: 2px 5px;
+
+  border:
+    1px solid
+    var(--border-big);
+
+  border-radius: 3px;
+
+  font-size:
+    0.72rem !important;
+
+  opacity: 0.7 !important;
+}
+
+.risk-chart-event-date {
+  font-family:
+    var(--font-console);
+
+  font-size: 0.82rem;
+
+  opacity: 0.58;
+}
+
+.risk-chart-event-target {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+
+  min-width: 0;
+
+  padding-top: 5px;
+
+  border-top:
+    1px solid
+    var(--border-big);
+}
+
+.risk-chart-event-target
+  span {
+  font-size: 0.75rem;
+
+  opacity: 0.5;
+}
+
+.risk-chart-event-target
+  strong {
+  overflow: hidden;
+
+  font-family:
+    var(--font-console);
+
+  font-size: 0.85rem;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
+@media (max-width: 1100px) {
+  .risk-chart-events {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .risk-chart-container {
+    height: 390px;
+  }
+}
+
+@media (max-width: 650px) {
+  .risk-chart-events {
+    grid-template-columns:
+      1fr;
+  }
+
+  .risk-chart-container {
+    height: 350px;
+  }
+
+  .risk-chart-tooltip {
+    width: 260px;
+  }
+
+  .risk-chart-tooltip-metrics {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .risk-chart-tooltip-detail {
+    grid-template-columns:
+      1fr 1fr;
+  }
+}

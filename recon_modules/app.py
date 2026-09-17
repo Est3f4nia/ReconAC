@@ -2,26 +2,56 @@ import os
 import threading
 import json
 import requests
+
 from datetime import datetime, date, timedelta
 from uuid import UUID
 from dataclasses import asdict, is_dataclass
-from flask import Flask, request, jsonify
+from io import BytesIO
+
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    send_file,
+)
+
 from config import Config
 from reconac import run_scan
-from scan_output import install, capture, snapshot
-install()
-from io import BytesIO
-from flask import send_file
+
+from scan_output import (
+    install,
+    capture,
+    snapshot,
+)
 
 from report.generate_report_md import generate_md
 from report.generate_report_csv import build_csv_data
-from report.report_serializer import (deserialize_scan_result, deserialize_api_results)
+from report.report_serializer import (
+    deserialize_scan_result,
+    deserialize_api_results,
+)
 from report.utils.save_report import create_csv_zip
+
 from models.scan_report import ScanReport
+
+
+# ============================================================
+# App
+# ============================================================
 
 app = Flask(__name__)
 
-BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8080").rstrip("/")
+install()
+
+BACKEND_API_URL = os.getenv(
+    "BACKEND_API_URL",
+    "http://localhost:8080",
+).rstrip("/")
+
+
+# ============================================================
+# Estados
+# ============================================================
 
 _BACKEND_STATUS = {
     "PENDIENTE": "PENDIENTE",
@@ -30,30 +60,130 @@ _BACKEND_STATUS = {
     "FALLO": "FALLO",
 }
 
-_scans: dict[str, dict] = {}
-_lock = threading.Lock()
-_MAX_SCANS = 500
-_SCAN_TTL = timedelta(hours=24)
 
+# ============================================================
+# Estado local de trabajos
+# ============================================================
+
+_scans: dict[str, dict] = {}
+
+_lock = threading.Lock()
+
+_MAX_SCANS = 500
+
+_SCAN_TTL = timedelta(
+    hours=24
+)
+
+
+# ============================================================
+# Serialización
+# ============================================================
 
 def _default_serializer(obj):
-    if is_dataclass(obj) and not isinstance(obj, type):
+    if (
+        is_dataclass(obj)
+        and not isinstance(obj, type)
+    ):
         return asdict(obj)
 
-    if isinstance(obj, (datetime, date)):
+    if isinstance(
+        obj,
+        (datetime, date),
+    ):
         return obj.isoformat()
 
-    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+    raise TypeError(
+        f"Object of type "
+        f"{type(obj).__name__} "
+        f"is not JSON serializable"
+    )
 
 
 def _to_json_safe(obj):
-    return json.loads(json.dumps(obj, default=_default_serializer))
+    return json.loads(
+        json.dumps(
+            obj,
+            default=_default_serializer,
+        )
+    )
 
 
-def _update_scan(scan_id: str, **kwargs):
+# ============================================================
+# Logs legibles
+# ============================================================
+
+def _error_message(
+    error: Exception,
+) -> str:
+    """
+    Convierte una excepción en un mensaje corto
+    para backend y consola del frontend.
+    """
+
+    message = str(error).strip()
+
+    if not message:
+        return error.__class__.__name__
+
+    return message
+
+
+def _log_info(
+    message: str,
+):
+    print(
+        f"[*] {message}"
+    )
+
+
+def _log_warning(
+    message: str,
+):
+    print(
+        f"[!] {message}"
+    )
+
+
+def _log_success(
+    message: str,
+):
+    print(
+        f"[+] {message}"
+    )
+
+
+# ============================================================
+# Estado local
+# ============================================================
+
+def _update_scan(
+    scan_id: str,
+    **kwargs,
+):
     with _lock:
-        if scan_id in _scans:
-            _scans[scan_id].update(kwargs)
+        scan = _scans.get(
+            scan_id
+        )
+
+        if scan is not None:
+            scan.update(
+                kwargs
+            )
+
+
+def _get_scan_copy(
+    scan_id: str,
+):
+    with _lock:
+        scan = _scans.get(
+            scan_id
+        )
+
+        if scan is None:
+            return None
+
+        return dict(scan)
 
 
 def _cleanup_scans():
@@ -62,392 +192,1064 @@ def _cleanup_scans():
 
         expired = [
             sid
-            for sid, s in _scans.items()
-            if s.get("status") in ("COMPLETADO", "FALLO")
-            and s.get("updated_at") is not None
-            and (now - s["updated_at"]) > _SCAN_TTL
+            for sid, scan
+            in _scans.items()
+            if (
+                scan.get("status")
+                in (
+                    "COMPLETADO",
+                    "FALLO",
+                )
+                and scan.get(
+                    "updated_at"
+                ) is not None
+                and (
+                    now
+                    - scan[
+                        "updated_at"
+                    ]
+                )
+                > _SCAN_TTL
+            )
         ]
 
         for sid in expired:
-            del _scans[sid]
+            _scans.pop(
+                sid,
+                None,
+            )
 
-        if len(_scans) > _MAX_SCANS:
+        if (
+            len(_scans)
+            > _MAX_SCANS
+        ):
+            excess = (
+                len(_scans)
+                - _MAX_SCANS
+            )
+
             oldest = sorted(
                 _scans.items(),
-                key=lambda x: x[1].get("created_at") or datetime.min
-            )[: len(_scans) - _MAX_SCANS]
+                key=lambda item:
+                    item[1].get(
+                        "created_at"
+                    )
+                    or datetime.min,
+            )[:excess]
 
             for sid, _ in oldest:
-                del _scans[sid]
+                _scans.pop(
+                    sid,
+                    None,
+                )
 
 
-def _notify_status(scan_id: str, status: str, progress=None, error=None):
+# ============================================================
+# Comunicación con backend
+# ============================================================
+
+def _notify_status(
+    scan_id: str,
+    status: str,
+    progress=None,
+    error=None,
+) -> bool:
+
+    backend_status = (
+        _BACKEND_STATUS.get(
+            status
+        )
+    )
+
+    if backend_status is None:
+        _log_warning(
+            f"Estado desconocido: "
+            f"{status}"
+        )
+
+        return False
+
     payload = {
         "scanId": scan_id,
-        "status": _BACKEND_STATUS[status],
+        "status": backend_status,
         "progress": progress,
-        "error": error
+        "error": error,
     }
 
     try:
-        resp = requests.post(
-            f"{BACKEND_API_URL}/api/internal/scans/{scan_id}/status",
+        response = requests.post(
+            (
+                f"{BACKEND_API_URL}"
+                f"/api/internal/scans/"
+                f"{scan_id}/status"
+            ),
             json=payload,
             timeout=15,
         )
 
-        if resp.status_code != 200:
-            print(f"[!] Notificación de estado rechazada ({resp.status_code}): {scan_id}")
+        if not response.ok:
+            _log_warning(
+                "El backend rechazó "
+                "la actualización de estado "
+                f"({response.status_code})."
+            )
+
+            return False
+
+        return True
 
     except requests.exceptions.Timeout:
-        print(f"[!] Timeout al notificar estado al backend: {scan_id}")
+        _log_warning(
+            "El backend no respondió "
+            "al actualizar el estado."
+        )
 
     except requests.exceptions.ConnectionError:
-        print(f"[!] Error de conexión al notificar estado al backend: {scan_id}")
+        _log_warning(
+            "No se pudo conectar con "
+            "el backend para actualizar "
+            "el estado."
+        )
 
-    except Exception as e:
-        print(f"[!] Fallo al notificar estado al backend ({scan_id}): {e}")
+    except requests.exceptions.RequestException as error:
+        _log_warning(
+            "Error HTTP al actualizar "
+            "el estado: "
+            f"{_error_message(error)}"
+        )
+
+    except Exception as error:
+        _log_warning(
+            "No se pudo actualizar "
+            "el estado en el backend: "
+            f"{_error_message(error)}"
+        )
+
+    return False
 
 
-def _notify_callback(scan_id: str, report: ScanReport):
-    sr = report.scan_result
+def _notify_callback(
+    scan_id: str,
+    report: ScanReport,
+) -> bool:
+
+    scan_result = (
+        report.scan_result
+    )
 
     hosts = [
         {
-            "ip": h.ip,
-            "mac": h.mac,
-            "hostname": h.hostname,
-            "os": h.os.name if h.os else None,
-            "soProbab": h.os.accuracy if h.os else None,
+            "ip": host.ip,
+            "mac": host.mac,
+            "hostname": (
+                host.hostname
+            ),
+            "os": (
+                host.os.name
+                if host.os
+                else None
+            ),
+            "soProbab": (
+                host.os.accuracy
+                if host.os
+                else None
+            ),
             "puertos": [
                 {
-                    "numero": port.port,
-                    "protocolo": port.protocol,
-                    "estado": port.estado,
-                    "servicio": port.service,
-                    "producto": port.product,
-                    "version": port.version,
-                    "extrainfo": port.extrainfo,
-                    "cpes": port.cpes,
-                }
-                for port in h.ports
-            ]
-        }
+                    "numero":
+                        port.port,
 
-        for h in sr.hosts
+                    "protocolo":
+                        port.protocol,
+
+                    "estado":
+                        port.estado,
+
+                    "servicio":
+                        port.service,
+
+                    "producto":
+                        port.product,
+
+                    "version":
+                        port.version,
+
+                    "extrainfo":
+                        port.extrainfo,
+
+                    "cpes":
+                        port.cpes,
+                }
+                for port
+                in host.ports
+            ],
+        }
+        for host
+        in scan_result.hosts
     ]
 
     payload = {
         "hosts": hosts,
-        "apiResults": _to_json_safe(report.api_results),
-        "nmapVersion": sr.nmap_version,
-        "startTime": sr.start_time.isoformat()
-        if sr.start_time
-        else None,
-        "endTime": sr.end_time.isoformat()
-        if sr.end_time
-        else None
+
+        "apiResults":
+            _to_json_safe(
+                report.api_results
+            ),
+
+        "nmapVersion":
+            scan_result.nmap_version,
+
+        "startTime": (
+            scan_result
+            .start_time
+            .isoformat()
+            if scan_result.start_time
+            else None
+        ),
+
+        "endTime": (
+            scan_result
+            .end_time
+            .isoformat()
+            if scan_result.end_time
+            else None
+        ),
     }
 
     try:
-        resp = requests.post(f"{BACKEND_API_URL}/api/internal/scans/{scan_id}/callback", json=payload, timeout=15)
+        response = requests.post(
+            (
+                f"{BACKEND_API_URL}"
+                f"/api/internal/scans/"
+                f"{scan_id}/callback"
+            ),
+            json=payload,
+            timeout=15,
+        )
 
-        if resp.status_code != 200:
-            print(f"[!] Callback rechazado ({resp.status_code}): {scan_id} - {resp.text[:200]}")
+        if not response.ok:
+            body = (
+                response.text[:200]
+                if response.text
+                else ""
+            )
+
+            _log_warning(
+                "El backend rechazó "
+                "el resultado "
+                f"({response.status_code})"
+                + (
+                    f": {body}"
+                    if body
+                    else "."
+                )
+            )
+
+            return False
+
+        return True
 
     except requests.exceptions.Timeout:
-        print(f"[!] Timeout al notificar resultado al backend: {scan_id}")
+        _log_warning(
+            "El backend no respondió "
+            "al recibir el resultado "
+            "del escaneo."
+        )
 
     except requests.exceptions.ConnectionError:
-        print(f"[!] Error de conexión al notificar resultado al backend: {scan_id}")
+        _log_warning(
+            "No se pudo conectar con "
+            "el backend para enviar "
+            "el resultado."
+        )
 
-    except Exception as e:
-        print(f"[!] Fallo al notificar resultado al backend ({scan_id}): {e}")
+    except requests.exceptions.RequestException as error:
+        _log_warning(
+            "Error HTTP al enviar "
+            "el resultado: "
+            f"{_error_message(error)}"
+        )
+
+    except Exception as error:
+        _log_warning(
+            "No se pudo enviar "
+            "el resultado al backend: "
+            f"{_error_message(error)}"
+        )
+
+    return False
 
 
-# ===== Endpoints back ======
+# ============================================================
+# Scan
+# ============================================================
 
-
-@app.route("/scan", methods=["POST"])
+@app.route(
+    "/scan",
+    methods=["POST"],
+)
 def start_scan():
-    body = request.get_json(silent=True)
+
+    body = request.get_json(
+        silent=True
+    )
 
     if not body:
-        return jsonify({"error": "la consulta debe tener un cuerpo"}), 400
+        return jsonify({
+            "error":
+                "la consulta debe tener un cuerpo"
+        }), 400
 
-    if "job_id" not in body:
-        return jsonify({"error": "job_id es obligatorio"}), 400
+    # --------------------------------------------------------
+    # job_id
+    # --------------------------------------------------------
 
-    job_id = body["job_id"]
+    job_id = body.get(
+        "job_id"
+    )
 
-    if not isinstance(job_id, str) or not job_id.strip():
-        return jsonify({"error": "job_id no puede ser una cadena vacía"}), 400
+    if (
+        not isinstance(
+            job_id,
+            str,
+        )
+        or not job_id.strip()
+    ):
+        return jsonify({
+            "error":
+                "job_id es obligatorio"
+        }), 400
 
-    escaneo_id = body.get("escaneo_id")
-    if not isinstance(escaneo_id, str) or not escaneo_id.strip():
-        return jsonify({"error": "escaneo_id es obligatorio y debe ser un UUID"}), 400
+    job_id = (
+        job_id.strip()
+    )
+
+    # --------------------------------------------------------
+    # escaneo_id
+    # --------------------------------------------------------
+
+    escaneo_id = body.get(
+        "escaneo_id"
+    )
+
+    if (
+        not isinstance(
+            escaneo_id,
+            str,
+        )
+        or not escaneo_id.strip()
+    ):
+        return jsonify({
+            "error":
+                "escaneo_id es obligatorio "
+                "y debe ser un UUID"
+        }), 400
+
     try:
-        escaneo_id = str(UUID(escaneo_id.strip()))
-    except ValueError:
-        return jsonify({"error": "escaneo_id debe ser un UUID válido"}), 400
+        escaneo_id = str(
+            UUID(
+                escaneo_id.strip()
+            )
+        )
 
-    if "targets" not in body:
-        return jsonify({"error": "targets es obligatorio"}), 400
+    except (
+        ValueError,
+        AttributeError,
+    ):
+        return jsonify({
+            "error":
+                "escaneo_id debe ser "
+                "un UUID válido"
+        }), 400
 
-    targets = body["targets"]
+    # --------------------------------------------------------
+    # Targets
+    # --------------------------------------------------------
 
-    if not isinstance(targets, list) or not targets:
-        return jsonify({"error": "targets no puede ser una lista vacía"}), 400
+    targets = body.get(
+        "targets"
+    )
 
-    timeout = body.get("timeout", 600)
-    icmp_timeout = body.get("icmp_timeout", 5)
-    # ververver
-    max_cve_years = body.get("max_cve_years", 2)
-    min_cvss_score = body.get("min_cvss_score", 0.0)
+    if (
+        not isinstance(
+            targets,
+            list,
+        )
+        or not targets
+    ):
+        return jsonify({
+            "error":
+                "targets debe ser "
+                "una lista no vacía"
+        }), 400
+
+    targets = [
+        str(target).strip()
+        for target in targets
+        if (
+            target is not None
+            and str(
+                target
+            ).strip()
+        )
+    ]
+
+    if not targets:
+        return jsonify({
+            "error":
+                "targets no contiene "
+                "objetivos válidos"
+        }), 400
+
+    # --------------------------------------------------------
+    # Configuración
+    # --------------------------------------------------------
+
+    timeout = body.get(
+        "timeout",
+        600,
+    )
+
+    icmp_timeout = body.get(
+        "icmp_timeout",
+        5,
+    )
+
+    max_cve_years = body.get(
+        "max_cve_years",
+        2,
+    )
+
+    min_cvss_score = body.get(
+        "min_cvss_score",
+        0.0,
+    )
+
+    # --------------------------------------------------------
+    # Registro local
+    # --------------------------------------------------------
 
     now = datetime.now()
 
     with _lock:
-        # Evita sobrescribir accidentalmente un trabajo existente.
         if job_id in _scans:
-            return jsonify({"error": "job_id ya existe"}), 409
+            return jsonify({
+                "error":
+                    "job_id ya existe"
+            }), 409
 
         _scans[job_id] = {
-            "scan_id": job_id,
-            "escaneo_id": escaneo_id,
-            "status": "PENDIENTE",
-            "targets": targets,
-            "result": None,
-            "error": None,
-            "created_at": now,
-            "updated_at": now
+            "scan_id":
+                job_id,
+
+            "escaneo_id":
+                escaneo_id,
+
+            "status":
+                "PENDIENTE",
+
+            "progress":
+                0,
+
+            "targets":
+                targets,
+
+            "result":
+                None,
+
+            "error":
+                None,
+
+            "created_at":
+                now,
+
+            "updated_at":
+                now,
         }
 
-        if len(_scans) > _MAX_SCANS:
-            _cleanup_scans()
+    # IMPORTANTE:
+    # Se ejecuta fuera del lock.
+    _cleanup_scans()
+
+    # ========================================================
+    # Progress
+    # ========================================================
+
+    def _on_progress(
+        progress,
+    ):
+        try:
+            if progress is None:
+                return
+
+            progress = int(
+                progress
+            )
+
+            progress = max(
+                0,
+                min(
+                    100,
+                    progress,
+                ),
+            )
+
+            _update_scan(
+                job_id,
+                progress=progress,
+                updated_at=datetime.now(),
+            )
+
+            _notify_status(
+                job_id,
+                "EN_PROCESO",
+                progress=progress,
+            )
+
+        except Exception as error:
+            # Un error reportando progreso
+            # no debe cancelar el escaneo.
+            _log_warning(
+                "No se pudo actualizar "
+                "el progreso: "
+                f"{_error_message(error)}"
+            )
+
+    # ========================================================
+    # Trabajo
+    # ========================================================
 
     def _run():
 
-        _update_scan(job_id, status="EN_PROCESO", updated_at=datetime.now())
-        _notify_status(job_id, "EN_PROCESO", progress=0)
+        _update_scan(
+            job_id,
+            status="EN_PROCESO",
+            progress=0,
+            error=None,
+            updated_at=datetime.now(),
+        )
+
+        _notify_status(
+            job_id,
+            "EN_PROCESO",
+            progress=0,
+        )
 
         try:
+            _log_info(
+                "Validando configuración "
+                "del escaneo."
+            )
+
             cfg = Config(
                 targets=targets,
                 timeout=timeout,
                 icmp_timeout=icmp_timeout,
                 max_cve_years=max_cve_years,
-                min_cvss_score=min_cvss_score
+                min_cvss_score=min_cvss_score,
             )
 
-            report = run_scan(cfg, escaneo_id=escaneo_id, on_progress=lambda progress: _notify_status(job_id, "EN_PROCESO", progress=progress))
+            cantidad = len(
+                targets
+            )
 
-            _update_scan(job_id, status="COMPLETADO", result=_to_json_safe(report), updated_at=datetime.now())
-            _notify_callback(job_id, report)
+            _log_info(
+                "Iniciando reconocimiento "
+                f"de {cantidad} "
+                + (
+                    "objetivo."
+                    if cantidad == 1
+                    else "objetivos."
+                )
+            )
 
-        except Exception as e:
-            _update_scan( job_id, status="FALLO", error=str(e), updated_at=datetime.now())
-            _notify_status(job_id,"FALLO",error=str(e))
+            report = run_scan(
+                cfg,
+                escaneo_id=escaneo_id,
+                on_progress=_on_progress,
+            )
+
+            if report is None:
+                raise RuntimeError(
+                    "El módulo terminó "
+                    "sin generar un resultado."
+                )
+
+            _log_info(
+                "Reconocimiento finalizado. "
+                "Procesando resultado."
+            )
+
+            safe_report = (
+                _to_json_safe(
+                    report
+                )
+            )
+
+            # Guardamos localmente el resultado,
+            # pero todavía NO marcamos COMPLETADO.
+            _update_scan(
+                job_id,
+                result=safe_report,
+                updated_at=datetime.now(),
+            )
+
+            _log_info(
+                "Enviando resultado "
+                "al backend."
+            )
+
+            callback_ok = (
+                _notify_callback(
+                    job_id,
+                    report,
+                )
+            )
+
+            if not callback_ok:
+                raise RuntimeError(
+                    "El escaneo terminó, "
+                    "pero el backend no pudo "
+                    "guardar el resultado."
+                )
+
+            # El callback exitoso en Spring
+            # es quien persiste el resultado
+            # y deja el escaneo COMPLETADO.
+            _update_scan(
+                job_id,
+                status="COMPLETADO",
+                progress=100,
+                error=None,
+                updated_at=datetime.now(),
+            )
+
+            _log_success(
+                "Escaneo completado "
+                "correctamente."
+            )
+
+        except Exception as error:
+            message = (
+                _error_message(
+                    error
+                )
+            )
+
+            _update_scan(
+                job_id,
+                status="FALLO",
+                error=message,
+                updated_at=datetime.now(),
+            )
+
+            _log_warning(
+                "Escaneo finalizado "
+                f"con error: {message}"
+            )
+
+            _notify_status(
+                job_id,
+                "FALLO",
+                error=message,
+            )
 
         finally:
-            _cleanup_scans()
+            try:
+                _cleanup_scans()
 
+            except Exception as error:
+                _log_warning(
+                    "No se pudo limpiar "
+                    "el historial temporal: "
+                    f"{_error_message(error)}"
+                )
+
+    # ========================================================
+    # Captura de consola
+    # ========================================================
 
     def _run_with_output():
-        with capture(job_id):
-            print('[*] Trabajo recibido. Preparando módulo de reconocimiento.')
-            _run()
-            state = _scans.get(job_id, {})
-            if state.get('error'):
-                print('[!] ' + state['error'])
-            print('[*] Estado final: ' + state.get('status', 'DESCONOCIDO'))
+        try:
+            with capture(
+                job_id
+            ):
+                _log_info(
+                    "Trabajo recibido. "
+                    "Preparando módulo "
+                    "de reconocimiento."
+                )
 
-    thread = threading.Thread(target=_run_with_output, daemon=True)
+                _run()
+
+                state = (
+                    _get_scan_copy(
+                        job_id
+                    )
+                    or {}
+                )
+
+                _log_info(
+                    "Estado final: "
+                    f"{state.get('status', 'DESCONOCIDO')}"
+                )
+
+        except Exception as error:
+            # Última barrera:
+            # evita un thread muerto silenciosamente.
+            message = (
+                _error_message(
+                    error
+                )
+            )
+
+            print(
+                "[!] Error inesperado "
+                "del trabajo: "
+                f"{message}"
+            )
+
+            _update_scan(
+                job_id,
+                status="FALLO",
+                error=message,
+                updated_at=datetime.now(),
+            )
+
+            _notify_status(
+                job_id,
+                "FALLO",
+                error=message,
+            )
+
+    thread = threading.Thread(
+        target=_run_with_output,
+        daemon=True,
+        name=f"reconac-{job_id}",
+    )
+
     thread.start()
 
-    return jsonify({"scan_id": job_id, "status": "PENDIENTE"}), 202
+    return jsonify({
+        "scan_id":
+            job_id,
+
+        "status":
+            "PENDIENTE",
+    }), 202
 
 
-@app.route("/status/<scan_id>", methods=["GET"])
-def get_status(scan_id: str):
-    with _lock:
-        scan = _scans.get(scan_id)
+# ============================================================
+# Status
+# ============================================================
 
-    if not scan:
-        return jsonify({"error": "escaneo no encontrado"}), 404
+@app.route(
+    "/status/<scan_id>",
+    methods=["GET"],
+)
+def get_status(
+    scan_id: str,
+):
+
+    scan = (
+        _get_scan_copy(
+            scan_id
+        )
+    )
+
+    if scan is None:
+        return jsonify({
+            "error":
+                "escaneo no encontrado"
+        }), 404
 
     return jsonify({
-        "scan_id": scan["scan_id"],
-        "status": scan["status"],
-        "error": scan["error"]
+        "scan_id":
+            scan["scan_id"],
+
+        "status":
+            scan["status"],
+
+        "progress":
+            scan.get(
+                "progress",
+                0,
+            ),
+
+        "error":
+            scan.get(
+                "error"
+            ),
     })
 
 
-@app.route("/result/<scan_id>", methods=["GET"])
-def get_result(scan_id: str):
-    with _lock:
-        scan = _scans.get(scan_id)
+# ============================================================
+# Result
+# ============================================================
 
-    if not scan:
-        return jsonify({"error": "escaneo no encontrado"}), 404
+@app.route(
+    "/result/<scan_id>",
+    methods=["GET"],
+)
+def get_result(
+    scan_id: str,
+):
 
-    if scan["status"] != "COMPLETADO":
-        return jsonify({"error": f"escaneo es {scan['status']}"}), 409
+    scan = (
+        _get_scan_copy(
+            scan_id
+        )
+    )
 
-    return jsonify(scan["result"])
+    if scan is None:
+        return jsonify({
+            "error":
+                "escaneo no encontrado"
+        }), 404
+
+    if (
+        scan["status"]
+        != "COMPLETADO"
+    ):
+        return jsonify({
+            "error":
+                f"escaneo es "
+                f"{scan['status']}"
+        }), 409
+
+    return jsonify(
+        scan["result"]
+    )
 
 
-@app.route('/logs/<job_id>', methods=['GET'])
-def get_logs(job_id):
+# ============================================================
+# Logs
+# ============================================================
+
+@app.route(
+    "/logs/<job_id>",
+    methods=["GET"],
+)
+def get_logs(
+    job_id: str,
+):
+
     try:
-        after = max(0, int(request.args.get('after', '0')))
-    except ValueError:
-        return jsonify({'error': 'after debe ser un entero'}), 400
-    return jsonify(snapshot(job_id, after))
+        after = max(
+            0,
+            int(
+                request.args.get(
+                    "after",
+                    "0",
+                )
+            ),
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+        return jsonify({
+            "error":
+                "after debe ser "
+                "un entero"
+        }), 400
+
+    try:
+        return jsonify(
+            snapshot(
+                job_id,
+                after,
+            )
+        )
+
+    except Exception as error:
+        return jsonify({
+            "error":
+                "no se pudieron obtener "
+                "los logs",
+
+            "message":
+                _error_message(
+                    error
+                ),
+        }), 500
 
 
-@app.route("/health", methods=["GET"])
+# ============================================================
+# Health
+# ============================================================
+
+@app.route(
+    "/health",
+    methods=["GET"],
+)
 def health():
-    return jsonify({"status": "ok"})
+    return jsonify({
+        "status":
+            "ok"
+    })
 
-@app.route("/report", methods=["POST"])
+
+# ============================================================
+# Reportes
+# ============================================================
+
+@app.route(
+    "/report",
+    methods=["POST"],
+)
 def generate_report():
 
-    app.logger.warning("========== ENTRE A /report ==========")
-
-    body = request.get_json(silent=True)
+    body = request.get_json(
+        silent=True
+    )
 
     if not body:
         return jsonify({
-            "error": "la consulta debe tener un cuerpo"
+            "error":
+                "la consulta debe "
+                "tener un cuerpo"
         }), 400
 
-    formato = body.get("formato")
+    formato = body.get(
+        "formato"
+    )
 
-    if formato not in ("md", "csv"):
+    if formato not in (
+        "md",
+        "csv",
+    ):
         return jsonify({
-            "error": "formato debe ser 'md' o 'csv'"
+            "error":
+                "formato debe ser "
+                "'md' o 'csv'"
         }), 400
 
-    scan_id = body.get("scan_id")
+    scan_id = body.get(
+        "scan_id"
+    )
 
     if not scan_id:
         return jsonify({
-            "error": "scan_id es obligatorio"
+            "error":
+                "scan_id es obligatorio"
         }), 400
 
-    resultado = body.get("resultado")
+    resultado = body.get(
+        "resultado"
+    )
 
     if not resultado:
         return jsonify({
-            "error": "resultado es obligatorio"
+            "error":
+                "resultado es obligatorio"
         }), 400
 
-    app.logger.warning(
-        "REPORT FORMATO: %s",
-        formato,
-    )
-
-    app.logger.warning(
-        "REPORT SCAN ID: %s",
-        scan_id,
-    )
-
-    app.logger.warning(
-        "REPORT HOSTS: %s",
-        len(resultado.get("hosts", [])),
-    )
-
-    for host in resultado.get("hosts", []):
-        app.logger.warning(
-            "REPORT HOST %s -> puertos=%s",
-            host.get("ip"),
-            len(host.get("puertos", [])),
-        )
-
     try:
-
-        scan_result = deserialize_scan_result(resultado)
-
-        api_results = deserialize_api_results(
-            resultado.get("apiResults", {})
-        )
-
-        app.logger.warning(
-            "REPORT DESERIALIZED -> hosts=%s",
-            len(scan_result.hosts),
-        )
-
-        for host in scan_result.hosts:
-            app.logger.warning(
-                "REPORT DESERIALIZED HOST %s -> ports=%s",
-                host.ip,
-                len(host.ports),
+        scan_result = (
+            deserialize_scan_result(
+                resultado
             )
+        )
 
-        # =========================================================
-        # MARKDOWN
-        # =========================================================
+        api_results = (
+            deserialize_api_results(
+                resultado.get(
+                    "apiResults",
+                    {},
+                )
+            )
+        )
+
+        # ----------------------------------------------------
+        # Markdown
+        # ----------------------------------------------------
 
         if formato == "md":
-
-            markdown = generate_md(
-                scan_result,
-                api_results,
+            markdown = (
+                generate_md(
+                    scan_result,
+                    api_results,
+                )
             )
 
-            response = app.response_class(
-                markdown,
-                status=200,
-                mimetype="text/markdown",
+            response = (
+                app.response_class(
+                    markdown,
+                    status=200,
+                    mimetype="text/markdown",
+                )
             )
 
-            response.headers["Content-Disposition"] = (
-                f'attachment; filename="reconac_{scan_id}.md"'
+            response.headers[
+                "Content-Disposition"
+            ] = (
+                "attachment; "
+                f'filename="reconac_'
+                f'{scan_id}.md"'
             )
 
             return response
 
-        # =========================================================
+        # ----------------------------------------------------
         # CSV
-        # =========================================================
+        # ----------------------------------------------------
 
-        csv_data = build_csv_data(
-            scan_result,
-            api_results,
+        csv_data = (
+            build_csv_data(
+                scan_result,
+                api_results,
+            )
         )
 
-        zip_bytes = create_csv_zip(csv_data)
-
-        app.logger.warning(
-            "REPORT CSV -> archivos=%s, bytes_zip=%s",
-            list(csv_data.keys()),
-            len(zip_bytes),
+        zip_bytes = (
+            create_csv_zip(
+                csv_data
+            )
         )
 
         return send_file(
-            BytesIO(zip_bytes),
+            BytesIO(
+                zip_bytes
+            ),
             mimetype="application/zip",
             as_attachment=True,
-            download_name=f"reconac_{scan_id}.zip",
+            download_name=(
+                f"reconac_"
+                f"{scan_id}.zip"
+            ),
         )
 
-    except Exception as e:
+    except Exception as error:
+        message = (
+            _error_message(
+                error
+            )
+        )
 
-        app.logger.exception(
-            "Error generando el reporte para el escaneo %s",
-            scan_id,
+        print(
+            "[!] No se pudo generar "
+            f"el reporte: {message}"
         )
 
         return jsonify({
-            "error": "error: reporte no generado"
+            "error":
+                "reporte no generado",
+
+            "message":
+                message,
         }), 500
+
+
+# ============================================================
+# Main
+# ============================================================
 
 if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=5000,
         debug=True,
-        use_reloader=False
+        use_reloader=False,
     )
-

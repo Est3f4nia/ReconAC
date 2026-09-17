@@ -1,17 +1,11 @@
+import os
 import aiohttp
-
 from datetime import datetime
 from typing import Dict, List
 
-from models.api_result import (
-    ApiResult,
-    Vulnerability,
-    CWE,
-    Reference,
-)
+from models.api_result import (ApiResult, Vulnerability, CWE, Reference)
 
-
-BACKEND_API_URL = "http://localhost:8080"
+BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8080").rstrip("/")
 
 
 async def lookup_cves_for_cpes(
@@ -35,13 +29,11 @@ async def lookup_cves_for_cpes(
         total=300
     )
 
-    async with aiohttp.ClientSession(
-        timeout=timeout
-    ) as session:
+    async with aiohttp.ClientSession(timeout=timeout) as session:
 
         async with session.post(
             f"{BACKEND_API_URL}/api/internal/vulnerabilities/lookup",
-            json=payload,
+            json=payload
         ) as response:
 
             if response.status >= 400:
@@ -66,17 +58,10 @@ def _parse_response(
 
     results = {}
 
-    for cpe, entry in data.get(
-        "results",
-        {}
-    ).items():
+    for cpe, entry in data.get("results", {}).items():
 
         vulnerabilities = [
-            _parse_vulnerability(raw)
-            for raw in entry.get(
-                "vulnerabilities",
-                []
-            )
+            _parse_vulnerability(raw) for raw in entry.get("vulnerabilities", [])
         ]
 
         results[cpe] = ApiResult(
@@ -93,10 +78,7 @@ def _parse_vulnerability(
 
     cwes = [
         CWE(id=cwe)
-        for cwe in raw.get(
-            "cwes",
-            []
-        )
+        for cwe in raw.get("cwes", [])
     ]
 
     references = [
@@ -117,49 +99,27 @@ def _parse_vulnerability(
         severity=_required_string(raw, "severity"),
         cvss_score=raw.get("cvssScore"),
         cvss_vector=raw.get("cvssVector"),
-        published_date=_parse_datetime(
-            raw.get("publishedDate")
-        ),
-        last_modified=_parse_datetime(
-            raw.get("lastModified")
-        ),
+        published_date=_parse_datetime(raw.get("publishedDate")),
+        last_modified=_parse_datetime(raw.get("lastModified")),
         cwes=cwes,
         references=references,
-        exploit_refs=raw.get(
-            "exploitRefs",
-            []
-        ),
-        mitigation=raw.get(
-            "mitigation"
-        ),
-        fixed_version=raw.get(
-            "fixedVersion"
-        ),
-        vulnerable_versions=raw.get(
-            "vulnerableVersions"
-        ),
-        fix_type=raw.get(
-            "fixType"
-        ),
-        nist_url=raw.get(
-            "nistUrl"
-        ),
+        exploit_refs=raw.get("exploitRefs",[]),
+        mitigation=raw.get("mitigation"),
+        fixed_version=raw.get("fixedVersion"),
+        vulnerable_versions=raw.get("vulnerableVersions"),
+        fix_type=raw.get("fixType"),
+        nist_url=raw.get("nistUrl")
     )
 
 
-def _parse_datetime(
-    value: str | None,
-):
+def _parse_datetime(value: str | None):
 
     if not value:
         return None
 
     try:
         return datetime.fromisoformat(
-            value.replace(
-                "Z",
-                "+00:00"
-            )
+            value.replace("Z", "+00:00")
         )
     except ValueError:
         return None

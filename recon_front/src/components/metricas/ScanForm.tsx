@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import type { ScanStartRequest } from "@/data/types";
+import { Radar, Ellipsis} from "lucide-react"
 import "./styles/ScanForm.css";
 import { ScanOutput } from "./ScanOutput";
 import type { ScanStatusResponse } from "@/data/types";
@@ -79,7 +80,8 @@ export function ScanForm({ onSubmit, loading = false, auditoriaId, scans, prefer
 
         <form className="scan-form" onSubmit={handleSubmit}>
           {/* Columna 1: Objetivos */}
-          <div className="scan-form-main">
+          <div className="scan-form-main scan-section">
+            <div className="scan-section-title">Escaneo</div>
             <div className="form-group">
               <label htmlFor="objetivos">Objetivos</label>
               <textarea
@@ -99,8 +101,8 @@ export function ScanForm({ onSubmit, loading = false, auditoriaId, scans, prefer
           </div>
 
           {/* Columna 2: Filtros verticales */}
-          <div className="scan-filters">
-            <div className="scan-filters-title">Filtros</div>
+          <div className="scan-section">
+            <div className="scan-section-title">Filtros</div>
 
             <div className="form-group">
               <label htmlFor="timeout">Timeout Nmap</label>
@@ -186,9 +188,9 @@ export function ScanForm({ onSubmit, loading = false, auditoriaId, scans, prefer
               <span className="scan-submit-ring" />
               <span className="scan-submit-core">
                 {loading ? (
-                  <span className="scan-submit-dots">···</span>
+                  <span className="scan-submit-dots"><Ellipsis size={20} /></span>
                 ) : (
-                  <span className="scan-submit-icon">&gt;</span>
+                  <span className="scan-submit-icon"><Radar size={35} /></span>
                 )}
               </span>
             </button>

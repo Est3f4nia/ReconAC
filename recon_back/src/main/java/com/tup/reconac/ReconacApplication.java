@@ -1,6 +1,6 @@
 package com.tup.reconac;
 
-import com.tup.reconac.config.jwt.JwtProperties;
+import com.tup.reconac.config.security.jwt.JwtProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

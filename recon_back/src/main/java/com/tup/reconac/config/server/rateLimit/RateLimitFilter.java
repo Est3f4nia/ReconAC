@@ -1,4 +1,4 @@
-package com.tup.reconac.config;
+package com.tup.reconac.config.server.rateLimit;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;

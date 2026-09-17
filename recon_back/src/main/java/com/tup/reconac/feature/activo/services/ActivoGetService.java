@@ -39,17 +39,14 @@ public class ActivoGetService implements IActivoGetService {
         Usuario usuario = userService.getAuthenticatedUser();
 
         List<Auditoria> auditorias = auditoriaConsult.findAllByUsuarioId(usuario.getId());
-        if (auditorias.isEmpty()) {
-            return Page.empty(pageable);
-        }
+        if (auditorias.isEmpty()) return Page.empty(pageable);
+
         List<UUID> auditoriaIds = auditorias.stream()
                 .map(Auditoria::getId)
                 .toList();
 
         List<UUID> escaneoIds = escaneoConsult.getEscaneoIds(auditoriaIds);
-        if (escaneoIds.isEmpty()) {
-            return Page.empty(pageable);
-        }
+        if (escaneoIds.isEmpty()) return Page.empty(pageable);
 
         // Primero trae todos los activos de usuario. Por los casos de uso pensados, no debería perjudicar
         // mucho al rendimiento

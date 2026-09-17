@@ -67,8 +67,10 @@ public class EscaneoCreateService implements IEscaneoPostService {
 
     @Override
     public EscaneoResponse startScan(UUID auditoriaId, ScanStartRequest req) {
-        Auditoria auditoria = auditoriaConsult.findId(auditoriaId);
+        auditoriaConsult.verifyAuditoriaOwnership(auditoriaId);
         Usuario usuario = userService.getAuthenticatedUser();
+        Auditoria auditoria = auditoriaConsult.findId(auditoriaId);
+
 
         if (!auditoria.getUsuarioId().equals(usuario.getId())) {
             throw new BadRequestException("La auditoría no pertenece al usuario autenticado");
@@ -327,6 +329,9 @@ public class EscaneoCreateService implements IEscaneoPostService {
                 puerto.setServicioFallback(
                         resultadoPuerto.servicio()
                 );
+                puerto.setProducto(resultadoPuerto.producto());
+                puerto.setVersion(resultadoPuerto.version());
+                puerto.setExtrainfo(resultadoPuerto.extrainfo());
 
                 puerto = puertoRepo.save(puerto);
 
