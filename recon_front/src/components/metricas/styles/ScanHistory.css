@@ -1,0 +1,553 @@
+/* =========================================================
+   Historial - sección
+   ========================================================= */
+
+.scan-history-section {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  grid-column: 1 / -1;
+
+  font-size: 1rem;
+}
+
+/* =========================================================
+   Tabla principal
+   ========================================================= */
+
+.scan-history-table-wrapper {
+  width: 100%;
+  min-width: 0;
+
+  overflow-x: auto;
+
+  border: 1px solid var(--border-big);
+  border-radius: var(--br-radius);
+}
+
+.scan-history-table {
+  width: 100%;
+  min-width: 1180px;
+
+  border-collapse: collapse;
+
+  background: var(--bg);
+
+  color: var(--font);
+
+  font-size: 1rem;
+}
+
+.scan-history-table th,
+.scan-history-table td {
+  padding: 13px 14px;
+
+  border-bottom:
+    1px solid var(--border-big);
+
+  text-align: left;
+  vertical-align: middle;
+}
+
+.scan-history-table thead th {
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  opacity: 0.7;
+
+  white-space: nowrap;
+}
+
+.scan-history-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* =========================================================
+   Fila
+   ========================================================= */
+
+.scan-history-row {
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.scan-history-row:hover,
+.scan-history-row:focus {
+  background:
+    color-mix(
+      in srgb,
+      var(--border-acc) 4%,
+      transparent
+    );
+
+  outline: none;
+}
+
+.scan-history-row-open {
+  background:
+    color-mix(
+      in srgb,
+      var(--border-acc) 5%,
+      transparent
+    );
+
+  box-shadow:
+    inset 3px 0
+    var(--border-acc);
+}
+
+.scan-history-date {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  white-space: nowrap;
+}
+
+.scan-history-date strong {
+  font-size: 1rem;
+}
+
+.scan-history-date span {
+  font-family: var(--font-console);
+
+  font-size: 0.85rem;
+
+  opacity: 0.52;
+}
+
+.scan-history-targets {
+  display: block;
+
+  max-width: 260px;
+
+  overflow: hidden;
+
+  font-family: var(--font-console);
+
+  font-size: 0.95rem;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   Botón expandir
+   ========================================================= */
+
+.scan-history-action-cell {
+  width: 42px;
+
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+
+  text-align: center !important;
+}
+
+.scan-history-detail-button {
+  display: inline-flex;
+  margin-right: 10px;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+
+  padding: 0;
+
+  border:
+    1px solid var(--border-big);
+  border-radius: 3px;
+
+  background: transparent;
+  color: var(--font);
+
+  cursor: pointer;
+}
+
+.scan-history-detail-button:hover {
+  border-color:
+    var(--border-acc);
+}
+
+.scan-history-chevron {
+  display: inline-block;
+
+  font-size: 1rem;
+
+  transition:
+    transform 0.16s ease;
+}
+
+.scan-history-chevron-open {
+  transform:
+    rotate(180deg);
+}
+
+/* =========================================================
+   Fila detalle
+   ========================================================= */
+
+.scan-history-detail-row > td {
+  padding: 0 !important;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--bg) 94%,
+      var(--border-big)
+    );
+}
+
+.scan-history-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  padding: 20px 22px;
+}
+
+.scan-history-loading {
+  padding: 14px;
+
+  font-family: var(--font-console);
+
+  font-size: 0.95rem;
+
+  opacity: 0.65;
+}
+
+.scan-history-detail-empty {
+  margin: 0;
+
+  font-size: 1rem;
+}
+
+/* =========================================================
+   Cabecera detalle
+   ========================================================= */
+
+.scan-history-detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 18px;
+}
+
+.scan-history-detail-heading h3 {
+  margin: 4px 0 0;
+
+  font-family: var(--font-title);
+
+  font-size: 1.2rem;
+}
+
+/* =========================================================
+   Métricas detalle
+   ========================================================= */
+
+.scan-history-detail-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(0, 1fr)
+    );
+
+  gap: 10px;
+
+  margin: 0;
+}
+
+.scan-history-detail-grid > div {
+  min-width: 0;
+
+  padding: 10px 12px;
+
+  border:
+    1px solid
+    var(--border-big);
+
+  border-radius:
+    var(--br-radius);
+}
+
+.scan-history-detail-grid dt {
+  margin-bottom: 6px;
+
+  font-size: 0.85rem;
+
+  opacity: 0.55;
+}
+
+.scan-history-detail-grid dd {
+  margin: 0;
+
+  overflow-wrap: anywhere;
+
+  font-family:
+    var(--font-console);
+
+  font-size: 1rem;
+}
+
+.scan-history-detail-wide {
+  grid-column:
+    1 / -1;
+}
+
+/* =========================================================
+   Activos
+   ========================================================= */
+
+.scan-history-assets {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+
+  padding-top: 16px;
+
+  border-top:
+    1px solid
+    var(--border-big);
+}
+
+.scan-history-assets-heading {
+  display: flex;
+
+  align-items: center;
+  justify-content:
+    space-between;
+
+  gap: 12px;
+}
+
+.scan-history-assets-heading h4 {
+  margin: 0;
+
+  font-family:
+    var(--font-title);
+
+  font-size: 1.05rem;
+}
+
+.scan-history-assets-heading > span,
+.scan-history-port-count {
+  padding: 3px 8px;
+
+  border:
+    1px solid
+    var(--border-big);
+
+  border-radius: 3px;
+
+  font-family:
+    var(--font-console);
+
+  font-size: 0.9rem;
+
+  opacity: 0.72;
+}
+
+.scan-history-asset {
+  min-width: 0;
+
+  padding: 13px 14px;
+
+  border:
+    1px solid
+    var(--border-big);
+
+  border-radius:
+    var(--br-radius);
+}
+
+.scan-history-asset-header {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content:
+    space-between;
+
+  gap: 14px;
+
+  margin-bottom: 11px;
+}
+
+.scan-history-asset-header > div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+
+  min-width: 0;
+}
+
+.scan-history-asset-header strong {
+  font-family: var(--font-console);
+
+  font-size: 1rem;
+}
+
+.scan-history-asset-header span {
+  font-size: 0.9rem;
+
+  opacity: 0.6;
+}
+
+.scan-history-asset-meta {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap: 8px;
+
+  margin:
+    0 0
+    12px;
+}
+
+.scan-history-asset-meta > div {
+  padding: 8px 10px;
+
+  border: 1px solid var(--border-big);
+
+  border-radius: 3px;
+}
+
+.scan-history-asset-meta dt {
+  margin-bottom: 5px;
+
+  font-size: 0.85rem;
+
+  opacity: 0.5;
+}
+
+.scan-history-asset-meta dd {
+  margin: 0;
+
+  font-family:
+    var(--font-console);
+
+  font-size: 1rem;
+
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   Puertos
+   ========================================================= */
+
+.scan-history-ports-wrapper {
+  width: 100%;
+
+  overflow-x: auto;
+}
+
+.scan-history-ports-table {
+  width: 100%;
+  min-width: 980px;
+
+  border-collapse: collapse;
+
+  font-size: 0.95rem;
+}
+
+.scan-history-ports-table th,
+.scan-history-ports-table td {
+  padding: 9px 10px;
+
+  border: 1px solid var(--border-big);
+
+  vertical-align: top;
+}
+
+.scan-history-ports-table th {
+  font-size: 0.82rem;
+
+  opacity: 0.58;
+
+  text-transform: uppercase;
+}
+
+.scan-history-ports-table td strong {
+  font-family: var(--font-console);
+
+  font-size: 1rem;
+}
+
+.scan-history-cpes {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.scan-history-cpes code {
+  font-family:
+    var(--font-console);
+
+  font-size: 0.9rem;
+
+  overflow-wrap: anywhere;
+}
+
+.scan-history-no-data {
+  margin: 0;
+
+  font-size: 0.95rem;
+
+  opacity: 0.58;
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
+@media (max-width: 1100px) {
+  .scan-history-detail-grid {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+  }
+
+  .scan-history-detail-wide {
+    grid-column:
+      1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .scan-history-detail-grid,
+  .scan-history-asset-meta {
+    grid-template-columns:
+      1fr;
+  }
+
+  .scan-history-detail {
+    padding:
+      14px 12px;
+  }
+
+  .scan-history-table {
+    min-width: 980px;
+  }
+}
