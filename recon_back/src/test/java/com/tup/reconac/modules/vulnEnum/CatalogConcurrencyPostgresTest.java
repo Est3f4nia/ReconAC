@@ -1,13 +1,16 @@
 package com.tup.reconac.modules.vulnEnum;
 
+import com.tup.reconac.modules.vulnEnum.dtos.enrichment.nvd.NvdCacheEntry;
+import com.tup.reconac.modules.vulnEnum.dtos.enrichment.nvd.NvdReferenceData;
+import com.tup.reconac.modules.vulnEnum.dtos.enrichment.nvd.NvdVulnerabilityData;
 import com.tup.reconac.modules.vulnEnum.models.Cpe;
 import com.tup.reconac.modules.vulnEnum.repositories.*;
 import com.tup.reconac.modules.vulnEnum.services.*;
 import com.tup.reconac.modules.vulnEnum.services.cache.VulnerabilityPersistenceService;
 import com.tup.reconac.modules.vulnEnum.clients.EpssClient;
 import com.tup.reconac.modules.vulnEnum.dtos.data.EpssData;
-import com.tup.reconac.modules.vulnEnum.dtos.nvd.*;
 import com.tup.reconac.cache.CacheService;
+import com.tup.reconac.modules.vulnEnum.services.helpers.VulnerabilityCatalogLock;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -24,7 +27,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
 
 @EnabledIfSystemProperty(named = "catalog.test.url", matches = ".+")
 class CatalogConcurrencyPostgresTest {

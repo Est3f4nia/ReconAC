@@ -37,18 +37,18 @@ public class AuditoriaGetController {
     @Operation(summary = "Consultar una auditoría", description = "Detalle de una auditoría accesible para el usuario.")
     @ApiResponse(responseCode = "200", description = "Operación completada", useReturnTypeSchema = true)
     @ApiResponse(responseCode = "404", ref = "#/components/responses/Error404")
-    @GetMapping("/{id}")
-    public ResponseEntity<AuditoriaResponse> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(auditoriaGet.getById(id));
+    @GetMapping("/{auditoriaId}")
+    public ResponseEntity<AuditoriaResponse> findById(@PathVariable UUID auditoriaId) {
+        return ResponseEntity.ok(auditoriaGet.getById(auditoriaId));
     }
 
     @Operation(summary = "Consultar estadísticas de escaneos", description = "Totales por estado de los escaneos de la auditoría.")
     @ApiResponse(responseCode = "200", description = "Operación completada", useReturnTypeSchema = true)
     @ApiResponse(responseCode = "404", ref = "#/components/responses/Error404")
-    @GetMapping("/{id}/estadisticas")
+    @GetMapping("/{auditoriaId}/estadisticas")
     public ResponseEntity<AuditoriaEstadisticasResponse> getEstadisticas(
-            @PathVariable UUID id
+            @PathVariable UUID auditoriaId
     ) {
-        return ResponseEntity.ok(auditoriaGet.getEstadisticas(id));
+        return ResponseEntity.ok(auditoriaGet.getEstadisticas(auditoriaId));
     }
 }

@@ -1,59 +1,56 @@
-import { apiFetch } from "./client";
-import type { DashboardAuditoria, AuditoriaResponse } from "./types";
+import {
+  apiFetch,
+  assertApiResponseOk,
+  parseApiResponse,
+} from "./client";
 
-export async function fetchDashboardAuditoria(
-  auditoriaId: string,
-): Promise<DashboardAuditoria> {
-  const res = await apiFetch(
-    `/api/auditorias/${encodeURIComponent(auditoriaId)}/dashboard`,
-  );
+import type {
+  AuditoriaEstadisticasResponse,
+  AuditoriaRequest,
+  AuditoriaResponse,
+  AuditoriaResumen,
+  DashboardAuditoria,
+  PageAuditoriaResponse,
+} from "./types";
 
-  const body = await res.json();
+export type { AuditoriaResumen } from "./types";
 
-  if (!res.ok) {
-    const detail =
-      body.detail ??
-      body.message ??
-      body.errors ??
-      "No se pudo obtener el dashboard de la auditoría.";
+export async function createAuditoria(
+  nombre: string,
+  objetivo: string,
+): Promise<AuditoriaResponse> {
+  const request: AuditoriaRequest = {
+    nombre,
+    objetivo,
+  };
 
-    throw new Error(
-      typeof detail === "string"
-        ? detail
-        : "Error en la petición.",
-    );
-  }
+  const res = await apiFetch("/api/auditorias", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
 
-  return body.data ?? body;
+  return parseApiResponse<AuditoriaResponse>(res);
 }
 
-export async function eliminarAuditoria(
+export async function fetchAuditoria(
   auditoriaId: string,
-): Promise<void> {
+): Promise<AuditoriaResponse> {
   const res = await apiFetch(
-    `/api/auditorias/${auditoriaId}`,
-    {
-      method: "DELETE",
-    },
+    `/api/auditorias/${encodeURIComponent(auditoriaId)}`,
   );
 
-  if (!res.ok) {
-    let message =
-      "No se pudo eliminar la auditoría.";
+  return parseApiResponse<AuditoriaResponse>(res);
+}
 
-    try {
-      const body = await res.json();
+export async function fetchAuditorias(): Promise<AuditoriaResponse[]> {
+  const res = await apiFetch(
+    "/api/auditorias?size=100",
+  );
 
-      message =
-        body.detail ??
-        body.message ??
-        message;
-    } catch {
-      // DELETE puede no devolver JSON.
-    }
+  const page =
+    await parseApiResponse<PageAuditoriaResponse>(res);
 
-    throw new Error(message);
-  }
+  return page.content ?? [];
 }
 
 export async function updateAuditoria(
@@ -61,8 +58,7 @@ export async function updateAuditoria(
   nombre: string,
   objetivo: string,
 ): Promise<AuditoriaResponse> {
-  const payload = {
-    // El backend aplica "Nueva auditoría" como nombre
+  const request: AuditoriaRequest = {
     nombre: nombre.trim() || undefined,
     objetivo: objetivo.trim(),
   };
@@ -71,28 +67,58 @@ export async function updateAuditoria(
     `/api/auditorias/${encodeURIComponent(auditoriaId)}`,
     {
       method: "PATCH",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(request),
     },
   );
 
-  return parseResponse<AuditoriaResponse>(res);
+  return parseApiResponse<AuditoriaResponse>(res);
 }
 
-/**
- * Response ==============
- */
+export async function eliminarAuditoria(
+  auditoriaId: string,
+): Promise<void> {
+  const res = await apiFetch(
+    `/api/auditorias/${encodeURIComponent(auditoriaId)}`,
+    {
+      method: "DELETE",
+    },
+  );
 
-async function parseResponse<T>(res: Response): Promise<T> {
-  const body = await res.json();
+  await assertApiResponseOk(
+    res,
+    "No se pudo eliminar la auditoría.",
+  );
+}
 
-  if (!res.ok) {
-    const detail =
-      body.detail ?? body.message ?? "Error desconocido";
+export async function fetchResumenAuditorias(): Promise<AuditoriaResumen[]> {
+  const res = await apiFetch(
+    "/api/auditorias/resumen",
+  );
 
-    const errors: string[] | undefined = body.errors;
+  return parseApiResponse<AuditoriaResumen[]>(res);
+}
 
-    throw new Error(errors?.[0] ?? detail);
-  }
+export async function fetchAuditoriaEstadisticas(
+  auditoriaId: string,
+): Promise<AuditoriaEstadisticasResponse> {
+  const res = await apiFetch(
+    `/api/auditorias/${encodeURIComponent(auditoriaId)}/estadisticas`,
+  );
 
-  return (body.data ?? body) as T;
+  return parseApiResponse<AuditoriaEstadisticasResponse>(
+    res,
+  );
+}
+
+export async function fetchDashboardAuditoria(
+  auditoriaId: string,
+): Promise<DashboardAuditoria> {
+  const res = await apiFetch(
+    `/api/auditorias/${encodeURIComponent(auditoriaId)}/dashboard`,
+  );
+
+  return parseApiResponse<DashboardAuditoria>(
+    res,
+    "No se pudo obtener el dashboard de la auditoría.",
+  );
 }

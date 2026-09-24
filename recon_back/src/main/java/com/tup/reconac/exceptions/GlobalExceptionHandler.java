@@ -1,5 +1,6 @@
 package com.tup.reconac.exceptions;
 
+import com.tup.reconac.exceptions.vulnEnum.NvdLookupException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -68,9 +69,9 @@ public class GlobalExceptionHandler {
                 .body(problem);
     }
 
-    @ExceptionHandler(com.tup.reconac.modules.vulnEnum.clients.NvdLookupException.class)
+    @ExceptionHandler(NvdLookupException.class)
     public ResponseEntity<ProblemDetail> handleNvd(
-            com.tup.reconac.modules.vulnEnum.clients.NvdLookupException ex) {
+            NvdLookupException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON).body(problem);

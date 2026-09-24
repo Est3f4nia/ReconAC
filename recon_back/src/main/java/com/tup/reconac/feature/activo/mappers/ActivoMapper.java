@@ -3,7 +3,9 @@ package com.tup.reconac.feature.activo.mappers;
 import com.tup.reconac.feature.activo.dtos.response.ActivoAgrupadoResponse;
 import com.tup.reconac.feature.activo.dtos.request.ActivoRequestDto;
 import com.tup.reconac.feature.activo.dtos.response.ActivoResponse;
+import com.tup.reconac.feature.activo.dtos.response.ActivoResultadoResponse;
 import com.tup.reconac.feature.activo.models.Activo;
+import com.tup.reconac.feature.puerto.dtos.PuertoResultadoResponse;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -11,18 +13,6 @@ import java.util.UUID;
 
 @Component
 public class ActivoMapper {
-
-    public static Activo toEntity(ActivoRequestDto req) {
-        Activo activo = new Activo();
-        activo.setEscaneoId(req.escaneoId());
-        activo.setHost(req.host());
-        activo.setHostname(req.hostname());
-        activo.setSo(req.so());
-        activo.setSoProbab(req.soProbab());
-        activo.setMac(req.mac());
-        activo.setDescripcion(req.descripcion());
-        return activo;
-    }
 
     public static void updateEntity(Activo activo, ActivoRequestDto req) {
         activo.setHost(req.host());
@@ -63,6 +53,21 @@ public class ActivoMapper {
                 activo.getMac(),
                 activo.getDescripcion(),
                 escaneoIds
+        );
+    }
+
+    public static ActivoResultadoResponse toResultadoResponse(
+            Activo activo,
+            List<PuertoResultadoResponse> puertos) {
+
+        return new ActivoResultadoResponse(
+                activo.getId(),
+                activo.getHost(),
+                activo.getHostname(),
+                activo.getSo(),
+                activo.getSoProbab(),
+                activo.getMac(),
+                puertos
         );
     }
 }

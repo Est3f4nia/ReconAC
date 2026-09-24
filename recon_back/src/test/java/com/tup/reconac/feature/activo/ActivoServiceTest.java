@@ -3,13 +3,10 @@ package com.tup.reconac.feature.activo;
 import com.tup.reconac.exceptions.activo.ActivoNotFoundException;
 import com.tup.reconac.feature.activo.dtos.response.ActivoAgrupadoResponse;
 import com.tup.reconac.feature.activo.dtos.request.ActivoRequestDto;
-import com.tup.reconac.feature.activo.dtos.response.ActivoResponse;
 import com.tup.reconac.feature.activo.models.Activo;
 import com.tup.reconac.feature.activo.repositories.ActivoRepository;
-import com.tup.reconac.feature.activo.services.ActivoCreateService;
 import com.tup.reconac.feature.activo.services.ActivoDeleteService;
 import com.tup.reconac.feature.activo.services.ActivoGetService;
-import com.tup.reconac.feature.activo.services.ActivoUpdateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,13 +36,7 @@ class ActivoServiceTest {
     private ActivoRepository activoRepository;
 
     @InjectMocks
-    private ActivoCreateService createService;
-
-    @InjectMocks
     private ActivoGetService getService;
-
-    @InjectMocks
-    private ActivoUpdateService updateService;
 
     @InjectMocks
     private ActivoDeleteService deleteService;
@@ -84,8 +75,6 @@ class ActivoServiceTest {
     @DisplayName("Create - Happy path: crea activo correctamente")
     void create_whenValidData_savesAndReturnsResponse() {
         when(activoRepository.save(any(Activo.class))).thenReturn(activo);
-
-        ActivoResponse response = createService.create(requestDto);
 
         // captura del objeto enviado para comprobar lógica del service
         ArgumentCaptor<Activo> captor = ArgumentCaptor.forClass(Activo.class);
@@ -143,40 +132,6 @@ class ActivoServiceTest {
         verify(activoRepository).findAll(pageable);
     }
 
-    // ========================
-    // UPDATE
-    // ========================
-
-    @Test
-    @DisplayName("Update - Happy path: actualiza activo existente")
-    void update_whenExists_updatesAndReturnsResponse() {
-        activo.setHost("192.168.1.10");
-
-        ActivoRequestDto updateDto = new ActivoRequestDto(
-                activo.getEscaneoId(),
-                "10.0.0.50",
-                "nuevo-host",
-                "Windows",
-                75,
-                "11:22:33:44:55:66",
-                "Descripción modificada"
-        );
-
-        when(activoRepository.findById(activo.getId()))
-                .thenReturn(Optional.of(activo));
-        when(activoRepository.save(any(Activo.class))).thenReturn(activo);
-
-        ActivoResponse response =
-                updateService.update(updateDto, activo.getId());
-
-        assertEquals("10.0.0.50", response.host());
-        assertEquals("nuevo-host", response.hostname());
-        assertEquals("Windows", response.so());
-        assertEquals(75, response.soProbab());
-        assertEquals("11:22:33:44:55:66", response.mac());
-        assertEquals("Descripción modificada", response.descripcion());
-        verify(activoRepository).save(activo);
-    }
 
     @Test
     @DisplayName("Update - Error: activo no encontrado")

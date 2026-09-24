@@ -6,30 +6,30 @@ import com.tup.reconac.feature.auditoria.mappers.AuditoriaMapper;
 import com.tup.reconac.feature.auditoria.models.Auditoria;
 import com.tup.reconac.feature.auditoria.repositories.AuditoriaRepository;
 import com.tup.reconac.feature.auditoria.services.interfaces.IAuditoriaCreateService;
-import com.tup.reconac.feature.usuario.models.Usuario;
-import com.tup.reconac.feature.usuario.services.domain.UserDetailsService;
-import lombok.AllArgsConstructor;
+import com.tup.reconac.feature.usuario.services.domain.CurrentUserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AuditoriaCreateService implements IAuditoriaCreateService {
 
     private final AuditoriaRepository repo;
-    private final UserDetailsService userService;
+    private final CurrentUserService currentUser;
 
     @Override
     @Transactional
     public AuditoriaResponse create(AuditoriaRequestDto req) {
-        Usuario usuario = userService.getAuthenticatedUser();
 
-        Auditoria audit = AuditoriaMapper.toEntity(req, usuario);
+        UUID usuarioId = currentUser.getUsuarioId();
+        Auditoria auditoria = AuditoriaMapper.toEntity(req, usuarioId);
 
-        if (audit.getNombre() == null || audit.getNombre().isBlank())
-            audit.setNombre("Nueva Auditoría");
+        if (auditoria.getNombre() == null || auditoria.getNombre().isBlank())
+            auditoria.setNombre("Nueva Auditoría");
 
-        Auditoria saved = repo.save(audit);
-        return AuditoriaMapper.toResponse(saved);
+        return AuditoriaMapper.toResponse(repo.save(auditoria));
     }
 }

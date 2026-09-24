@@ -6,31 +6,33 @@ import com.tup.reconac.feature.auditoria.mappers.AuditoriaMapper;
 import com.tup.reconac.feature.auditoria.models.Auditoria;
 import com.tup.reconac.feature.auditoria.services.domain.AuditoriaConsultService;
 import com.tup.reconac.feature.auditoria.services.interfaces.IAuditoriaUpdateService;
-import com.tup.reconac.feature.usuario.models.Usuario;
-import com.tup.reconac.feature.usuario.services.domain.UserDetailsService;
-import lombok.AllArgsConstructor;
+import com.tup.reconac.feature.usuario.services.domain.CurrentUserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AuditoriaUpdateService implements IAuditoriaUpdateService {
 
-    private final UserDetailsService userService;
+    private final CurrentUserService currentUser;
     private final AuditoriaConsultService auditoriaConsult;
 
     @Override
     @Transactional
     public AuditoriaResponse update(AuditoriaRequestDto req, UUID auditoriaId) {
 
-        Usuario usuario = userService.getAuthenticatedUser();
-        Auditoria audit = auditoriaConsult.findOwnedAuditoria(auditoriaId, usuario.getId());
+        UUID usuarioId = currentUser.getUsuarioId();
+        Auditoria auditoria = auditoriaConsult.findOwnedAuditoria(auditoriaId, usuarioId);
 
-        if (audit.getNombre() == null) audit.setNombre("Nueva auditoria");
+        AuditoriaMapper.updateEntity(auditoria, req);
 
-        AuditoriaMapper.updateEntity(audit, req);  // dirty checking JPA
-        return AuditoriaMapper.toResponse(audit);
+        if (auditoria.getNombre() == null || auditoria.getNombre().isBlank()) {
+            auditoria.setNombre("Nueva auditoria");
+        }
+
+        return AuditoriaMapper.toResponse(auditoria);
     }
 }

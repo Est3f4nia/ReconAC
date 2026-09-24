@@ -1,8 +1,8 @@
 package com.tup.reconac.cache;
 
-import com.tup.reconac.modules.vulnEnum.dtos.nvd.NvdCacheEntry;
-import com.tup.reconac.modules.vulnEnum.dtos.nvd.NvdReferenceData;
-import com.tup.reconac.modules.vulnEnum.dtos.nvd.NvdVulnerabilityData;
+import com.tup.reconac.modules.vulnEnum.dtos.enrichment.nvd.NvdCacheEntry;
+import com.tup.reconac.modules.vulnEnum.dtos.enrichment.nvd.NvdReferenceData;
+import com.tup.reconac.modules.vulnEnum.dtos.enrichment.nvd.NvdVulnerabilityData;
 import com.tup.reconac.modules.vulnEnum.models.Cpe;
 import com.tup.reconac.modules.vulnEnum.models.CpeCve;
 import com.tup.reconac.modules.vulnEnum.models.Cve;
@@ -139,7 +139,6 @@ public class CacheService {
 
         NvdCacheEntry entry = new NvdCacheEntry(cpeUri, cpe.getUltimoCheck(), vulnerabilities);
         putNvd(entry);
-        System.out.println("[CacheService] Se obtuvo: " + entry.cpe());
         return Optional.of(entry);
     }
 

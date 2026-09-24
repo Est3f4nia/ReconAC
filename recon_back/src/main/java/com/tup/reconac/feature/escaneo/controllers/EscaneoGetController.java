@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.tup.reconac.config.server.BaseResponse;
+import com.tup.reconac.config.BaseResponse;
 import com.tup.reconac.feature.escaneo.dtos.response.EscaneoResult;
 import com.tup.reconac.feature.escaneo.dtos.internal.ScanStatusResponse;
 import com.tup.reconac.feature.escaneo.services.interfaces.IEscaneoGetService;

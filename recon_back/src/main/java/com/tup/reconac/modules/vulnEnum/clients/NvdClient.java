@@ -1,6 +1,8 @@
 package com.tup.reconac.modules.vulnEnum.clients;
 
+import com.tup.reconac.exceptions.vulnEnum.NvdLookupException;
 import com.tup.reconac.exceptions.vulnEnum.NvdTooManyResultsException;
+import com.tup.reconac.modules.vulnEnum.clients.nvd.NvdCpeQuery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;

@@ -9,19 +9,17 @@ import com.tup.reconac.feature.usuario.models.Usuario;
 import com.tup.reconac.feature.usuario.repositories.UsuarioRepository;
 import com.tup.reconac.feature.usuario.services.NvdApiKeyEncryptionService;
 import com.tup.reconac.modules.vulnEnum.clients.NvdClient;
-import com.tup.reconac.modules.vulnEnum.dtos.nvd.*;
+import com.tup.reconac.modules.vulnEnum.dtos.enrichment.nvd.NvdCacheEntry;
+import com.tup.reconac.modules.vulnEnum.dtos.enrichment.nvd.NvdLookupRequest;
 import com.tup.reconac.modules.vulnEnum.mappers.NvdVulnerabilityMapper;
-import com.tup.reconac.modules.vulnEnum.models.Cpe;
-import com.tup.reconac.modules.vulnEnum.repositories.*;
 import com.tup.reconac.modules.vulnEnum.services.cache.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.redis.core.RedisTemplate;
+
 import java.math.BigDecimal;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
 
 class NvdLookupRegressionTest {
     private final CacheService cache = mock(CacheService.class);

@@ -424,7 +424,7 @@ function ActivoRanking({
 
                     <div className="security-ranking-preview">
                       <span>
-                        CVEs{" "}
+                        CVE{" "}
                         <strong>
                           {
                             activo.vulnerabilidades

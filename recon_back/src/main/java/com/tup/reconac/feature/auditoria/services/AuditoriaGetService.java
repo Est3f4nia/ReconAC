@@ -1,17 +1,16 @@
 package com.tup.reconac.feature.auditoria.services;
 
-import com.tup.reconac.exceptions.auditoria.AuditoriaNotFoundException;
 import com.tup.reconac.feature.auditoria.dtos.response.AuditoriaEstadisticasResponse;
 import com.tup.reconac.feature.auditoria.dtos.response.AuditoriaResponse;
 import com.tup.reconac.feature.auditoria.mappers.AuditoriaMapper;
 import com.tup.reconac.feature.auditoria.models.Auditoria;
 import com.tup.reconac.feature.auditoria.repositories.AuditoriaRepository;
+import com.tup.reconac.feature.auditoria.services.domain.AuditoriaConsultService;
 import com.tup.reconac.feature.auditoria.services.interfaces.IAuditoriaGetService;
 import com.tup.reconac.feature.escaneo.models.Escaneo;
-import com.tup.reconac.feature.escaneo.models.EscaneoEstado;
 import com.tup.reconac.feature.escaneo.services.domain.EscaneoConsultService;
-import com.tup.reconac.feature.usuario.services.domain.UserDetailsService;
-import lombok.AllArgsConstructor;
+import com.tup.reconac.feature.usuario.services.domain.CurrentUserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,17 +20,18 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AuditoriaGetService implements IAuditoriaGetService {
 
     private final AuditoriaRepository repo;
-    private final UserDetailsService userService;
+    private final CurrentUserService currentUser;
+    private final AuditoriaConsultService auditoriaConsult;
     private final EscaneoConsultService escaneoConsult;
 
     @Override
     @Transactional(readOnly = true)
     public Page<AuditoriaResponse> getAll(Pageable pageable) {
-        UUID usuarioId = userService.getAuthenticatedUser().getId();
+        UUID usuarioId = currentUser.getUsuarioId();
 
         return repo.findByUsuarioIdOrderByFechaGeneracionDesc(usuarioId, pageable)
                 .map(AuditoriaMapper::toResponse);
@@ -39,51 +39,37 @@ public class AuditoriaGetService implements IAuditoriaGetService {
 
     @Override
     @Transactional(readOnly = true)
-    public AuditoriaResponse getById(UUID id) {
+    public AuditoriaResponse getById(UUID auditoriaId) {
 
-        UUID usuarioId = userService.getAuthenticatedUser().getId();
-
-        Auditoria auditoria = repo.findByIdAndUsuarioId(id, usuarioId)
-                .orElseThrow(() ->
-                        new AuditoriaNotFoundException("Auditoría no encontrada")
-                );
+        UUID usuarioId = currentUser.getUsuarioId();
+        Auditoria auditoria = auditoriaConsult.findOwnedAuditoria(auditoriaId, usuarioId);
 
         return AuditoriaMapper.toResponse(auditoria);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public AuditoriaEstadisticasResponse getEstadisticas(UUID autitoriaId) {
+    public AuditoriaEstadisticasResponse getEstadisticas(UUID auditoriaId) {
 
-        UUID usuarioId = userService.getAuthenticatedUser().getId();
+        auditoriaConsult.verifyAuditoriaOwnership(auditoriaId);
+        List<Escaneo> escaneos = escaneoConsult.getEscaneos(auditoriaId);
 
-        repo.findByIdAndUsuarioId(autitoriaId, usuarioId)
-                .orElseThrow(() ->
-                        new AuditoriaNotFoundException("Auditoría no encontrada")
-                );
+        int completados = 0;
+        int enProceso = 0;
+        int pendientes = 0;
+        int fallidos = 0;
 
-        List<Escaneo> escaneos = escaneoConsult.getEscaneos(autitoriaId);
-
-        int total = escaneos.size();
-
-        int completados = (int) escaneos.stream()
-                .filter(e -> e.getEstado() == EscaneoEstado.COMPLETADO)
-                .count();
-
-        int enProceso = (int) escaneos.stream()
-                .filter(e -> e.getEstado() == EscaneoEstado.EN_PROCESO)
-                .count();
-
-        int pendientes = (int) escaneos.stream()
-                .filter(e -> e.getEstado() == EscaneoEstado.PENDIENTE)
-                .count();
-
-        int fallidos = (int) escaneos.stream()
-                .filter(e -> e.getEstado() == EscaneoEstado.FALLO)
-                .count();
+        for (Escaneo escaneo : escaneos) {
+            switch (escaneo.getEstado()) {
+                case COMPLETADO -> completados++;
+                case EN_PROCESO -> enProceso++;
+                case PENDIENTE -> pendientes++;
+                case FALLO -> fallidos++;
+            }
+        }
 
         return new AuditoriaEstadisticasResponse(
-                total,
+                escaneos.size(),
                 completados,
                 enProceso,
                 pendientes,

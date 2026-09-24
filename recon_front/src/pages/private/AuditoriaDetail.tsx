@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchAuditoria, fetchEscaneoStatus, startEscaneo } from "@/data/escaneos";
-import { fetchDashboardAuditoria } from "@/data/auditorias";
+import { fetchEscaneoStatus, startEscaneo } from "@/data/escaneos";
+import { fetchAuditoria, fetchDashboardAuditoria } from "@/data/auditorias";
 import { AuditoriaHeader } from "@/components/metricas/AuditoriaHeader";
 import { ScanForm } from "@/components/metricas/ScanForm";
 import { DashboardKpiGrid } from "@/components/metricas/DashboardKpiGrid";
@@ -13,7 +13,23 @@ import { ReportGenerator } from "@/components/metricas/ReportGenerator";
 import type { AuditoriaResponse, DashboardAuditoria, ScanStartRequest, ScanStatusResponse } from "@/data/types";
 import "@/pages/private/styles/AuditoriaDetail.css";
 
-const esEscaneoActivo = (scan: ScanStatusResponse) => ["PENDIENTE", "EN_PROCESO"].includes(scan.status);
+const esEscaneoActivo = (scan: ScanStatusResponse) =>
+  scan.status === "PENDIENTE" ||
+  scan.status === "EN_PROCESO";
+
+function normalizarEstado(
+  estado?: string,
+): ScanStatusResponse["status"] {
+  switch (estado) {
+    case "PENDIENTE":
+    case "EN_PROCESO":
+    case "COMPLETADO":
+    case "FALLO":
+      return estado;
+    default:
+      return undefined;
+  }
+}
 
 export default function AuditoriaDetail({ id }: { id: string }) {
   const navigate = useNavigate();
@@ -43,13 +59,30 @@ export default function AuditoriaDetail({ id }: { id: string }) {
       setDashboard(data);
       setError("");
       const next = { ...estadosRef.current };
-      for (const scan of data.historial) {
-        const saved: ScanStatusResponse = { scanId: scan.escaneoId, status: scan.estado,
-          progress: scan.progreso, error: scan.mensajeError ?? null };
-        const live = next[scan.escaneoId];
-        next[scan.escaneoId] = live && !esEscaneoActivo(live) ? live
-          : !esEscaneoActivo(saved) ? saved : live ?? saved;
+
+      for (const scan of data.historial ?? []) {
+        const scanId = scan.escaneoId;
+        const status = normalizarEstado(scan.estado);
+
+        if (!scanId || !status) continue;
+
+        const saved: ScanStatusResponse = {
+          scanId,
+          status,
+          progress: scan.progreso,
+          error: scan.mensajeError,
+        };
+
+        const live = next[scanId];
+
+        next[scanId] =
+          live && !esEscaneoActivo(live)
+            ? live
+            : !esEscaneoActivo(saved)
+              ? saved
+              : live ?? saved;
       }
+
       actualizarEstados(next);
     } catch (err) {
       if (alive.current && version === requestVersion.current)
@@ -114,19 +147,31 @@ export default function AuditoriaDetail({ id }: { id: string }) {
     } finally { if (alive.current) setIniciandoEscaneo(false); }
   }
 
-  const escaneos = (dashboard?.historial ?? []).map(scan => ({
-    ...scan, estado: estadosEscaneos[scan.escaneoId]?.status ?? scan.estado,
-    progreso: estadosEscaneos[scan.escaneoId]?.progress ?? scan.progreso,
-    mensajeError: estadosEscaneos[scan.escaneoId]?.error ?? scan.mensajeError,
-  }));
+  const escaneos = (dashboard?.historial ?? []).flatMap((scan) => {
+    const scanId = scan.escaneoId;
+
+    if (!scanId) return [];
+
+    const live = estadosEscaneos[scanId];
+
+    return [{
+      ...scan,
+      escaneoId: scanId,
+      estado: live?.status ?? scan.estado,
+      progreso: live?.progress ?? scan.progreso,
+      mensajeError: live?.error ?? scan.mensajeError,
+    }];
+  });
+
   const escaneosActivos = Object.values(estadosEscaneos).filter(esEscaneoActivo);
+  
   if (cargando) return <main className="dashboard-page auditoria-detail"><div className="dashboard-empty" role="status">Cargando auditoría…</div></main>;
   if (!auditoria) return <main className="dashboard-page auditoria-detail"><div className="dashboard-error" role="alert">
     {error || "Auditoría no encontrada."}
     <button className="button button-page" onClick={() => void cargarDatos()}>Reintentar</button>
   </div></main>;
   return (
-    <main className="dashboard-page auditoria-detail">
+    <main className="dashboard-page auditoria-detail" id="auditoria-detail">
       {/* =====================================================
           1. HEADER
           ===================================================== */}
@@ -264,7 +309,7 @@ export default function AuditoriaDetail({ id }: { id: string }) {
           5. KPIs
           ===================================================== */}
 
-      {dashboard && (
+      {dashboard?.kpis && (
         <section className="auditoria-section">
           <DashboardKpiGrid
             data={dashboard.kpis}
@@ -276,12 +321,10 @@ export default function AuditoriaDetail({ id }: { id: string }) {
           6. TIMELINE DE RIESGO
           ===================================================== */}
 
-      {dashboard && (
+      {dashboard?.riesgoTemporal && (
         <section className="auditoria-section risk-section">
           <RiskTimeline
-            data={
-              dashboard.riesgoTemporal
-            }
+            data={dashboard.riesgoTemporal}
           />
         </section>
       )}
@@ -290,7 +333,7 @@ export default function AuditoriaDetail({ id }: { id: string }) {
           7. HOSTS + CVEs
           ===================================================== */}
 
-      {dashboard && (
+      {dashboard?.vulnerabilidades && dashboard?.hosts && (
         <section className="auditoria-section breakdown-row">
           <SecurityBreakdown
             auditoriaId={id}
@@ -341,6 +384,12 @@ export default function AuditoriaDetail({ id }: { id: string }) {
           />
         </section>
       )}
+
+      <div className="auditoria-back">
+        <a href="#auditoria-detail">
+          Volver al inicio ↑
+        </a>
+      </div>
     </main>
   );
 }

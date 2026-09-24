@@ -214,12 +214,6 @@
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 768px) {
-  .auditoria-detail .dashboard-section {
-    padding: 16px;
-  }
-}
-
 .auditoria-detail {
   display: flex;
   flex-direction: column;
@@ -372,26 +366,308 @@
   border-top: 1px solid var(--acc2);
 }
 
-@media (max-width: 900px) {
+/* ============================================================
+   RESPONSIVE — AUDITORÍA DETAIL
+   ============================================================ */
+
+/* Evita que contenido interno fuerce el ancho de la página */
+.auditoria-detail,
+.auditoria-section,
+.auditoria-detail .dashboard-section,
+.auditoria-detail .dashboard-card,
+.scan-form-section {
+  min-width: 0;
+}
+
+.auditoria-detail img,
+.auditoria-detail svg,
+.auditoria-detail canvas {
+  max-width: 100%;
+}
+
+/* ---------- Formulario de escaneo ---------- */
+
+.scan-form-section {
+  width: 100%;
+  overflow: hidden;
+}
+
+.scan-form-section form {
+  width: 100%;
+  min-width: 0;
+}
+
+.scan-form-section form > * {
+  min-width: 0;
+}
+
+.scan-form-section fieldset {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.scan-form-section :is(
+  input,
+  textarea,
+  select
+) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.scan-form-section textarea {
+  resize: vertical;
+}
+
+.scan-form-section :is(
+  input,
+  textarea,
+  select,
+  button
+) {
+  font-size: inherit;
+}
+
+/* Evita que objetivos largos rompan el layout */
+.scan-form-section :is(
+  label,
+  p,
+  span,
+  code
+) {
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Contenido que puede crecer mucho ---------- */
+
+.auditoria-detail :is(
+  .console,
+  .scan-history-item,
+  .host-ranking-item,
+  .cve-ranking-item
+) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.auditoria-detail .console {
+  overflow-x: auto;
+}
+
+.auditoria-detail code {
+  overflow-wrap: anywhere;
+}
+
+.auditoria-back {
+  margin-bottom: 30px;
+}
+
+/* ---------- Tablet / notebook angosta ---------- */
+
+@media (max-width: 1100px) {
+  .auditoria-detail {
+    gap: 20px;
+  }
+
+  .auditoria-detail .dashboard-section {
+    padding: 20px;
+  }
+
   .breakdown-row {
-    grid-template-columns: 1fr;
-    gap: 16px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .auditoria-detail .dashboard-kpi strong {
+    font-size: 1.45rem;
   }
 }
 
-@media (max-width: 768px) {
+/* ---------- Tablet ---------- */
+
+@media (max-width: 900px) {
   .auditoria-detail {
     gap: 18px;
+  }
+
+  .breakdown-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .auditoria-detail :is(
+    .host-breakdown-metrics,
+    .cve-breakdown-metrics,
+    .cve-ranking-main,
+    .cve-ranking-secondary
+  ) {
+    gap: 5px 10px;
+  }
+
+  .auditoria-detail .report-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .auditoria-detail .report-actions button {
+    margin-right: 0;
+  }
+}
+
+/* ---------- Pantallas chicas ---------- */
+
+@media (max-width: 768px) {
+  .auditoria-detail {
+    gap: 16px;
     padding-bottom: 24px;
   }
-  
+
+  .auditoria-detail .dashboard-section {
+    padding: 16px;
+  }
+
+  .auditoria-detail .dashboard-section-heading {
+    margin-bottom: 14px;
+  }
+
+  .auditoria-detail .dashboard-section-heading h1 {
+    font-size: clamp(1.4rem, 7vw, 1.9rem);
+  }
+
+  .auditoria-detail .dashboard-section-heading h2 {
+    font-size: 1.1rem;
+  }
+
+  .auditoria-header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 12px;
+  }
+
+  .auditoria-header-meta span + span {
+    margin-left: 0;
+  }
+
+  .scan-progress {
+    padding: 11px 12px;
+  }
+
+  .scan-progress-header {
+    gap: 10px;
+  }
+
+  .auditoria-detail .dashboard-kpi {
+    padding: 12px;
+  }
+
+  .auditoria-detail .dashboard-kpi strong {
+    margin-left: 8px;
+    font-size: 1.35rem;
+  }
+
+  .auditoria-detail .dashboard-card {
+    padding: 12px;
+  }
+
+  .auditoria-detail :is(
+    .host-ranking-item,
+    .cve-ranking-item
+  ) {
+    padding: 8px 4px;
+  }
+
+  .host-ranking-pagination,
+  .cve-ranking-pagination {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .report-section {
+    padding-top: 16px;
+  }
+}
+
+/* ---------- Muy angosto ---------- */
+
+@media (max-width: 560px) {
+  .auditoria-detail {
+    gap: 14px;
+  }
+
+  .auditoria-detail .dashboard-section {
+    padding: 14px 12px;
+  }
+
+  .auditoria-detail .dashboard-section-heading h1 {
+    font-size: 1.35rem;
+  }
+
+  .auditoria-detail .dashboard-section-heading h2 {
+    font-size: 1rem;
+  }
+
+  .auditoria-detail .dashboard-section-heading p:not(
+    .dashboard-section-eyebrow
+  ) {
+    font-size: 0.8rem;
+  }
+
+  .scan-form-section form {
+    gap: 10px;
+  }
+
+  .scan-form-section :is(
+    input,
+    textarea,
+    select
+  ) {
+    font-size: 16px;
+  }
+
+  .scan-progress-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .auditoria-detail :is(
+    .host-breakdown-metrics,
+    .cve-breakdown-metrics,
+    .cve-ranking-main,
+    .cve-ranking-secondary
+  ) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
+
+  .auditoria-detail .cve-badge {
+    margin-left: 4px;
+  }
+
+  .auditoria-detail .report-actions {
+    flex-direction: column;
+  }
+
+  .auditoria-detail .report-actions button {
+    width: 100%;
+  }
+
+  .auditoria-detail select {
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .auditoria-detail,
   .auditoria-section,
+  .scan-progress,
   .scan-progress-value,
-  .auditoria-detail .dashboard-card {
+  .auditoria-detail .dashboard-card,
+  .auditoria-detail .scan-history-item,
+  .auditoria-detail .scan-history-toggle {
     transition: none;
   }
 }

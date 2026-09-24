@@ -9,8 +9,11 @@ import java.util.UUID;
 public record ScanStatusResponse(
         @Schema(description = "En GET status es el UUID persistido del escaneo; en el callback de progreso Python envía el UUID del trabajo.")
         UUID scanId,
+
         EscaneoEstado status,
+
         @Schema(description = "Porcentaje de progreso (0 a 100).")
         Integer progress,
+
         String error
 ) {}

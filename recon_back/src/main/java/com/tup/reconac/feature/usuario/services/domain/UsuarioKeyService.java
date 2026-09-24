@@ -1,54 +1,58 @@
 package com.tup.reconac.feature.usuario.services.domain;
 
-import com.tup.reconac.exceptions.global.BadRequestException;
+import com.tup.reconac.exceptions.usuario.KeyNotValidException;
+import com.tup.reconac.exceptions.usuario.UserNotFoundException;
 import com.tup.reconac.feature.usuario.models.Usuario;
 import com.tup.reconac.feature.usuario.repositories.UsuarioRepository;
 import com.tup.reconac.feature.usuario.services.NvdApiKeyEncryptionService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class UsuarioKeyService {
 
     private final UsuarioRepository repo;
-    private final UserDetailsService userService;
+    private final CurrentUserService currentUser;
     private final NvdApiKeyEncryptionService encryptionService;
 
     public String getApiKey() {
-        Usuario usuario = userService.getAuthenticatedUser();
+
+        UUID usuarioId = currentUser.getUsuarioId();
+        Usuario usuario = repo.findById(usuarioId).orElseThrow(() ->
+                new UserNotFoundException("Usuario no encontrado"));
+
         String encryptedKey = usuario.getNvdApiKey();
 
-        if (encryptedKey == null || encryptedKey.isBlank()) {
-            return null;
-        }
-
+        if (encryptedKey == null || encryptedKey.isBlank()) return null;
         return encryptionService.decrypt(encryptedKey);
     }
 
-    public void updateKey(
-            Usuario usuario,
-            String apiKey
-    ) {
-        usuario.setNvdApiKey(
-                encryptionService.encrypt(apiKey)
-        );
+    public void updateKey(Usuario usuario, String apiKey) {
+
+        if (apiKey == null) {
+            throw new KeyNotValidException("La NVD API key no puede estar vacía");
+        }
+
+        String normalized = apiKey.strip();
+
+        if (normalized.isEmpty()) {
+            throw new KeyNotValidException("La NVD API key no puede estar vacía");
+        }
+
+        usuario.setNvdApiKey(encryptionService.encrypt(normalized));
     }
 
     @Transactional
     public void updateNvdApiKey(String nvdApiKey) {
-        Usuario usuario = userService.getAuthenticatedUser();
 
-        if (nvdApiKey == null || nvdApiKey.isBlank()) {
-            throw new BadRequestException(
-                    "La NVD API key es obligatoria"
-            );
-        }
+        UUID usuarioId = currentUser.getUsuarioId();
+        Usuario usuario = repo.findById(usuarioId).orElseThrow(() ->
+                new UserNotFoundException("Usuario no encontrado"));
 
-        String encryptedKey = encryptionService.encrypt(nvdApiKey);
-
-        usuario.setNvdApiKey(encryptedKey);
-        repo.save(usuario);
+        updateKey(usuario, nvdApiKey);
     }
 }

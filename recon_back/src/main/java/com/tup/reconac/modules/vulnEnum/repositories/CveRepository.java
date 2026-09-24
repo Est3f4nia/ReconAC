@@ -17,4 +17,6 @@ public interface CveRepository extends JpaRepository<Cve, UUID> {
 
     List<Cve> findAllByCveIn(Collection<String> cves);
 
+    long countByCveInAndKevTrue(Collection<String> cves);
+
 }

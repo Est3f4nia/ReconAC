@@ -1,36 +1,69 @@
 import { useEffect, useState } from "react";
+
 import {
-  fetchAuditorias,
-  fetchEscaneos,
-  fetchEscaneo,
   deleteEscaneo,
+  fetchEscaneo,
+  fetchEscaneos,
   moveEscaneo,
 } from "@/data/escaneos";
+
+import { fetchAuditorias } from "@/data/auditorias";
+
 import type {
+  AuditoriaResponse,
   EscaneoListado,
   EscaneoResultResponse,
-  AuditoriaResponse,
 } from "@/data/types";
+
 import EscaneosListado from "./EscaneosListado";
 
 const PAGE_SIZE = 8;
 
+function getEscaneoIds(
+  escaneo: EscaneoListado,
+): {
+  auditoriaId: string;
+  escaneoId: string;
+} {
+  if (!escaneo.auditoriaId || !escaneo.escaneoId) {
+    throw new Error(
+      "El escaneo no contiene los identificadores necesarios.",
+    );
+  }
+
+  return {
+    auditoriaId: escaneo.auditoriaId,
+    escaneoId: escaneo.escaneoId,
+  };
+}
+
 export default function EscaneosListadoPage() {
-  const [escaneos, setEscaneos] = useState<EscaneoListado[]>([]);
+  const [escaneos, setEscaneos] =
+    useState<EscaneoListado[]>([]);
+
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] =
+    useState<string | null>(null);
 
   const [escaneoDetalle, setEscaneoDetalle] =
     useState<EscaneoResultResponse | null>(null);
-  const [loadingDetalle, setLoadingDetalle] = useState(false);
 
-  const [auditorias, setAuditorias] = useState<AuditoriaResponse[]>([]);
-  const [escaneoMover, setEscaneoMover] = useState<EscaneoListado | null>(null);
-  const [nuevaAuditoriaId, setNuevaAuditoriaId] = useState("");
+  const [loadingDetalle, setLoadingDetalle] =
+    useState(false);
+
+  const [auditorias, setAuditorias] =
+    useState<AuditoriaResponse[]>([]);
+
+  const [escaneoMover, setEscaneoMover] =
+    useState<EscaneoListado | null>(null);
+
+  const [nuevaAuditoriaId, setNuevaAuditoriaId] =
+    useState("");
+
   const [moving, setMoving] = useState(false);
 
   const cargarDatos = async () => {
@@ -38,20 +71,32 @@ export default function EscaneosListadoPage() {
       setLoading(true);
       setError(null);
 
-      const [escaneosResponse, auditoriasResponse] = await Promise.all([
+      const [
+        escaneosResponse,
+        auditoriasResponse,
+      ] = await Promise.all([
         fetchEscaneos(page, PAGE_SIZE),
         fetchAuditorias(),
       ]);
 
-      setEscaneos(escaneosResponse.content);
-      setTotalPages(escaneosResponse.totalPages);
-      setTotalElements(escaneosResponse.totalElements);
+      setEscaneos(
+        escaneosResponse.content ?? [],
+      );
+
+      setTotalPages(
+        escaneosResponse.totalPages ?? 0,
+      );
+
+      setTotalElements(
+        escaneosResponse.totalElements ?? 0,
+      );
+
       setAuditorias(auditoriasResponse);
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "No se pudieron cargar los datos."
+          : "No se pudieron cargar los datos.",
       );
     } finally {
       setLoading(false);
@@ -74,19 +119,29 @@ export default function EscaneosListadoPage() {
     }
   };
 
-  const handleVerDetalles = async (escaneo: EscaneoListado) => {
+  const handleVerDetalles = async (
+    escaneo: EscaneoListado,
+  ) => {
     try {
       setLoadingDetalle(true);
+      setError(null);
+
+      const {
+        auditoriaId,
+        escaneoId,
+      } = getEscaneoIds(escaneo);
+
       const detalle = await fetchEscaneo(
-        escaneo.auditoriaId,
-        escaneo.escaneoId
+        auditoriaId,
+        escaneoId,
       );
+
       setEscaneoDetalle(detalle);
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "No se pudieron cargar los detalles."
+          : "No se pudieron cargar los detalles.",
       );
     } finally {
       setLoadingDetalle(false);
@@ -97,24 +152,27 @@ export default function EscaneosListadoPage() {
     escaneo: EscaneoListado,
   ) => {
     try {
+      setError(null);
+
+      const {
+        auditoriaId,
+        escaneoId,
+      } = getEscaneoIds(escaneo);
+
       await deleteEscaneo(
-        escaneo.auditoriaId,
-        escaneo.escaneoId,
+        auditoriaId,
+        escaneoId,
       );
 
       setEscaneos((actuales) =>
         actuales.filter(
           (item) =>
-            item.escaneoId !==
-            escaneo.escaneoId,
+            item.escaneoId !== escaneoId,
         ),
       );
 
       setTotalElements((prev) =>
-        Math.max(
-          0,
-          prev - 1,
-        ),
+        Math.max(0, prev - 1),
       );
     } catch (err) {
       setError(
@@ -125,37 +183,58 @@ export default function EscaneosListadoPage() {
     }
   };
 
-  const openMoverModal = (escaneo: EscaneoListado) => {
+  const openMoverModal = (
+    escaneo: EscaneoListado,
+  ) => {
     setEscaneoMover(escaneo);
-    setNuevaAuditoriaId(escaneo.auditoriaId);
+    setNuevaAuditoriaId(
+      escaneo.auditoriaId ?? "",
+    );
   };
 
   const handleMover = async () => {
-    if (!escaneoMover || !nuevaAuditoriaId) return;
+    if (
+      !escaneoMover ||
+      !escaneoMover.escaneoId ||
+      !nuevaAuditoriaId
+    ) {
+      return;
+    }
 
     try {
       setMoving(true);
       setError(null);
 
-      await moveEscaneo(escaneoMover.escaneoId, nuevaAuditoriaId);
+      const escaneoId =
+        escaneoMover.escaneoId;
 
-      const nuevaAuditoria = auditorias.find(
-        (a) => a.id === nuevaAuditoriaId
+      await moveEscaneo(
+        escaneoId,
+        nuevaAuditoriaId,
       );
 
-      if (nuevaAuditoria) {
-        setEscaneos((actuales) =>
-          actuales.map((escaneo) =>
-            escaneo.escaneoId === escaneoMover.escaneoId
-              ? {
-                  ...escaneo,
-                  auditoriaId: nuevaAuditoria.id,
-                  auditoriaNombre: nuevaAuditoria.nombre,
-                }
-              : escaneo
-          )
+      const nuevaAuditoria =
+        auditorias.find(
+          (auditoria) =>
+            auditoria.id ===
+            nuevaAuditoriaId,
         );
-      }
+
+      setEscaneos((actuales) =>
+        actuales.map((escaneo) =>
+          escaneo.escaneoId === escaneoId
+            ? {
+                ...escaneo,
+                auditoriaId:
+                  nuevaAuditoria?.id ??
+                  nuevaAuditoriaId,
+                auditoriaNombre:
+                  nuevaAuditoria?.nombre ??
+                  escaneo.auditoriaNombre,
+              }
+            : escaneo,
+        ),
+      );
 
       setEscaneoMover(null);
       setNuevaAuditoriaId("");
@@ -163,7 +242,7 @@ export default function EscaneosListadoPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "No se pudo mover el escaneo."
+          : "No se pudo mover el escaneo.",
       );
     } finally {
       setMoving(false);
@@ -180,7 +259,10 @@ export default function EscaneosListadoPage() {
               <p>Cargando escaneos...</p>
             </div>
           </div>
-          <div className="listado-loading">Cargando...</div>
+
+          <div className="listado-loading">
+            Cargando...
+          </div>
         </section>
       </div>
     );
@@ -194,8 +276,10 @@ export default function EscaneosListadoPage() {
             <h1>Escaneos</h1>
           </div>
         </div>
+
         <div className="listado-error">
           <p>{error}</p>
+
           <button
             type="button"
             className="button button-error"
@@ -213,15 +297,24 @@ export default function EscaneosListadoPage() {
       <div className="listado-header">
         <div>
           <h1>Escaneos</h1>
-          <p>Historial de escaneos realizados.</p>
+          <p>
+            Historial de escaneos realizados.
+          </p>
         </div>
+
         <span className="listado-total">
-          {totalElements} {totalElements === 1 ? "escaneo" : "escaneos"}
+          {totalElements}{" "}
+          {totalElements === 1
+            ? "escaneo"
+            : "escaneos"}
         </span>
       </div>
 
       {error && (
-        <div className="listado-error" style={{ marginBottom: 16 }}>
+        <div
+          className="listado-error"
+          style={{ marginBottom: 16 }}
+        >
           <p>{error}</p>
         </div>
       )}
@@ -237,11 +330,15 @@ export default function EscaneosListadoPage() {
         onEliminar={handleEliminar}
         escaneoDetalle={escaneoDetalle}
         loadingDetalle={loadingDetalle}
-        onCerrarDetalle={() => setEscaneoDetalle(null)}
+        onCerrarDetalle={() =>
+          setEscaneoDetalle(null)
+        }
         escaneoMover={escaneoMover}
         auditorias={auditorias}
         nuevaAuditoriaId={nuevaAuditoriaId}
-        onChangeAuditoria={setNuevaAuditoriaId}
+        onChangeAuditoria={
+          setNuevaAuditoriaId
+        }
         onConfirmarMover={handleMover}
         onCancelarMover={() => {
           setEscaneoMover(null);

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { createAuditoria } from "@/data/auditorias";
 import {
-  fetchResumen,
-  createAuditoria,
-} from "@/data/escaneos";
-import type { EscaneoResumen } from "@/data/types";
+  fetchResumenAuditorias,
+  type AuditoriaResumen,
+} from "@/data/auditorias";
 import { AuditCard } from "@/components/AuditoriaCard";
 import "@/pages/global.css";
 import "@/pages/private/styles/DashboardPage.css";
@@ -12,7 +12,7 @@ import "@/pages/private/styles/DashboardPage.css";
 export default function DashboardPage() {
   const { user } = useAuth();
 
-  const [auditorias, setAuditorias] = useState<EscaneoResumen[]>([]);
+  const [auditorias, setAuditorias] = useState<AuditoriaResumen[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -30,22 +30,22 @@ export default function DashboardPage() {
   }, []);
 
   async function cargarAuditorias() {
-    try {
-      setCargando(true);
-      setError("");
+  try {
+    setCargando(true);
+    setError("");
 
-      const data = await fetchResumen();
-      setAuditorias(data);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Error al cargar las auditorías"
-      );
-    } finally {
-      setCargando(false);
-    }
+    const data = await fetchResumenAuditorias();
+    setAuditorias(data);
+  } catch (err) {
+    setError(
+      err instanceof Error
+        ? err.message
+        : "Error al cargar las auditorías"
+    );
+  } finally {
+    setCargando(false);
   }
+}
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

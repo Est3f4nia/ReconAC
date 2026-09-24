@@ -1,6 +1,6 @@
 package com.tup.reconac.feature.puerto.dtos;
 
-import com.tup.reconac.modules.vulnEnum.dtos.CpeResponse;
+import com.tup.reconac.modules.vulnEnum.dtos.metricas.CpeResponse;
 
 import java.util.List;
 import java.util.UUID;

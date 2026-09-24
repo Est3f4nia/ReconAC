@@ -1,123 +1,117 @@
 package com.tup.reconac.feature.auditoria.services;
 
+import com.tup.reconac.feature.activo.models.Activo;
+import com.tup.reconac.feature.activo.repositories.ActivoRepository;
+import com.tup.reconac.feature.auditoria.mappers.AuditoriaMapper;
 import com.tup.reconac.feature.auditoria.models.Auditoria;
-import com.tup.reconac.feature.auditoria.repositories.AuditoriaRepository;
 import com.tup.reconac.feature.auditoria.dtos.response.AuditoriaResumenResponseDto;
+import com.tup.reconac.feature.auditoria.services.domain.AuditoriaConsultService;
 import com.tup.reconac.feature.escaneo.models.Escaneo;
-import com.tup.reconac.feature.escaneo.services.domain.EscaneoConsultService;
-import com.tup.reconac.feature.usuario.services.domain.UserDetailsService;
+import com.tup.reconac.feature.escaneo.repositories.EscaneoRepository;
+import com.tup.reconac.feature.puerto.models.Puerto;
+import com.tup.reconac.feature.puerto.repositories.PuertoRepository;
+import com.tup.reconac.feature.usuario.services.domain.CurrentUserService;
+import com.tup.reconac.modules.vulnEnum.dtos.metricas.ScanMetrics;
+import com.tup.reconac.modules.vulnEnum.services.metricas.ScanMetricsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AuditoriaResumenService {
 
-    private final AuditoriaRepository repo;
-    private final EscaneoConsultService escaneoConsult;
-    private final UserDetailsService userService;
-    private final ObjectMapper objectMapper;
+    private final CurrentUserService currentUserService;
+    private final AuditoriaConsultService auditoriaConsult;
+    private final EscaneoRepository escaneoRepository;
+    private final ActivoRepository activoRepository;
+    private final PuertoRepository puertoRepository;
+    private final ScanMetricsService scanMetricsService;
 
     public List<AuditoriaResumenResponseDto> getResumen() {
 
-        UUID usuarioId = userService.getAuthenticatedUser().getId();
-        List<Auditoria> auditorias = repo.findByUsuarioIdOrderByFechaGeneracionDesc(usuarioId);
+        List<Auditoria> auditorias = auditoriaConsult.findAllByUsuarioId(currentUserService.getUsuarioId());
+        if (auditorias.isEmpty()) return List.of();
 
-        List<AuditoriaResumenResponseDto> result = new ArrayList<>();
-        for (Auditoria auditoria : auditorias) {
+        List<UUID> auditoriaIds = auditorias
+                .stream()
+                .map(Auditoria::getId)
+                .toList();
 
-            Optional<Escaneo> ultimoEscaneo = escaneoConsult.getUltimoEscaneo(auditoria.getId());
+        List<Escaneo> escaneos = escaneoRepository
+                .findByAuditoriaIdIn(auditoriaIds, Pageable
+                        .unpaged(Sort.by(Sort.Direction.DESC, "creadoA"))
+                )
+                .getContent();
 
-            if (ultimoEscaneo.isEmpty()) {
-                result.add(
-                        new AuditoriaResumenResponseDto(
-                                null,
-                                auditoria.getId(),
-                                auditoria.getNombre(),
-                                0,
-                                0,
-                                null,
-                                null,
-                                0,
-                                0
-                        )
-                );
+        Map<UUID, Escaneo> ultimoPorAuditoria = new LinkedHashMap<>();
+        escaneos.forEach(escaneo ->
+                ultimoPorAuditoria.putIfAbsent(escaneo.getAuditoriaId(), escaneo)
+        );
 
-                continue;
-            }
+        List<UUID> escaneoIds = ultimoPorAuditoria
+                .values().stream()
+                .map(Escaneo::getId)
+                .toList();
 
-            Escaneo escaneo = ultimoEscaneo.get();
+        List<Activo> activos = escaneoIds.isEmpty()
+                ? List.of()
+                : activoRepository.findByEscaneoIdIn(escaneoIds);
 
-            int activos = 0;
-            int puertos = 0;
-            int cve = 0;
-            int cveCriticos = 0;
+        Map<UUID, List<Activo>> activosPorEscaneo = activos.stream()
+                .collect(Collectors.groupingBy(Activo::getEscaneoId));
 
-            String resultado = escaneo.getResultado();
+        List<UUID> activoIds = activos
+                .stream()
+                .map(Activo::getId)
+                .toList();
 
-            if (resultado != null && !resultado.isBlank()) {
+        Map<UUID, Long> puertosPorActivo = activoIds.isEmpty()
+                ? Map.of()
+                : puertoRepository.findByActivoIdIn(activoIds).stream()
+                .collect(Collectors.groupingBy(
+                        Puerto::getActivoId,
+                        Collectors.counting()
+                ));
 
-                JsonNode root = objectMapper.readTree(resultado);
+        return auditorias.stream()
+                .map(auditoria -> {
+                    Escaneo escaneo = ultimoPorAuditoria.get(auditoria.getId());
 
-                // Activos ---
-
-                JsonNode hosts = root.get("hosts");
-
-                if (hosts != null && hosts.isArray()) {
-                    activos = hosts.size();
-                }
-
-                // API results ---
-
-                JsonNode apiResults = root.get("apiResults");
-                if (apiResults != null && apiResults.isObject()) {
-
-                    // Puertos ---
-
-                    JsonNode ports = apiResults.get("ports");
-                    if (ports != null && ports.isNumber()) {
-                        puertos = ports.asInt();
+                    if (escaneo == null) {
+                        return AuditoriaMapper.toResumenResponse(auditoria);
                     }
 
-                    // CVE ---
+                    ScanMetrics metrics = scanMetricsService.calculate(
+                            escaneo,
+                            activosPorEscaneo,
+                            puertosPorActivo
+                    );
 
-                    JsonNode cves = apiResults.get("cves");
-                    if (cves != null && cves.isArray()) {
-                        cve = cves.size();
-                        for (JsonNode cveNode : cves) {
-                            JsonNode severidad = cveNode.get("severidad");
-                            if (severidad != null
-                                    && "CRITICA".equalsIgnoreCase(
-                                    severidad.asString())) {
-
-                                cveCriticos++;
-                            }
-                        }
-                    }
-                }
-            }
-
-            result.add(
-                    new AuditoriaResumenResponseDto(
-                            escaneo.getId(),
-                            auditoria.getId(),
-                            auditoria.getNombre(),
-                            activos,
-                            puertos,
-                            escaneo.getCompletadoA(),
-                            escaneo.getEstado(),
-                            cve,
-                            cveCriticos
-                    )
-            );
-        }
-
-        return result;
+                    return AuditoriaMapper.toResumenResponse(
+                            auditoria,
+                            escaneo,
+                            Math.toIntExact(metrics.activos()),
+                            Math.toIntExact(metrics.puertos()),
+                            Math.toIntExact(metrics.cves()),
+                            Math.toIntExact(metrics.cvesCriticos())
+                    );
+                })
+                .toList();
     }
 }
+
+//    // DTO interno
+//
+//    private record ResumenMetricas(int activos, int puertos, int cves, int cvesCriticos) {
+//        private static ResumenMetricas empty() {
+//            return new ResumenMetricas(0, 0, 0, 0);
+//        }
+//    }
+//}

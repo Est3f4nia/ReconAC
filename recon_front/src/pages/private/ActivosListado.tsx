@@ -23,7 +23,11 @@ export default function ActivosListado({
   onCerrarDetalle,
 }: Props) {
   if (activos.length === 0) {
-    return <div className="empty-state">No hay activos registrados.</div>;
+    return (
+      <div className="empty-state">
+        No hay activos registrados.
+      </div>
+    );
   }
 
   return (
@@ -42,31 +46,66 @@ export default function ActivosListado({
               <th>Acciones</th>
             </tr>
           </thead>
+
           <tbody>
-            {activos.map((activo) => (
-              <tr
-                key={[activo.host, activo.hostname, activo.so].join("|")}
-              >
-                <td className="cell-mono">{activo.host}</td>
-                <td>{activo.hostname ?? "—"}</td>
-                <td>{activo.so ?? "—"}</td>
-                <td>
-                  {activo.soProbab != null ? `${activo.soProbab}%` : "—"}
-                </td>
-                <td className="cell-mono">{activo.mac ?? "—"}</td>
-                <td>{activo.descripcion ?? "—"}</td>
-                <td>{activo.escaneoIds.length}</td>
-                <td>
-                  <button
-                    type="button"
-                    className="button button-activoP"
-                    onClick={() => onVerDetalle(activo)}
-                  >
-                    Ver
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {activos.map((activo, index) => {
+              const escaneoIds =
+                activo.escaneoIds ?? [];
+
+              const key = [
+                activo.host,
+                activo.hostname,
+                activo.so,
+                ...escaneoIds,
+                index,
+              ].join("|");
+
+              return (
+                <tr key={key}>
+                  <td className="cell-mono">
+                    {activo.host ?? "—"}
+                  </td>
+
+                  <td>
+                    {activo.hostname ?? "—"}
+                  </td>
+
+                  <td>
+                    {activo.so ?? "—"}
+                  </td>
+
+                  <td>
+                    {activo.soProbab != null
+                      ? `${activo.soProbab}%`
+                      : "—"}
+                  </td>
+
+                  <td className="cell-mono">
+                    {activo.mac ?? "—"}
+                  </td>
+
+                  <td>
+                    {activo.descripcion ?? "—"}
+                  </td>
+
+                  <td>
+                    {escaneoIds.length}
+                  </td>
+
+                  <td>
+                    <button
+                      type="button"
+                      className="button button-activoP"
+                      onClick={() =>
+                        onVerDetalle(activo)
+                      }
+                    >
+                      Ver
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -80,27 +119,39 @@ export default function ActivosListado({
         >
           Anterior
         </button>
+
         <span>
-          Página {page + 1} de {Math.max(totalPages, 1)}
+          Página {page + 1} de{" "}
+          {Math.max(totalPages, 1)}
         </span>
+
         <button
           type="button"
           className="button button-page"
           onClick={onSiguiente}
-          disabled={page >= totalPages - 1}
+          disabled={
+            totalPages === 0 ||
+            page >= totalPages - 1
+          }
         >
           Siguiente
         </button>
       </div>
 
       {activoDetalle && (
-        <div className="activo-modal-overlay" onClick={onCerrarDetalle}>
+        <div
+          className="activo-modal-overlay"
+          onClick={onCerrarDetalle}
+        >
           <div
             className="activo-modal"
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
           >
             <div className="activo-modal-header">
               <h2>Detalle del activo</h2>
+
               <button
                 type="button"
                 className="activo-modal-close"
@@ -114,40 +165,71 @@ export default function ActivosListado({
             <div className="activo-detalle">
               <div className="activo-detalle-item">
                 <strong>Host</strong>
-                <code>{activoDetalle.host}</code>
+                <code>
+                  {activoDetalle.host ?? "—"}
+                </code>
               </div>
+
               <div className="activo-detalle-item">
                 <strong>Hostname</strong>
-                <span>{activoDetalle.hostname ?? "—"}</span>
+                <span>
+                  {activoDetalle.hostname ?? "—"}
+                </span>
               </div>
+
               <div className="activo-detalle-item">
                 <strong>Sistema operativo</strong>
-                <span>{activoDetalle.so ?? "—"}</span>
+                <span>
+                  {activoDetalle.so ?? "—"}
+                </span>
               </div>
+
               <div className="activo-detalle-item">
-                <strong>Probabilidad del SO</strong>
+                <strong>
+                  Probabilidad del SO
+                </strong>
+
                 <span>
                   {activoDetalle.soProbab != null
                     ? `${activoDetalle.soProbab}%`
                     : "—"}
                 </span>
               </div>
+
               <div className="activo-detalle-item">
                 <strong>MAC</strong>
-                <span>{activoDetalle.mac ?? "—"}</span>
+                <span>
+                  {activoDetalle.mac ?? "—"}
+                </span>
               </div>
+
               <div className="activo-detalle-item">
                 <strong>Descripción</strong>
-                <span>{activoDetalle.descripcion ?? "—"}</span>
+                <span>
+                  {activoDetalle.descripcion ??
+                    "—"}
+                </span>
               </div>
+
               <div className="activo-detalle-escaneos">
-                <strong>Escaneos donde fue detectado</strong>
-                {activoDetalle.escaneoIds.length === 0 ? (
-                  <span>Sin escaneos registrados.</span>
+                <strong>
+                  Escaneos donde fue detectado
+                </strong>
+
+                {(activoDetalle.escaneoIds ?? [])
+                  .length === 0 ? (
+                  <span>
+                    Sin escaneos registrados.
+                  </span>
                 ) : (
                   <div className="activo-escaneos-lista">
-                    {activoDetalle.escaneoIds.map((escaneoId) => (
-                      <code key={escaneoId}>{escaneoId}</code>
+                    {(
+                      activoDetalle.escaneoIds ??
+                      []
+                    ).map((escaneoId) => (
+                      <code key={escaneoId}>
+                        {escaneoId}
+                      </code>
                     ))}
                   </div>
                 )}
@@ -155,7 +237,6 @@ export default function ActivosListado({
             </div>
 
             <div className="activo-modal-footer" />
-             
           </div>
         </div>
       )}

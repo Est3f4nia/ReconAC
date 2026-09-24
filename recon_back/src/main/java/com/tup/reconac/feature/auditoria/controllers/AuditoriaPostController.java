@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.tup.reconac.config.server.BaseResponse;
+import com.tup.reconac.config.BaseResponse;
 import com.tup.reconac.feature.auditoria.dtos.request.AuditoriaRequestDto;
 import com.tup.reconac.feature.auditoria.dtos.response.AuditoriaResponse;
 import com.tup.reconac.feature.auditoria.services.interfaces.IAuditoriaCreateService;

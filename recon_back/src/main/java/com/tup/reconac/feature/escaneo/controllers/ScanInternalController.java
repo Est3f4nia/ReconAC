@@ -4,10 +4,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.tup.reconac.config.server.BaseResponse;
+import com.tup.reconac.config.BaseResponse;
 import com.tup.reconac.feature.escaneo.dtos.response.EscaneoResult;
 import com.tup.reconac.feature.escaneo.dtos.internal.ScanStatusResponse;
-import com.tup.reconac.feature.escaneo.services.interfaces.IEscaneoPostService;
+import com.tup.reconac.feature.escaneo.services.interfaces.IEscaneoCreateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ScanInternalController {
 
-    private final IEscaneoPostService escaneoPost;
+    private final IEscaneoCreateService escaneoPost;
 
     @Operation(summary = "Recibir progreso desde Python", description = "Uso interno, sin JWT ni CSRF en la configuración actual. jobId es el identificador del trabajo Python (moduloJobId), distinto del ID persistido del escaneo.")
     @ApiResponse(responseCode = "200", description = "Operación completada", useReturnTypeSchema = true)

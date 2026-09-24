@@ -1,15 +1,25 @@
-/* ============================================================
- *  Funciones de autenticación — llaman a /api/auth/*
- * ============================================================ */
+import {
+  apiFetch,
+  parseApiResponse,
+  requestTokenRefresh,
+} from "./client";
 
-import { apiFetch } from "./client";
-import type { AuthResponse, BaseResponse, RefreshResponse } from "./types";
+import type {
+  AuthResponse,
+  LoginRequest,
+  RefreshResponse,
+  RegisterRequest,
+} from "./types";
 
 export class AuthError extends Error {
   status: number;
   errors?: string[];
 
-  constructor(status: number, message: string, errors?: string[]) {
+  constructor(
+    status: number,
+    message: string,
+    errors?: string[],
+  ) {
     super(message);
     this.name = "AuthError";
     this.status = status;
@@ -17,47 +27,54 @@ export class AuthError extends Error {
   }
 }
 
-async function parseResponse<T>(res: Response): Promise<T> {
-  const body = await res.json();
-
-  if (!res.ok) {
-    const detail = body.detail ?? body.message ?? "Error desconocido";
-    const errors: string[] | undefined = body.errors;
-    throw new AuthError(res.status, detail, errors);
-  }
-
-  return (body.data ?? body) as T;
-}
-
 export async function login(
   email: string,
   contrasenia: string,
 ): Promise<AuthResponse> {
+  const request: LoginRequest = {
+    email,
+    contrasenia,
+  };
+
   const res = await apiFetch("/api/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, contrasenia }),
+    body: JSON.stringify(request),
   });
-  return parseResponse<AuthResponse>(res);
+
+  return parseApiResponse<AuthResponse>(
+    res,
+    "No se pudo iniciar sesión.",
+    (status, message, errors) =>
+      new AuthError(status, message, errors),
+  );
 }
 
 export async function register(
   email: string,
   contrasenia: string,
-  apiKey: string
+  apiKey: string,
 ): Promise<void> {
+  const request: RegisterRequest = {
+    email,
+    contrasenia,
+    apiKey,
+  };
+
   const res = await apiFetch("/api/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email, contrasenia, apiKey }),
+    body: JSON.stringify(request),
   });
-  await parseResponse<BaseResponse<null>>(res);
+
+  await parseApiResponse<void>(
+    res,
+    "No se pudo registrar el usuario.",
+    (status, message, errors) =>
+      new AuthError(status, message, errors),
+  );
 }
 
-export async function refresh(
+export function refresh(
   refreshToken: string,
 ): Promise<RefreshResponse> {
-  const res = await apiFetch("/api/auth/refresh", {
-    method: "POST",
-    body: JSON.stringify({ refreshToken }),
-  });
-  return parseResponse<RefreshResponse>(res);
+  return requestTokenRefresh(refreshToken);
 }

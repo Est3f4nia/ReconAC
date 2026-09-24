@@ -833,7 +833,7 @@ export function CveDesglose({
         </p>
 
         <h2 id="security-breakdown-title">
-          Desglose de CVEs
+          Desglose de CVE
         </h2>
 
         <p>

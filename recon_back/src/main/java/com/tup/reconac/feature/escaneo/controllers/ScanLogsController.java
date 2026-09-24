@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.tup.reconac.config.ModulesConfig;
+import com.tup.reconac.config.modules.ModulesConfig;
 import com.tup.reconac.feature.escaneo.services.domain.EscaneoConsultService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

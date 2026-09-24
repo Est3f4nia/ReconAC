@@ -1,6 +1,6 @@
 package com.tup.reconac.modules.vulnEnum.mappers;
 
-import com.tup.reconac.modules.vulnEnum.dtos.CveDetalleResponse;
+import com.tup.reconac.modules.vulnEnum.dtos.metricas.CveDetalleResponse;
 import com.tup.reconac.modules.vulnEnum.models.Cve;
 import org.springframework.stereotype.Component;
 

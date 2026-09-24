@@ -4,37 +4,33 @@ import com.tup.reconac.exceptions.escaneo.EscaneoNotFoundException;
 import com.tup.reconac.feature.auditoria.models.Auditoria;
 import com.tup.reconac.feature.auditoria.services.domain.AuditoriaConsultService;
 import com.tup.reconac.feature.escaneo.dtos.response.EscaneoListadoResponse;
+import com.tup.reconac.feature.escaneo.mappers.EscaneoMapper;
 import com.tup.reconac.feature.escaneo.models.Escaneo;
 import com.tup.reconac.feature.escaneo.repositories.EscaneoRepository;
-import com.tup.reconac.feature.usuario.models.Usuario;
-import com.tup.reconac.feature.usuario.services.domain.UserDetailsService;
-import lombok.AllArgsConstructor;
+import com.tup.reconac.feature.usuario.services.domain.CurrentUserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class EscaneoConsultService {
 
     private final EscaneoRepository repo;
     private final AuditoriaConsultService auditoriaConsult;
-    private final UserDetailsService userService;
+    private final CurrentUserService currentUser;
 
     // Getters ---
 
-    public List<UUID> getEscaneoIds(List<UUID> auditoriaIds) {
-        return repo.findByAuditoriaIdIn(auditoriaIds, Pageable.unpaged())
-                .stream()
-                .map(Escaneo::getId)
-                .toList();
+    public List<UUID> getEscaneoIds(Set<UUID> auditoriaIds) {
+        return repo.findIdsByAuditoriaIdIn(auditoriaIds);
     }
+
+    public List<UUID> getEscaneoIds(UUID auditoriaId) {return repo.findIdsByAuditoriaId(auditoriaId); }
 
     public List<Escaneo> getEscaneos(UUID auditoriaId) {
         return repo.findByAuditoriaIdOrderByCreadoADesc(auditoriaId);
@@ -51,7 +47,7 @@ public class EscaneoConsultService {
     public Escaneo findById(UUID escaneoId) {
         return repo.findById(escaneoId)
                 .orElseThrow(() ->
-                        new EscaneoNotFoundException("Escaneo no encontrado" + escaneoId));
+                        new EscaneoNotFoundException("Escaneo no encontrado: " + escaneoId));
     }
 
     // Búsqueda con validación de pertenencia a auditoria
@@ -69,7 +65,10 @@ public class EscaneoConsultService {
     }
 
     // Búsqueda con validación de pertenencia a usuario
-    public Escaneo findEscaneoForUsuario(UUID escaneoId, UUID usuarioId) {
+    public Escaneo findEscaneoForUsuario(UUID escaneoId) {
+
+        UUID usuarioId = currentUser.getUsuarioId();
+
         Escaneo escaneo = repo.findById(escaneoId)
                 .orElseThrow(() -> new EscaneoNotFoundException("Escaneo no encontrado: " + escaneoId));
         auditoriaConsult.verifyEscaneoOwnership(escaneo, usuarioId);
@@ -78,12 +77,10 @@ public class EscaneoConsultService {
 
     public Page<EscaneoListadoResponse> findAllForAuthenticatedUser(Pageable pageable) {
 
-        Usuario usuario = userService.getAuthenticatedUser();
+        UUID usuarioId = currentUser.getUsuarioId();
 
-        List<Auditoria> auditorias = auditoriaConsult.findAllByUsuarioId(usuario.getId());
-        if (auditorias.isEmpty()) {
-            return Page.empty(pageable);
-        }
+        List<Auditoria> auditorias = auditoriaConsult.findAllByUsuarioId(usuarioId);
+        if (auditorias.isEmpty()) return Page.empty(pageable);
 
         List<UUID> auditoriaIds = auditorias.stream()
                 .map(Auditoria::getId)
@@ -92,24 +89,18 @@ public class EscaneoConsultService {
         Map<UUID, String> nombresAuditorias = auditorias.stream()
                 .collect(Collectors.toMap(
                         Auditoria::getId,
-                        Auditoria::getNombre
+                        auditoria -> auditoria.getNombre() != null
+                                ? auditoria.getNombre()
+                                : "Nueva auditoría"
                 ));
 
-//        return repo.findByAuditoriaIdIn(auditoriaIds, pageable)
-//                .map(EscaneoMapper::toResponseListado);
+        Page<Escaneo> escaneos = repo.findByAuditoriaIdIn(auditoriaIds, pageable);
 
-        // mappeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeer
-        return repo.findByAuditoriaIdIn(auditoriaIds, pageable)
-                .map(escaneo -> new EscaneoListadoResponse(
-                        escaneo.getId(),
-                        escaneo.getAuditoriaId(),
-                        nombresAuditorias.get(escaneo.getAuditoriaId()),
-                        List.of(escaneo.getObjetivos()),
-                        escaneo.getEstado(),
-                        escaneo.getProgreso(),
-                        escaneo.getNmapVersion(),
-                        escaneo.getIniciadoA(),
-                        escaneo.getCompletadoA()
-                ));
+        return escaneos.map(escaneo ->
+                EscaneoMapper.toListadoResponse(
+                        escaneo,
+                        nombresAuditorias.get(escaneo.getAuditoriaId())
+                )
+        );
     }
 }
