@@ -1,5 +1,5 @@
 package com.tup.reconac.modules.vulnEnum;
-import com.tup.reconac.config.ModulesConfig;
+import com.tup.reconac.config.modules.ModulesConfig;
 import com.tup.reconac.feature.escaneo.controllers.ScanLogsController;
 import com.tup.reconac.feature.escaneo.services.domain.EscaneoConsultService;
 import org.junit.jupiter.api.Test;

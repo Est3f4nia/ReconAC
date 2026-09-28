@@ -41,8 +41,8 @@ public class Puerto implements Serializable {
     @Column(name = "version")
     private String version;
 
-    @Column(name = "extrainfo")
-    private String extrainfo;
+    @Column(name = "extra_info")
+    private String extraInfo;
 
     @Column(name = "numero", nullable = false)
     private Integer numero;

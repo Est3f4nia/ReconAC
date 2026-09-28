@@ -1,11 +1,11 @@
 package com.tup.reconac.feature.escaneo.controllers;
 
+import com.tup.reconac.feature.escaneo.services.interfaces.IEscaneoDeleteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.tup.reconac.config.server.BaseResponse;
-import com.tup.reconac.feature.escaneo.services.EscaneoDeleteService;
+import com.tup.reconac.config.BaseResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,17 +15,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-/**
- * Falta meter interfaz y comprobaciones en el service
- */
-
 @Tag(name = "Escaneos")
 @RestController
 @RequestMapping("/api/auditorias/{auditoriaId}/escaneos")
 @RequiredArgsConstructor
 public class EscaneoDeleteController {
 
-    private final EscaneoDeleteService escaneoDelete;
+    private final IEscaneoDeleteService escaneoDelete;
 
     @Operation(summary = "Eliminar un escaneo", description = "El servicio resuelve la propiedad por escaneoId; auditoriaId forma parte de la ruta pero no se utiliza para resolver la eliminación.")
     @ApiResponse(responseCode = "204", description = "Eliminado; sin cuerpo", content = @io.swagger.v3.oas.annotations.media.Content)

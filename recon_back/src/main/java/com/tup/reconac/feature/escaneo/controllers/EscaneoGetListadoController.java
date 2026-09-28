@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
 
-import com.tup.reconac.config.server.BaseResponse;
+import com.tup.reconac.config.BaseResponse;
 import com.tup.reconac.feature.escaneo.dtos.response.EscaneoListadoResponse;
 import com.tup.reconac.feature.escaneo.services.domain.EscaneoConsultService;
 import lombok.RequiredArgsConstructor;

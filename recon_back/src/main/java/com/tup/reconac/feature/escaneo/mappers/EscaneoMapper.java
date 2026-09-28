@@ -1,16 +1,14 @@
 package com.tup.reconac.feature.escaneo.mappers;
 
+import com.tup.reconac.feature.activo.dtos.response.ActivoResultadoResponse;
 import com.tup.reconac.feature.escaneo.dtos.response.EscaneoListadoResponse;
 import com.tup.reconac.feature.escaneo.dtos.response.EscaneoResponse;
 import com.tup.reconac.feature.escaneo.dtos.internal.ScanStatusResponse;
+import com.tup.reconac.feature.escaneo.dtos.response.EscaneoResult;
 import com.tup.reconac.feature.escaneo.models.Escaneo;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
-@Component
 public class EscaneoMapper {
 
     public static EscaneoResponse toResponse(Escaneo escaneo) {
@@ -29,19 +27,18 @@ public class EscaneoMapper {
 
     public static ScanStatusResponse toStatusResponse(Escaneo escaneo) {
         return new ScanStatusResponse(
-                escaneo.getId(),   // hdppalgjvaknsdfna'lskdnvaonv dkl
+                escaneo.getId(),
                 escaneo.getEstado(),
                 escaneo.getProgreso(),
                 escaneo.getMensajeError()
         );
     }
 
-    // corregir uso
-    public static EscaneoListadoResponse toResponseListado (Escaneo escaneo, Map<UUID, String> nombresAuditorias) {
+    public static EscaneoListadoResponse toListadoResponse(Escaneo escaneo, String auditoriaNombre) {
         return new EscaneoListadoResponse(
                 escaneo.getId(),
                 escaneo.getAuditoriaId(),
-                nombresAuditorias.get(escaneo.getAuditoriaId()),
+                auditoriaNombre,
                 List.of(escaneo.getObjetivos()),
                 escaneo.getEstado(),
                 escaneo.getProgreso(),
@@ -51,4 +48,18 @@ public class EscaneoMapper {
         );
     }
 
+    public static EscaneoResult.EscaneoResultResponse toResultResponse(
+            Escaneo escaneo,
+            List<ActivoResultadoResponse> activos) {
+
+        return new EscaneoResult.EscaneoResultResponse(
+                escaneo.getId(),
+                escaneo.getEstado(),
+                escaneo.getProgreso(),
+                escaneo.getNmapVersion(),
+                escaneo.getIniciadoA(),
+                escaneo.getCompletadoA(),
+                activos
+        );
+    }
 }

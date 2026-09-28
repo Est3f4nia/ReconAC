@@ -4,6 +4,7 @@ import com.tup.reconac.modules.vulnEnum.dtos.data.KevData;
 import com.tup.reconac.modules.vulnEnum.models.Cve;
 import com.tup.reconac.modules.vulnEnum.repositories.CveRepository;
 import com.tup.reconac.modules.vulnEnum.clients.KevClient;
+import com.tup.reconac.modules.vulnEnum.services.helpers.VulnerabilityCatalogLock;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;

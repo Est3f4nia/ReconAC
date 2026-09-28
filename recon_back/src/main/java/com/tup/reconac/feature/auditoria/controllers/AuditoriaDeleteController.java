@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.tup.reconac.config.server.BaseResponse;
+import com.tup.reconac.config.BaseResponse;
 import com.tup.reconac.feature.auditoria.services.interfaces.IAuditoriaDeleteService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;

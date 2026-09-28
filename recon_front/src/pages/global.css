@@ -4,34 +4,34 @@
 
 :root {
 
-    /* General */
-    --bg: #0a0f3d;
-    --font: #e6edf3;
-    --acc1: #2c2971;
-    --acc2: #353b85;
-    --border-big: #4682b4;
-    --border-acc: #40e0d0;
-    --button-link: #ff1493;
-    --modal-bg: #0009;
+  /* General */
+  --bg: #0a0f3d;
+  --font: #e6edf3;
+  --acc1: #2c2971;
+  --acc2: #353b85;
+  --border-big: #4682b4;
+  --border-acc: #40e0d0;
+  --button-link: #ff1493;
+  --modal-bg: #0009;
 
-    /* CVSS */
-    --critical: #ff3131;
-    --high: #ff8a3d;
-    --medium: #f5c542;
-    --low: #4da3ff;
-    /* --none: #8b949e; */
+  /* CVSS */
+  --critical: #ff3131;
+  --high: #ff8a3d;
+  --medium: #f5c542;
+  --low: #4da3ff;
+  /* --none: #8b949e; */
 
-    /* Scan */
-    --pendiente: #d099ff;
-    --en-proceso: #40e0d0;
-    --completado: #00df81;
-    --fallo: #ff3131;
+  /* Scan */
+  --pendiente: #d099ff;
+  --en-proceso: #40e0d0;
+  --completado: #00df81;
+  --fallo: #ff3131;
 
-    --br-radius: 5px;
-    --transition: .25s;
+  --br-radius: 5px;
+  --transition: .25s;
 
-    --font-title: "Quantico", sans-serif;
-    --font-body: "IBM Plex Mono", monospace;
+  --font-title: "Quantico", sans-serif;
+  --font-body: "IBM Plex Mono", monospace;
   --font-console: "Ubuntu Mono", monospace;  /* "salidas" por consola */
 
   --motion-enter: 350ms;

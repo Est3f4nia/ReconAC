@@ -10,7 +10,7 @@ import com.tup.reconac.feature.auditoria.services.AuditoriaDeleteService;
 import com.tup.reconac.feature.auditoria.services.AuditoriaGetService;
 import com.tup.reconac.feature.auditoria.services.AuditoriaUpdateService;
 import com.tup.reconac.feature.usuario.models.Usuario;
-import com.tup.reconac.feature.usuario.services.domain.UserDetailsService;
+import com.tup.reconac.feature.usuario.services.domain.CustomUserDetailsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,7 @@ class AuditoriaServiceTest {
     private AuditoriaRepository auditoriaRepository;
 
     @Mock
-    private UserDetailsService userService;
+    private CustomUserDetailsService userService;
 
     @InjectMocks
     private AuditoriaCreateService createService;

@@ -1,12 +1,13 @@
 package com.tup.reconac.modules.vulnEnum;
 
-import com.tup.reconac.cache.CacheService;
+import com.tup.reconac.modules.vulnEnum.dtos.enrichment.nvd.NvdCacheEntry;
+import com.tup.reconac.modules.vulnEnum.dtos.enrichment.nvd.NvdVulnerabilityData;
 import com.tup.reconac.modules.vulnEnum.mappers.CpeParser;
 import com.tup.reconac.modules.vulnEnum.mappers.NvdVulnerabilityMapper;
 import com.tup.reconac.modules.vulnEnum.models.*;
 import com.tup.reconac.modules.vulnEnum.repositories.*;
-import com.tup.reconac.modules.vulnEnum.dtos.nvd.*;
 import com.tup.reconac.modules.vulnEnum.services.cache.VulnerabilityPersistenceService;
+import com.tup.reconac.modules.vulnEnum.services.helpers.VulnerabilityCatalogLock;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.RedisTemplate;
 import tools.jackson.databind.json.JsonMapper;
@@ -15,7 +16,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
 
 class CpePersistenceRegressionTest {
     @Test void parsesNmapExamplesAndMissingVersions() {
@@ -56,7 +56,7 @@ class CpePersistenceRegressionTest {
         var refs = mock(ReferenciaRepository.class);
         var service = new VulnerabilityPersistenceService(mock(RedisTemplate.class),
                 JsonMapper.builder().build(), cpes, cves, cwes, links, weaknesses, refs,
-                mock(com.tup.reconac.modules.vulnEnum.services.VulnerabilityCatalogLock.class));
+                mock(VulnerabilityCatalogLock.class));
         var cpe = new Cpe();
         cpe.setId(UUID.randomUUID());
         cpe.setUri("cpe:/a:openbsd:openssh:6.6.1p1");

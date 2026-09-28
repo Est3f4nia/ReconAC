@@ -12,6 +12,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AuditoriaRepository extends JpaRepository<Auditoria, UUID> {
 
     Page<Auditoria> findByUsuarioIdOrderByFechaGeneracionDesc(UUID usuarioId, Pageable pageable);
+
     List<Auditoria> findByUsuarioIdOrderByFechaGeneracionDesc(UUID usuarioId);
+
     Optional<Auditoria> findByIdAndUsuarioId(UUID id, UUID usuarioId);
+
+    boolean existsByIdAndUsuarioId(UUID id, UUID usuarioId);
 }

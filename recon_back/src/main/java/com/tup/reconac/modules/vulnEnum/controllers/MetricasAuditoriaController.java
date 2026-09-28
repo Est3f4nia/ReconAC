@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.tup.reconac.modules.vulnEnum.dtos.DashboardAuditoriaResponse;
+import com.tup.reconac.modules.vulnEnum.dtos.metricas.DashboardAuditoriaResponse;
 import com.tup.reconac.modules.vulnEnum.services.interfaces.IMetricasAuditoriaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

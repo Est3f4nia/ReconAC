@@ -23,8 +23,8 @@ public class ActivoDeleteController {
     @ApiResponse(responseCode = "204", description = "Eliminado; sin cuerpo", content = @io.swagger.v3.oas.annotations.media.Content)
     @ApiResponse(responseCode = "404", ref = "#/components/responses/Error404")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteById(@PathVariable UUID id) {
-        activoDelete.deleteById(id);
+    public ResponseEntity<Void> deleteById(@PathVariable UUID activoId) {
+        activoDelete.deleteById(activoId);
         return ResponseEntity.noContent().build();
     }
 }

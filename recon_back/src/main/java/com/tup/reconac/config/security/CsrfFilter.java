@@ -29,25 +29,28 @@ public class CsrfFilter extends OncePerRequestFilter {
     private static final String CSRF_HEADER = "X-XSRF-TOKEN";
     private static final String CSRF_COOKIE = "XSRF-TOKEN";
     private static final String ACCESS_COOKIE = "access_token";
-    private static final Set<String> SAFE_METHODS = Set.of("GET", "HEAD", "OPTIONS", "TRACE");
+
+    private static final Set<String> SAFE_METHODS =
+            Set.of("GET", "HEAD", "OPTIONS", "TRACE");
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,    // deprecated, ver
-                                    @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
 
-        if (SAFE_METHODS.contains(request.getMethod())) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+        if (SAFE_METHODS.contains(request.getMethod())) return true;
 
         String path = request.getServletPath();
-        if (path.startsWith("/api/auth/") || path.startsWith("/api/internal/")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+        return path.startsWith("/api/auth/") || path.startsWith("/api/internal/");
+    }
+
+    @Override
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain)
+            throws ServletException, IOException {
 
         String accessToken = findCookie(request, ACCESS_COOKIE);
+
         if (accessToken == null || accessToken.isBlank()) {
             filterChain.doFilter(request, response);
             return;
@@ -57,27 +60,34 @@ public class CsrfFilter extends OncePerRequestFilter {
         String cookieToken = findCookie(request, CSRF_COOKIE);
 
         if (headerToken == null || !headerToken.equals(cookieToken)) {
-            response.setStatus(HttpStatus.FORBIDDEN.value());
-            response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-            response.getWriter().write(
-                    "{\"type\":\"/errors/csrf\",\"title\":\"Forbidden\"," +
-                    "\"status\":403,\"detail\":\"Token CSRF inválido o ausente.\"}");
+            reject(response);
             return;
         }
 
         filterChain.doFilter(request, response);
     }
 
+    private void reject(HttpServletResponse response) throws IOException {
+
+        response.setStatus(HttpStatus.FORBIDDEN.value());
+        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+
+        // jackson ya
+        response.getWriter().write(
+                "{\"type\":\"/errors/csrf\",\"title\":\"Forbidden\"," +
+                        "\"status\":403,\"detail\":\"Token CSRF inválido o ausente.\"}"
+        );
+    }
+
     private String findCookie(HttpServletRequest request, String name) {
+
         Cookie[] cookies = request.getCookies();
-        if (cookies == null) {
-            return null;
-        }
+        if (cookies == null) return null;
+
         for (Cookie cookie : cookies) {
-            if (name.equals(cookie.getName())) {
-                return cookie.getValue();
-            }
+            if (name.equals(cookie.getName())) return cookie.getValue();
         }
+
         return null;
     }
 }

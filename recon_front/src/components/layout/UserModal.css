@@ -78,33 +78,6 @@
   color: var(--font);
 }
 
-.user-modal-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 34px;
-  height: 34px;
-
-  padding: 0;
-
-  border: 1px solid var(--border-big);
-  border-radius: var(--br-radius);
-
-  background: var(--acc2);
-  color: var(--font);
-
-  cursor: pointer;
-
-  transition:
-    border-color var(--transition),
-    background var(--transition);
-}
-
-.user-modal-close:hover {
-  border-color: var(--border-acc);
-}
-
 /* ============================================================
    BODY
    ============================================================ */
@@ -169,7 +142,7 @@
 .user-modal-option-content {
   display: grid;
   gap: 4px;
-  font-family: var(--font);
+  font-family: var(--font-body);
 
   min-width: 0;
 }

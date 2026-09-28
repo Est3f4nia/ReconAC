@@ -22,7 +22,7 @@ export function DashboardKpiGrid({ data }: Props) {
     {
       label: "CVE",
       value: data?.cves ?? "—",
-    },
+    }, 
     {
       label: "CVE críticas",
       value: data?.cvesCriticos ?? "—",

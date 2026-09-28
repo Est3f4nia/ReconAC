@@ -1,26 +1,17 @@
 import { Link } from "react-router-dom";
-import { EscaneoResumen } from "@/data/types";
+import { AuditoriaResumen } from "@/data/auditorias";
 import "./AuditCard.css";
 
-// interface EscaneoResumen {
-//   auditoriaId: string | number;
-//   auditoriaNombre: string;
-//   escaneoId?: string | number | null;
-//   completadoA?: string | Date | null;
-//   status?: string | null;
-//   activos: number;
-//   puertos: number;    falla?
-//   cve: number;
-//   cveCriticos: number;
-// } 
-
-
-
 interface AuditCardProps {
-  audit: EscaneoResumen;
+  audit: AuditoriaResumen;
 }
 
 export function AuditCard({ audit }: AuditCardProps) {
+  const activos = audit.activos ?? 0;
+  const puertos = audit.puertos ?? 0;
+  const cve = audit.cve ?? 0;
+  const cveCriticos = audit.cveCriticos ?? 0;
+
   const fecha = audit.completadoA
     ? new Date(audit.completadoA).toLocaleString("es-AR", {
         day: "2-digit",
@@ -49,8 +40,8 @@ export function AuditCard({ audit }: AuditCardProps) {
       <hr className="audit-card-divider" />
 
       <div className="audit-card-info console card-audit-console">
-        <p>{pluralize(audit.activos, 'activo', 'activos')}</p>
-        <p>{pluralize(audit.puertos, 'puerto', 'puertos')}</p>
+        <p>{pluralize(activos, "activo", "activos")}</p>
+        <p>{pluralize(puertos, "puerto", "puertos")}</p>
 
         <div className="audit-card-scan">
           <p>Último escaneo:</p>
@@ -65,7 +56,7 @@ export function AuditCard({ audit }: AuditCardProps) {
         </div>
 
         <p className="audit-card-cves">
-          {audit.cve} CVE — {audit.cveCriticos} críticos
+          {cve} CVE — {cveCriticos} críticos
         </p>
       </div>
 

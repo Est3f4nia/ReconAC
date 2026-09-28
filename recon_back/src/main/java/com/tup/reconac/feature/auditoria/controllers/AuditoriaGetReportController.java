@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import com.tup.reconac.feature.auditoria.models.AuditoriaReporte;
-import com.tup.reconac.feature.auditoria.services.interfaces.IAuditoriaReportService;
+import com.tup.reconac.feature.escaneo.services.interfaces.IEscaneoReportService;
 import org.springframework.core.io.Resource;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +20,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AuditoriaGetReportController {
 
-    private final IAuditoriaReportService auditoriaReport;
+    private final IEscaneoReportService auditoriaReport;
 
     @Operation(summary = "Descargar un reporte", description = "Requiere un escaneo COMPLETADO con resultado. MD descarga Markdown; CSV descarga un ZIP con archivos CSV. Se conserva la ruta /api/{auditoriaId}/escaneos/{escaneoId}/reporte.")
     @ApiResponse(responseCode = "200", description = "Archivo descargable", content = {

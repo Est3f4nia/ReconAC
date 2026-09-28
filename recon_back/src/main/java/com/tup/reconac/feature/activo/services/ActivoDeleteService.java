@@ -7,8 +7,7 @@ import com.tup.reconac.feature.activo.services.interfaces.IActivoDeleteService;
 import com.tup.reconac.feature.auditoria.services.domain.AuditoriaConsultService;
 import com.tup.reconac.feature.escaneo.models.Escaneo;
 import com.tup.reconac.feature.escaneo.services.domain.EscaneoConsultService;
-import com.tup.reconac.feature.usuario.models.Usuario;
-import com.tup.reconac.feature.usuario.services.domain.UserDetailsService;
+import com.tup.reconac.feature.usuario.services.domain.CurrentUserService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,13 +21,13 @@ public class ActivoDeleteService implements IActivoDeleteService {
     private final ActivoRepository repo;
     private final AuditoriaConsultService auditoriaConsult;
     private final EscaneoConsultService escaneoConsult;
-    private final UserDetailsService userService;
+    private final CurrentUserService currentUser;
 
     @Override
     @Transactional
     public void deleteById(UUID activoId) {
 
-        Usuario usuario = userService.getAuthenticatedUser();
+        UUID usuarioId = currentUser.getUsuarioId();
 
         Activo activo = repo.findById(activoId)
                 .orElseThrow(() ->
@@ -36,7 +35,7 @@ public class ActivoDeleteService implements IActivoDeleteService {
                 );
 
         Escaneo escaneo = escaneoConsult.findById(activo.getEscaneoId());
-        auditoriaConsult.verifyEscaneoOwnership(escaneo, usuario.getId());
+        auditoriaConsult.verifyEscaneoOwnership(escaneo, usuarioId);
 
         repo.delete(activo);
     }

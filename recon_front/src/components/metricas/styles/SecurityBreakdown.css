@@ -332,6 +332,8 @@
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.05em;
+
+  align-content: center;
 }
 
 .cve-badge-kev {
@@ -339,6 +341,7 @@
     1px solid var(--critical);
 
   color: var(--critical);
+
 }
 
 .security-tags {
@@ -815,6 +818,45 @@
   font-size: 0.9rem;
 
   opacity: 0.6;
+}
+
+/* ============================================================
+ * Listado completo de CVE por activo
+ * ============================================================ */
+
+.cve-detail-section + .cve-detail-section {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-big);
+}
+
+.cve-detail-section h4 {
+  margin: 0 0 0.75rem;
+}
+
+.host-port-cpes {
+  min-width: 0;
+}
+
+.host-port-cpes code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 600px) {
+  .cve-detail-section + .cve-detail-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+
+  .host-port-cpes {
+    align-items: flex-start;
+  }
+
+  .host-port-cpes code {
+    width: 100%;
+  }
 }
 
 /* =========================================================

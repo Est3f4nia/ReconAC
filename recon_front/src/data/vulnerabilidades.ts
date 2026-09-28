@@ -1,4 +1,8 @@
-import { apiFetch } from "./client";
+import {
+  apiFetch,
+  parseApiResponse,
+} from "./client";
+
 import type { CveDetalle } from "./types";
 
 export async function fetchCveDetalle(
@@ -8,21 +12,8 @@ export async function fetchCveDetalle(
     `/api/vulnerabilities/${encodeURIComponent(cveId)}`,
   );
 
-  const body = await res.json();
-
-  if (!res.ok) {
-    const detail =
-      body.detail ??
-      body.message ??
-      body.errors ??
-      "No se pudo obtener el detalle de la vulnerabilidad.";
-
-    throw new Error(
-      typeof detail === "string"
-        ? detail
-        : "Error en la petición.",
-    );
-  }
-
-  return (body.data ?? body) as CveDetalle;
+  return parseApiResponse<CveDetalle>(
+    res,
+    "No se pudo obtener el detalle de la vulnerabilidad.",
+  );
 }

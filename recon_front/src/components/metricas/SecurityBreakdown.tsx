@@ -12,10 +12,8 @@ import "@/components/metricas/styles/SecurityBreakdown.css";
 interface Props {
   auditoriaId: string;
   escaneos: EjecucionHistorial[];
-
   cves: CveDesgloseType | null;
   hosts: HostDesglose | null;
-
   pageSize?: number;
 }
 

@@ -11,6 +11,6 @@ public record PuertoResultadoResponse(
         String servicio,
         String producto,
         String version,
-        String extrainfo,
+        String extraInfo,
         List<String> cpes
 ) {}

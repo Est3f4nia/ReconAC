@@ -1,5 +1,7 @@
 package com.tup.reconac.modules.vulnEnum.clients;
 
+import com.tup.reconac.exceptions.vulnEnum.NvdLookupException;
+import com.tup.reconac.modules.vulnEnum.clients.nvd.NvdCpeQuery;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

@@ -1,67 +1,17 @@
-import { apiFetch } from "./client";
+import {
+  apiFetch,
+  assertApiResponseOk,
+  parseApiResponse,
+} from "./client";
+
 import type {
-  AuditoriaResponse,
-  EscaneoResumen,
-  EscaneoResultResponse,
   EscaneoResponse,
+  EscaneoResultResponse,
+  MoverEscaneoRequest,
   ScanStartRequest,
   ScanStatusResponse,
-  PageResponse,
-  EscaneoListado,
-  AuditoriaEstadisticasResponse
+  PageEscaneoListadoResponse
 } from "./types";
-
-export async function fetchResumen(): Promise<EscaneoResumen[]> {
-  const res = await apiFetch("/api/auditorias/resumen");
-
-  return parseResponse<EscaneoResumen[]>(res);
-}
-
-// ??????????????????????????????????????????
-export async function createAuditoria(
-  nombre: string,
-  objetivo: string,
-): Promise<AuditoriaResponse> {
-  const res = await apiFetch("/api/auditorias", {
-    method: "POST",
-    body: JSON.stringify({ nombre, objetivo }),
-  });
-
-  return parseResponse<AuditoriaResponse>(res);
-}
-
-export async function fetchAuditoria(
-  auditoriaId: string,
-): Promise<AuditoriaResponse> {
-  const res = await apiFetch(`/api/auditorias/${auditoriaId}`);
-
-  return parseResponse<AuditoriaResponse>(res);
-}
-
-
-export async function fetchAuditorias(): Promise<AuditoriaResponse[]> {
-  const res = await apiFetch("/api/auditorias?size=100");
-
-  const body = await res.json();
-
-  if (!res.ok) {
-    const detail = body.detail ?? body.message ?? "Error desconocido";
-    throw new Error(detail);
-  }
-
-  return body.content ?? body.data ?? [];
-}
-
-export async function fetchAuditoriaEstadisticas(
-  auditoriaId: string,
-): Promise<AuditoriaEstadisticasResponse> {
-  const res = await apiFetch(
-    `/api/auditorias/${encodeURIComponent(auditoriaId)}/estadisticas`,
-  );
-
-  return parseResponse<AuditoriaEstadisticasResponse>(res);
-}
-
 
 export async function fetchEscaneo(
   auditoriaId: string,
@@ -71,60 +21,25 @@ export async function fetchEscaneo(
     `/api/auditorias/${encodeURIComponent(auditoriaId)}/escaneos/${encodeURIComponent(escaneoId)}/resultado`,
   );
 
-  return parseResponse<EscaneoResultResponse>(res);
+  return parseApiResponse<EscaneoResultResponse>(res);
 }
-
 
 export async function fetchEscaneos(
   page = 0,
   size = 20,
-): Promise<PageResponse<EscaneoListado>> {
+): Promise<PageEscaneoListadoResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+    sort: "creadoA,desc",
+  });
+
   const res = await apiFetch(
-    `/api/escaneos?page=${page}&size=${size}&sort=creadoA,desc`,
+    `/api/escaneos?${params.toString()}`,
   );
 
-  return parseResponse<PageResponse<EscaneoListado>>(res);
+  return parseApiResponse<PageEscaneoListadoResponse>(res);
 }
-
-
-export async function moveEscaneo(
-  escaneoId: string,
-  auditoriaId: string,
-): Promise<void> {
-  const res = await apiFetch(
-    `/api/escaneos/${encodeURIComponent(escaneoId)}`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({ auditoriaId }),
-    },
-  );
-
-  await parseResponse<void>(res);
-}
-
-export async function deleteEscaneo(
-  auditoriaId: string,
-  escaneoId: string,
-): Promise<void> {
-  const res = await apiFetch(
-    `/api/auditorias/${encodeURIComponent(auditoriaId)}/escaneos/${encodeURIComponent(escaneoId)}`,
-    {
-      method: "DELETE",
-    },
-  );
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => null);
-
-    const detail =
-      body?.detail ??
-      body?.message ??
-      "No se pudo eliminar el escaneo.";
-
-    throw new Error(detail);
-  }
-}
-
 
 export async function startEscaneo(
   auditoriaId: string,
@@ -138,7 +53,7 @@ export async function startEscaneo(
     },
   );
 
-  return parseResponse<EscaneoResponse>(res);
+  return parseApiResponse<EscaneoResponse>(res);
 }
 
 export async function fetchEscaneoStatus(
@@ -149,25 +64,46 @@ export async function fetchEscaneoStatus(
     `/api/auditorias/${encodeURIComponent(auditoriaId)}/escaneos/${encodeURIComponent(escaneoId)}/status`,
   );
 
-  return parseResponse<ScanStatusResponse>(res);
+  return parseApiResponse<ScanStatusResponse>(res);
 }
 
-async function parseResponse<T>(res: Response): Promise<T> {
-  const body = await res.json();
+export async function moveEscaneo(
+  escaneoId: string,
+  auditoriaId: string,
+): Promise<void> {
+  const request: MoverEscaneoRequest = {
+    auditoriaId,
+  };
 
-  if (!res.ok) {
-    const detail =
-      body.detail ?? body.message ?? "Error desconocido";
+  const res = await apiFetch(
+    `/api/escaneos/${encodeURIComponent(escaneoId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(request),
+    },
+  );
 
-    const errors: string[] | undefined = body.errors;
-
-    throw new Error(errors?.[0] ?? detail);
-  }
-
-  return (body.data ?? body) as T;
+  await parseApiResponse<void>(res);
 }
 
-// REPORTE ======================
+export async function deleteEscaneo(
+  auditoriaId: string,
+  escaneoId: string,
+): Promise<void> {
+  const res = await apiFetch(
+    `/api/auditorias/${encodeURIComponent(auditoriaId)}/escaneos/${encodeURIComponent(escaneoId)}`,
+    {
+      method: "DELETE",
+    },
+  );
+
+  await assertApiResponseOk(
+    res,
+    "No se pudo eliminar el escaneo.",
+  );
+}
+
+/* ---------- Reportes ---------- */
 
 export type FormatoReporte = "MD" | "CSV";
 
@@ -176,22 +112,18 @@ export async function descargarReporte(
   escaneoId: string,
   formato: FormatoReporte,
 ): Promise<Blob> {
+  const params = new URLSearchParams({
+    formato,
+  });
+
   const res = await apiFetch(
-    `/api/${encodeURIComponent(auditoriaId)}/escaneos/${encodeURIComponent(
-      escaneoId,
-    )}/reporte?formato=${formato}`,
+    `/api/${encodeURIComponent(auditoriaId)}/escaneos/${encodeURIComponent(escaneoId)}/reporte?${params.toString()}`,
   );
 
-  if (!res.ok) {
-    let detail = "No se pudo generar el reporte.";
-    try {
-      const body = await res.json();
-      detail = body.detail ?? body.message ?? detail;
-    } catch {
-      // La respuesta puede no ser JSON.
-    }
-    throw new Error(detail);
-  }
+  await assertApiResponseOk(
+    res,
+    "No se pudo generar el reporte.",
+  );
 
   return res.blob();
 }

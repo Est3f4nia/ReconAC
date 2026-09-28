@@ -1,56 +1,40 @@
 package com.tup.reconac.feature.escaneo.services;
 
-import com.tup.reconac.exceptions.escaneo.EscaneoNotFoundException;
 import com.tup.reconac.exceptions.global.BadRequestException;
-import com.tup.reconac.feature.auditoria.models.Auditoria;
 import com.tup.reconac.feature.auditoria.services.domain.AuditoriaConsultService;
 import com.tup.reconac.feature.escaneo.models.Escaneo;
 import com.tup.reconac.feature.escaneo.models.EscaneoEstado;
-import com.tup.reconac.feature.escaneo.repositories.EscaneoRepository;
+import com.tup.reconac.feature.escaneo.services.domain.EscaneoConsultService;
 import com.tup.reconac.feature.escaneo.services.interfaces.IEscaneoPatchService;
-import com.tup.reconac.feature.usuario.models.Usuario;
-import com.tup.reconac.feature.usuario.services.domain.UserDetailsService;
-import lombok.AllArgsConstructor;
+import com.tup.reconac.feature.usuario.services.domain.CurrentUserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class EscaneoPatchService implements IEscaneoPatchService {
 
+    private final EscaneoConsultService escaneoConsult;
     private final AuditoriaConsultService auditoriaConsult;
-    private final UserDetailsService userService;
-    private final EscaneoRepository repo;
+    private final CurrentUserService currentUser;
 
     @Override
     @Transactional
     public void mover(UUID escaneoId, UUID nuevaAuditoriaId) {
 
-        Usuario usuario = userService.getAuthenticatedUser();
-
-        Escaneo escaneo = repo.findById(escaneoId)
-                .orElseThrow(() ->
-                        new EscaneoNotFoundException("Escaneo no encontrado (patch)")
-                );
-
-        auditoriaConsult.verifyEscaneoOwnership(escaneo, usuario.getId());
-        Auditoria nuevaAuditoria = auditoriaConsult.findId(nuevaAuditoriaId);
-
-        if (!nuevaAuditoria.getUsuarioId().equals(usuario.getId())) {
-            throw new BadRequestException(
-                    "La auditoría no pertenece al usuario autenticado"
-            );
-        }
+        UUID usuarioId = currentUser.getUsuarioId();
+        Escaneo escaneo = escaneoConsult.findEscaneoForUsuario(escaneoId);
 
         if (escaneo.getEstado() == EscaneoEstado.EN_PROCESO) {
-            throw new BadRequestException(
-                    "No se puede mover un escaneo en proceso"
-            );
+            throw new BadRequestException("No se puede mover un escaneo en proceso");
         }
 
+        if (escaneo.getAuditoriaId().equals(nuevaAuditoriaId)) return;
+
+        auditoriaConsult.findOwnedAuditoria(nuevaAuditoriaId, usuarioId);
         escaneo.setAuditoriaId(nuevaAuditoriaId);
-        repo.save(escaneo);
     }
 }
