@@ -976,8 +976,10 @@ export interface components {
             epssScore?: number;
             kev?: boolean;
             cpes?: string[];
+            puertos?: string[];
         };
         HostDesgloseResponse: {
+            todosLosHosts?: components["schemas"]["HostVulnerabilidadResponse"][];
             masVulnerabilidadesCriticas?: components["schemas"]["HostVulnerabilidadResponse"][];
             mayorRiesgoExplotacion?: components["schemas"]["HostVulnerabilidadResponse"][];
         };
@@ -993,6 +995,7 @@ export interface components {
             kev?: boolean;
             cvesCriticas?: components["schemas"]["HostCveResponse"][];
             cvesPrioritarias?: components["schemas"]["HostCveResponse"][];
+            cves?: components["schemas"]["HostCveResponse"][];
         };
         RiesgoTemporalResponse: {
             /** Format: uuid */
@@ -1094,42 +1097,6 @@ export interface components {
         };
     };
     responses: {
-        /** @description Permisos insuficientes o CSRF inválido */
-        Error403: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/problem+json": components["schemas"]["ApiProblem"];
-            };
-        };
-        /** @description Error inesperado del servidor */
-        Error500: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/problem+json": components["schemas"]["ApiProblem"];
-            };
-        };
-        /** @description JWT o credenciales ausentes, inválidos o expirados */
-        Error401: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/problem+json": components["schemas"]["ApiProblem"];
-            };
-        };
-        /** @description Validación o solicitud rechazada */
-        Error400: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/problem+json": components["schemas"]["ApiProblem"];
-            };
-        };
         /** @description Conflicto con los datos existentes */
         Error409: {
             headers: {
@@ -1159,6 +1126,42 @@ export interface components {
         };
         /** @description Recurso no encontrado o no accesible */
         Error404: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ApiProblem"];
+            };
+        };
+        /** @description Permisos insuficientes o CSRF inválido */
+        Error403: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ApiProblem"];
+            };
+        };
+        /** @description Error inesperado del servidor */
+        Error500: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ApiProblem"];
+            };
+        };
+        /** @description JWT o credenciales ausentes, inválidos o expirados */
+        Error401: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ApiProblem"];
+            };
+        };
+        /** @description Validación o solicitud rechazada */
+        Error400: {
             headers: {
                 [name: string]: unknown;
             };

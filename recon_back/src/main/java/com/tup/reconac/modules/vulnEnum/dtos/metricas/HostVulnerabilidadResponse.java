@@ -12,6 +12,7 @@ public record HostVulnerabilidadResponse(
         BigDecimal epssMaximo,
         boolean kev,
         List<HostCveResponse> cvesCriticas,
-        List<HostCveResponse> cvesPrioritarias
+        List<HostCveResponse> cvesPrioritarias,
+        List<HostCveResponse> cves
 ) {
 }

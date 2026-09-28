@@ -8,6 +8,7 @@ public record HostCveResponse(
         BigDecimal cvssScore,
         BigDecimal epssScore,
         boolean kev,
-        List<String> cpes
+        List<String> cpes,
+        List<String> puertos
 ) {
 }

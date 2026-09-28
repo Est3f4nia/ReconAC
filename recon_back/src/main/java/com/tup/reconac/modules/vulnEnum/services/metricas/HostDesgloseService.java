@@ -32,7 +32,7 @@ public class HostDesgloseService {
     public HostDesgloseResponse build(List<Activo> activos, List<Puerto> puertos) {
 
             if (activos.isEmpty() || puertos.isEmpty()) {
-                return new HostDesgloseResponse(List.of(), List.of());
+                return new HostDesgloseResponse(List.of(), List.of(), List.of());
             }
 
             Map<UUID, Activo> activosPorId = activos
@@ -56,7 +56,7 @@ public class HostDesgloseService {
                     .findByPuertoIdIn(puertoIds);
 
             if (puertoCpes.isEmpty()) {
-                return new HostDesgloseResponse(List.of(), List.of());
+                return new HostDesgloseResponse(List.of(), List.of(), List.of());
             }
 
             Set<UUID> cpeIds = puertoCpes
@@ -82,7 +82,7 @@ public class HostDesgloseService {
                     .findByCpeIdIn(cpeIds);
 
             if (cpeCves.isEmpty()) {
-                return new HostDesgloseResponse(List.of(), List.of());
+                return new HostDesgloseResponse(List.of(), List.of(), List.of());
             }
 
             Set<UUID> cveIds = cpeCves
@@ -138,6 +138,7 @@ public class HostDesgloseService {
                 }
 
                 List<PuertoCpe> relaciones = cpesPorPuerto.getOrDefault(puerto.getId(), List.of());
+                String puertoLabel = formatPuerto(puerto);
 
                 for (PuertoCpe puertoCpe : relaciones) {
 
@@ -150,11 +151,11 @@ public class HostDesgloseService {
 
                     for (CpeCve cpeCve : relacionesCve) {
 
-                        var cve = cvesPorId.get(cpeCve.getCveId());
+                        Cve cve = cvesPorId.get(cpeCve.getCveId());
 
                         if (cve == null || cve.getCve() == null) continue;
 
-                        host.addCve(cve, cpe.getUri());
+                        host.addCve(cve, cpe.getUri(), puertoLabel);
                     }
                 }
             }
@@ -205,7 +206,23 @@ public class HostDesgloseService {
                     .limit(10)
                     .toList();
 
-            return new HostDesgloseResponse(masVulnerabilidadesCriticas, mayorRiesgoExplotacion);
+            return new HostDesgloseResponse(
+                    all,
+                    masVulnerabilidadesCriticas,
+                    mayorRiesgoExplotacion);
+    }
+
+    private String formatPuerto(Puerto puerto) {
+
+        String protocolo = puerto.getProtocolo() == null || puerto.getProtocolo().isBlank()
+                ? null
+                : puerto.getProtocolo()
+                .trim()
+                .toLowerCase(Locale.ROOT);
+
+        return protocolo == null
+                ? String.valueOf(puerto.getNumero())
+                : puerto.getNumero() + "/" + protocolo;
     }
 
     private static class HostAccumulator {
@@ -220,7 +237,7 @@ public class HostDesgloseService {
         }
 
 
-        private void addCve(Cve cve, String cpe) {
+        private void addCve(Cve cve, String cpe, String puerto) {
 
             String cveId = cve
                     .getCve()
@@ -231,7 +248,7 @@ public class HostDesgloseService {
                     .computeIfAbsent(cveId, ignored -> new HostCveAccumulator(cveId)
             );
 
-            current.merge(cve, cpe);
+            current.merge(cve, cpe, puerto);
         }
 
         private HostVulnerabilidadResponse toResponse() {
@@ -309,7 +326,8 @@ public class HostDesgloseService {
                     epssMaximo,
                     kev,
                     cvesCriticas,
-                    cvesPrioritarias
+                    cvesPrioritarias,
+                    all
             );
         }
     }
@@ -321,11 +339,13 @@ public class HostDesgloseService {
         private BigDecimal epss;
         private boolean kev;
         private final Set<String> cpes = new TreeSet<>();
+        private final Set<String> puertos = new TreeSet<>();
+
         private HostCveAccumulator(String cveId) {
             this.cveId = cveId;
         }
 
-        private void merge(Cve cve, String cpe) {
+        private void merge(Cve cve, String cpe, String puerto) {
 
             if (cve.getCvss() != null) {
                 if (cvss == null || cve.getCvss().compareTo(cvss) > 0) cvss = cve.getCvss();
@@ -338,10 +358,12 @@ public class HostDesgloseService {
             kev |= Boolean.TRUE.equals(cve.getKev());
 
             if (cpe != null && !cpe.isBlank()) cpes.add(cpe.trim());
+
+            if (puerto != null && !puerto.isBlank()) puertos.add(puerto.trim());
         }
 
         private HostCveResponse toResponse() {
-            return new HostCveResponse(cveId, cvss, epss, kev, List.copyOf(cpes));
+            return new HostCveResponse(cveId, cvss, epss, kev, List.copyOf(cpes), List.copyOf(puertos));
         }
     }
 }
