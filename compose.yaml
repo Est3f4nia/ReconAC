@@ -3,9 +3,9 @@ services:
   postgres:
     image: postgres:17-bookworm
     environment:
-      POSTGRES_DB: ${DB_NAME:-reconac}
-      POSTGRES_USER: ${DB_USER:-reconac}
-      POSTGRES_PASSWORD: ${DB_PASSWD:?Definir DB_PASSWD en .env}
+      POSTGRES_DB: ${DB_NAME:?Definir DB_NAME en .env raiz}
+      POSTGRES_USER: ${DB_USER:?Definir DB_USER en recon_back/.env}
+      POSTGRES_PASSWORD: ${DB_PASSWD:?Definir DB_PASSWD en recon_back/.env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -30,6 +30,8 @@ services:
     environment:
       BACKEND_API_URL: http://backend:8080
       NMAP_CMD: nmap
+    depends_on:
+      backend: {condition: service_healthy}
     cap_drop: [ALL]
     cap_add: [NET_RAW]
     security_opt: ["no-new-privileges:true"]
@@ -40,33 +42,33 @@ services:
   backend:
     build: ./recon_back
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-reconac}
-      DB_USER: ${DB_USER:-reconac}
-      DB_PASSWD: ${DB_PASSWD:?Definir DB_PASSWD en .env}
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:?Definir DB_NAME en .env raiz}
+      DB_USER: ${DB_USER:?Definir DB_USER en recon_back/.env}
+      DB_PASSWD: ${DB_PASSWD:?Definir DB_PASSWD en recon_back/.env}
       REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_PORT: "6379"
       MODULES_API_URL: http://modules:5000
-      JWT_SECRET: ${JWT_SECRET:?Definir JWT_SECRET en .env}
-      NVD_ENCRYPTION_KEY: ${NVD_ENCRYPTION_KEY:?Definir NVD_ENCRYPTION_KEY en .env}
+      JWT_SECRET: ${JWT_SECRET:?Definir JWT_SECRET en recon_back/.env}
+      NVD_ENCRYPTION_KEY: ${NVD_ENCRYPTION_KEY:?Definir NVD_ENCRYPTION_KEY en recon_back/.env}
+      SEC_NAME: ${SEC_NAME:-}
+      SEC_PASSWD: ${SEC_PASSWD:-}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:${FRONTEND_PORT:-3000}}
       CACHE_TTL_HOURS: ${CACHE_TTL_HOURS:-24}
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
-      modules: {condition: service_healthy}
     restart: unless-stopped
 
   frontend:
     build: ./recon_front
     ports:
-      - "${FRONTEND_BIND:-127.0.0.1}:${FRONTEND_PORT:-3000}:80"
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:80"
     depends_on:
       backend: {condition: service_healthy}
+      modules: {condition: service_healthy}
     restart: unless-stopped
 
 volumes:

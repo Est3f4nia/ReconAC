@@ -224,7 +224,7 @@ export function UserModal({
             className="user-api-key-form"
             onSubmit={handleSubmit}
           >
-            <div className="form-group">
+            <div className="user-api-key-field">
               <label htmlFor="new-nvd-api-key">
                 Nueva NVD API KEY
               </label>
@@ -233,18 +233,14 @@ export function UserModal({
                 id="new-nvd-api-key"
                 type="password"
                 value={apiKey}
-                onChange={(event) =>
-                  setApiKey(
-                    event.target.value,
-                  )
-                }
+                onChange={(event) => setApiKey(event.target.value)}
                 autoComplete="new-password"
                 disabled={loading}
                 required
               />
             </div>
 
-            <div className="form-group">
+            <div className="user-api-key-field">
               <label htmlFor="confirm-nvd-api-key">
                 Confirmar API KEY
               </label>
@@ -253,11 +249,7 @@ export function UserModal({
                 id="confirm-nvd-api-key"
                 type="password"
                 value={confirmApiKey}
-                onChange={(event) =>
-                  setConfirmApiKey(
-                    event.target.value,
-                  )
-                }
+                onChange={(event) => setConfirmApiKey(event.target.value)}
                 autoComplete="new-password"
                 disabled={loading}
                 required
@@ -265,9 +257,8 @@ export function UserModal({
             </div>
 
             <p className="user-api-key-help">
-              La clave actual no se muestra por
-              seguridad. Al confirmar, será
-              reemplazada por la nueva.
+              La clave actual no se muestra por seguridad. Al confirmar,
+              será reemplazada por la nueva.
             </p>
 
             {error && (
@@ -300,9 +291,7 @@ export function UserModal({
                   !confirmApiKey.trim()
                 }
               >
-                {loading
-                  ? "Actualizando..."
-                  : "Actualizar API KEY"}
+                {loading ? "Actualizando..." : "Actualizar API KEY"}
               </button>
             </div>
           </form>

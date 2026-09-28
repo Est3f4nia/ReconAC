@@ -152,32 +152,31 @@
 }
 
 
-
 /* ============================================================
    API KEY FORM
    ============================================================ */
 
 .user-api-key-form {
-  display: grid;
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .user-api-key-field {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 7px;
 }
 
 .user-api-key-field label {
   font-size: 0.85rem;
   font-weight: 600;
-
   color: var(--font);
 }
 
 .user-api-key-field input {
   width: 100%;
   min-height: 42px;
-
   padding: 9px 11px;
 
   border: 1px solid var(--border-big);
@@ -187,7 +186,6 @@
   color: var(--font);
 
   font: inherit;
-
   outline: none;
 
   transition:
@@ -197,10 +195,7 @@
 
 .user-api-key-field input:focus {
   border-color: var(--border-acc);
-
-  box-shadow:
-    0 0 0 2px
-    rgba(64, 224, 208, 0.14);
+  box-shadow: 0 0 0 2px rgba(64, 224, 208, 0.14);
 }
 
 .user-api-key-field input:disabled {
@@ -210,12 +205,13 @@
 
 .user-api-key-help {
   margin: 0;
-
   padding: 10px 12px;
 
   border-left: 3px solid var(--border-acc);
+  border-radius: 0 var(--br-radius) var(--br-radius) 0;
 
   background: var(--acc1);
+  color: var(--font);
 
   font-size: 0.85rem;
   line-height: 1.5;
