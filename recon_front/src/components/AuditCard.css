@@ -1,0 +1,80 @@
+/* ======= AUDIT CARD ======= */
+
+.audit-card {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    max-width: 320px;
+    padding: 18px 20px;
+
+    border: 2px solid var(--border-big);
+    border-radius: var(--br-radius);
+
+    background: var(--acc2);
+
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+
+/* ------- TITLE ------- */
+
+.audit-card-title {
+    font-size: 1.3rem;
+    text-align: center;
+}
+
+
+/* ------- DIVIDER ------- */
+
+.audit-card-divider {
+    border: none;
+    border-top: 1px dashed var(--border-big);
+    margin: 10px 0;
+}
+
+
+/* ------- INFO ------- */
+
+.audit-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.card-audit-console {
+    font-size: 1rem;
+}
+
+/* ------- SCAN ------- */
+
+.audit-card-scan {
+    margin-top: 6px;
+}
+
+
+/* ------- STATUS ------- */
+
+.audit-card-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+/* ------- CVE CONSOLE ------- */
+
+.audit-card-cves {
+    margin-top: 8px;
+}
+
+
+/* ------- BUTTON ------- */
+
+.audit-card-button {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 8px 0;
+}

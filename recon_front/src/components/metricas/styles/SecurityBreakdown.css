@@ -1,0 +1,895 @@
+/* =========================================================
+   Security breakdown
+   ========================================================= */
+
+.security-breakdown {
+  width: 100%;
+  max-width: none;
+
+  grid-column: 1 / -1;
+
+  min-width: 0;
+
+  font-size: 1rem;
+}
+
+.security-breakdown-subheading h2 {
+  margin:
+    6px 0
+    8px;
+
+  font-size: 1.5rem;
+}
+
+.security-breakdown-subheading p {
+  margin-bottom: 0;
+
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.security-breakdown-grid {
+  width: 100%;
+
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 18px;
+
+  min-width: 0;
+}
+
+.security-breakdown-host-grid {
+  margin-top: 0;
+}
+
+.security-breakdown-card {
+  width: 100%;
+  min-width: 0;
+
+  box-sizing: border-box;
+}
+
+.security-breakdown-card > h3 {
+  margin:
+    0 0
+    16px;
+
+  font-size: 1.2rem;
+  color: var(--border-acc);
+}
+
+/* =========================================================
+   Rankings
+   ========================================================= */
+
+.security-ranking-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  min-width: 0;
+}
+
+.security-ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+
+  margin: 0;
+  padding: 0;
+
+  list-style: none;
+}
+
+.security-ranking-item {
+  min-width: 0;
+
+  overflow: hidden;
+
+  border:
+    1px solid var(--border-big);
+  border-radius: var(--br-radius);
+
+  background: var(--bg);
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.security-ranking-item:hover,
+.security-ranking-item-expanded {
+  border-color: var(--border-acc);
+}
+
+.security-ranking-item-expanded {
+  box-shadow:
+    0 0 0 1px var(--border-acc);
+}
+
+/* =========================================================
+   Fila principal
+   ========================================================= */
+
+.security-ranking-trigger {
+  display: flex;
+
+  align-items: center;
+
+  gap: 14px;
+
+  width: 100%;
+
+  padding: 13px 14px;
+
+  border: 0;
+
+  background: transparent;
+  color: var(--font);
+  font-family: var(--font);
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.security-ranking-trigger:hover {
+  background:
+    color-mix(
+      in srgb,
+      var(--border-acc) 4%,
+      transparent
+    );
+}
+
+.security-ranking-position {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  min-width: 38px;
+
+  font-family: var(--font-console);
+  font-size: 0.9rem;
+
+  opacity: 0.55;
+}
+
+.security-ranking-summary {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: 7px;
+
+  min-width: 0;
+}
+
+.security-ranking-title {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  min-width: 0;
+}
+
+.security-ranking-title strong {
+  overflow: hidden;
+
+  font-family: var(--font-console);
+  font-size: 1.05rem;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.security-ranking-subtitle {
+  overflow: hidden;
+
+  font-size: 0.9rem;
+  font-family: var(--font-console);
+
+  opacity: 0.6;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.security-ranking-preview {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px 18px;
+
+  font-size: 0.95rem;
+
+  opacity: 0.72;
+}
+
+.security-ranking-preview strong {
+  color: var(--font);
+
+  font-family: var(--font);
+
+  opacity: 1;
+}
+
+.security-ranking-chevron {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+
+  width: 28px;
+  height: 28px;
+
+  font-size: 1rem;
+  margin-left: auto;
+  opacity: 0.6;
+
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.security-ranking-trigger:hover
+  .security-ranking-chevron {
+  opacity: 1;
+}
+
+.security-ranking-chevron-open {
+  transform: rotate(180deg);
+}
+
+/* =========================================================
+   Detalle expandido
+   ========================================================= */
+
+.security-ranking-detail {
+  padding: 12px 14px;
+
+  animation:
+    security-detail-open
+    0.16s ease-out;
+}
+
+@keyframes security-detail-open {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.security-detail-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 12px;
+
+  margin: 0;
+  padding-top: 12px;
+
+  border-top:
+    1px solid var(--border-big);
+}
+
+.security-detail-grid > div {
+  min-width: 0;
+
+  padding: 10px 12px;
+
+  border:
+    1px solid var(--border-big);
+  border-radius: var(--br-radius);
+}
+
+.security-detail-grid dt {
+  margin-bottom: 6px;
+
+  font-size: 0.85rem;
+  font-weight: 500;
+
+  opacity: 0.58;
+}
+
+.security-detail-grid dd {
+  min-width: 0;
+
+  margin: 0;
+
+  overflow-wrap: anywhere;
+
+  font-family: var(--font-console);
+  font-size: 1rem;
+}
+
+.security-detail-wide {
+  grid-column: 1 / -1;
+}
+
+/* =========================================================
+   CWE / KEV
+   ========================================================= */
+
+.cve-badge {
+  flex: 0 0 auto;
+
+  padding:
+    3px 7px;
+
+  border-radius: 3px;
+
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+
+  align-content: center;
+}
+
+.cve-badge-kev {
+  border:
+    1px solid var(--critical);
+
+  color: var(--critical);
+
+}
+
+.security-tags {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 7px;
+}
+
+.security-tag {
+  display: inline-flex;
+
+  padding:
+    4px 8px;
+
+  border:
+    1px solid var(--border-big);
+  border-radius: 3px;
+
+  font-family: var(--font-console);
+  font-size: 0.9rem;
+}
+
+/* =========================================================
+   Pagination
+   ========================================================= */
+
+.security-pagination {
+  margin-top: 10px;
+
+  font-size: 0.95rem;
+}
+
+/* =========================================================
+   CVE detail
+   ========================================================= */
+
+.cve-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  min-width: 0;
+}
+
+.cve-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 18px;
+}
+
+.cve-detail-header > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cve-detail-label {
+  display: block;
+
+  margin-bottom: 6px;
+
+  font-size: 0.85rem;
+
+  opacity: 0.58;
+}
+
+.cve-detail-id {
+  font-family: var(--font-console);
+  font-size: 1.1rem;
+}
+
+.cve-detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+
+  gap: 7px;
+}
+
+.cve-detail-badge {
+  padding: 3px 8px;
+
+  border: 1px solid var(--border-big);
+  border-radius: 3px;
+
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.cve-detail-description {
+  padding: 12px 14px;
+
+  border: 1px solid var(--border-big);
+  border-radius: var(--br-radius);
+}
+
+.cve-detail-description p,
+.cve-detail-text {
+  margin: 0;
+
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.cve-detail-vector {
+  overflow-wrap: anywhere;
+}
+
+.cve-detail-section {
+  padding-top: 15px;
+
+  border-top: 1px solid var(--border-big);
+}
+
+.cve-detail-section h4 {
+  margin:
+    0 0
+    12px;
+
+  font-family: var(--font-title);
+  font-size: 1.05rem;
+}
+
+.cve-detail-links {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  margin: 0;
+  padding-left: 22px;
+}
+
+.cve-detail-links a,
+.cve-detail-nist-link {
+  color: var(--border-acc);
+
+  font-family: var(--font-console);
+  font-size: 0.95rem;
+
+  overflow-wrap: anywhere;
+}
+
+.cve-detail-empty {
+  margin: 0;
+
+  font-size: 0.95rem;
+
+  opacity: 0.6;
+}
+
+.security-detail-loading {
+  padding: 14px;
+
+  font-family: var(--font-console);
+  font-size: 0.95rem;
+
+  opacity: 0.7;
+}
+
+.security-detail-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 14px;
+
+  padding: 12px;
+
+  border: 1px solid var(--critical);
+  border-radius: var(--br-radius);
+
+  font-size: 0.95rem;
+}
+
+/* =========================================================
+   Host detail
+   ========================================================= */
+
+/* =========================================================
+   Desglose completo de activos
+   ========================================================= */
+
+.activo-desglose-full {
+  grid-column: 1 / -1;
+
+  width: 100%;
+  min-width: 0;
+
+  box-sizing: border-box;
+}
+
+.activo-desglose-full > h3 {
+  margin:
+    0 0
+    16px;
+
+  font-family: var(--font-title);
+  font-size: 1.2rem;
+}
+
+/* =========================================================
+   Lista de activos
+   ========================================================= */
+
+.activo-desglose-full > .host-port-list {
+  gap: 14px;
+}
+
+.activo-desglose-full
+  > .host-port-list
+  > .host-port-item {
+  padding: 14px;
+
+  border:
+    1px solid var(--border-big);
+
+  border-radius:
+    var(--br-radius);
+
+  background: var(--bg);
+}
+
+/* =========================================================
+   Cabecera de cada activo
+   ========================================================= */
+
+.activo-desglose-full
+  .host-detail-heading {
+  margin-bottom: 12px;
+}
+
+.activo-desglose-full
+  .host-detail-heading h4 {
+  font-size: 1.05rem;
+}
+
+.activo-desglose-full
+  .host-detail-heading > span {
+  font-size: 0.9rem;
+}
+
+/* =========================================================
+   KPIs del activo
+   ========================================================= */
+
+.activo-desglose-full
+  .security-detail-grid {
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap: 10px;
+
+  margin-bottom: 14px;
+}
+
+.activo-desglose-full
+  .security-detail-grid > div {
+  min-width: 0;
+
+  padding: 10px 12px;
+}
+
+.activo-desglose-full
+  .security-detail-grid dt {
+  font-size: 0.85rem;
+}
+
+.activo-desglose-full
+  .security-detail-grid dd {
+  font-size: 1rem;
+}
+
+/* El ID del escaneo suele ser largo */
+.activo-desglose-full
+  .security-detail-grid
+  > div:last-child {
+  grid-column: span 2;
+}
+
+.activo-desglose-full
+  .security-detail-grid
+  > div:last-child
+  dd {
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   Puertos dentro del activo
+   ========================================================= */
+
+.activo-desglose-full
+  .host-detail-section {
+  margin-top: 0;
+  padding-top: 14px;
+}
+
+.activo-desglose-full
+  .host-detail-section
+  > .host-detail-heading {
+  margin-bottom: 10px;
+}
+
+.activo-desglose-full
+  .host-detail-section
+  > .host-port-list {
+  gap: 8px;
+}
+
+.activo-desglose-full
+  .host-detail-section
+  .host-port-item {
+  padding: 11px 12px;
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
+.activo-desglose-full {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.activo-desglose-full
+  .security-detail-grid {
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+}
+
+.activo-desglose-full
+  .security-detail-grid
+  > div:last-child {
+  grid-column: span 2;
+}
+
+.activo-desglose-full
+  .security-detail-grid
+  > div:last-child
+  dd {
+  overflow-wrap: anywhere;
+}
+
+.host-detail-section {
+  margin-top: 16px;
+  padding-top: 15px;
+
+  border-top:
+    1px solid var(--border-big);
+}
+
+.host-detail-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 12px;
+}
+
+.host-detail-heading h4 {
+  margin: 0;
+
+  font-family: var(--font-title);
+  font-size: 1.05rem;
+}
+
+.host-detail-heading > span {
+  font-family: var(--font-console);
+  font-size: 0.9rem;
+
+  opacity: 0.6;
+}
+
+.host-port-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.host-port-item {
+  padding: 11px 12px;
+
+  border:
+    1px solid var(--border-big);
+  border-radius:
+    var(--br-radius);
+}
+
+.host-port-main {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 7px;
+}
+
+.host-port-main strong {
+  font-family:
+    var(--font-console);
+
+  font-size: 1rem;
+}
+
+.host-port-main > span {
+  padding: 3px 7px;
+
+  border:
+    1px solid var(--border-big);
+  border-radius: 3px;
+
+  font-size: 0.8rem;
+}
+
+.host-port-meta {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 6px 18px;
+
+  font-size: 0.92rem;
+
+  opacity: 0.72;
+}
+
+.host-port-meta strong {
+  color: var(--font);
+
+  opacity: 1;
+}
+
+.host-port-cpes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  margin-top: 10px;
+  padding-top: 9px;
+
+  border-top:
+    1px solid var(--border-big);
+}
+
+.host-port-cpes > span {
+  font-size: 0.8rem;
+  opacity: 0.55;
+}
+
+.host-port-cpes code {
+  overflow-wrap: anywhere;
+
+  font-family:
+    var(--font-console);
+  font-size: 0.9rem;
+}
+
+.host-detail-observed {
+  margin:
+    10px 0
+    0;
+
+  font-size: 0.9rem;
+
+  opacity: 0.6;
+}
+
+/* ============================================================
+ * Listado completo de CVE por activo
+ * ============================================================ */
+
+.cve-detail-section + .cve-detail-section {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-big);
+}
+
+.cve-detail-section h4 {
+  margin: 0 0 0.75rem;
+}
+
+.host-port-cpes {
+  min-width: 0;
+}
+
+.host-port-cpes code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 600px) {
+  .cve-detail-section + .cve-detail-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+
+  .host-port-cpes {
+    align-items: flex-start;
+  }
+
+  .host-port-cpes code {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .security-breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .security-ranking-trigger {
+    grid-template-columns:
+      auto minmax(0, 1fr) auto;
+
+    gap: 9px;
+
+    padding: 10px;
+  }
+
+  .security-ranking-detail {
+    padding:
+      0 10px
+      12px;
+  }
+
+  .security-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .security-detail-wide {
+    grid-column: auto;
+  }
+}

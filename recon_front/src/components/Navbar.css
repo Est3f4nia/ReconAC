@@ -1,0 +1,87 @@
+/* ======= NAVBAR ======= */
+
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    height: 56px;
+    padding: 0 24px;
+
+    border-bottom: 1px solid var(--border-big);
+
+    background: var(--acc1);
+}
+ 
+
+/* ======= BRAND ======= */
+
+.navbar-brand {
+    font-family: var(--font-title);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.navbar-brand:hover {
+    text-decoration: none;
+    color: var(--font);
+}
+
+
+/* ======= NAVIGATION ======= */
+
+.navbar-navigation {
+    display: flex;
+    gap: 24px;
+}
+
+.navbar-link {
+    font-size: 0.85rem;
+    font-weight: 400;
+    opacity: 0.85;
+
+    transition: color var(--transition);
+}
+
+.navbar-link:hover {
+    text-decoration: none;
+    font-weight: 400;
+}
+
+
+/* ======= USER ======= */
+
+.navbar-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.navbar-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 0;
+    padding: 0;
+
+    width: 32px;
+    height: 32px;
+
+    margin-right: 10px;
+
+    border-radius: 50%;
+
+    background: var(--border-big);
+    color: var(--font);
+
+    font-size: 0.8rem;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.navbar-logout {
+    padding: 4px 12px;
+}
+

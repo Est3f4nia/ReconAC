@@ -1,0 +1,5 @@
+
+
+ALTER TABLE activo
+ALTER COLUMN mac TYPE TEXT
+    USING mac::TEXT;

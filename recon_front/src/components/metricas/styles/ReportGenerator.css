@@ -1,0 +1,180 @@
+/* =========================================================
+   Report generator
+   ========================================================= */
+
+.report-generator-section {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  grid-column: 1 / -1;
+
+  box-sizing: border-box;
+
+  font-size: 1rem;
+}
+
+/* =========================================================
+   Controles
+   ========================================================= */
+
+.report-generator-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+
+  align-items: end;
+
+  gap: 16px;
+
+  width: 100%;
+  min-width: 0;
+}
+
+/* =========================================================
+   Selector
+   ========================================================= */
+
+.report-form {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+
+  min-width: 0;
+}
+
+.report-form label {
+  font-size: 0.9rem;
+  font-weight: 600;
+
+  opacity: 0.75;
+}
+
+.report-form select {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+
+  padding: 0 12px;
+
+  border: 1px solid var(--border-big);
+  border-radius: var(--br-radius);
+
+  background: var(--bg);
+  color: var(--font);
+
+  font-family: var(--font-console);
+  font-size: 1rem;
+
+  outline: none;
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.report-form select:hover:not(:disabled),
+.report-form select:focus {
+  border-color: var(--border-acc);
+}
+
+.report-form select:focus {
+  box-shadow:
+    0 0 0 1px var(--border-acc);
+}
+
+.report-form select:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* =========================================================
+   Acciones
+   ========================================================= */
+
+.report-actions {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+}
+
+.report-actions .button {
+  height: 44px;
+
+  padding: 0 16px;
+
+  font-size: 0.95rem;
+
+  white-space: nowrap;
+}
+
+.report-actions .button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* =========================================================
+   Error
+   ========================================================= */
+
+.report-generator-section .dashboard-error {
+  margin-top: 14px;
+
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   Empty state
+   ========================================================= */
+
+.report-generator-section .dashboard-empty {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
+@media (max-width: 850px) {
+  .report-generator-controls {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .report-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 520px) {
+  .report-actions {
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    width: 100%;
+  }
+
+  .report-actions .button {
+    width: 100%;
+    min-width: 0;
+
+    padding: 0 10px;
+
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .report-actions {
+    grid-template-columns: 1fr;
+  }
+}

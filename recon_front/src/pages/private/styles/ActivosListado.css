@@ -1,0 +1,103 @@
+/* Modal */
+.activo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 61, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.activo-modal {
+  background: var(--bg);
+  border: 1px solid var(--border-big);
+  border-radius: var(--br-radius);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.activo-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--acc2);
+}
+
+.activo-modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.activo-modal-close {
+  background: none;
+  border: none;
+  color: var(--font);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity var(--transition);
+}
+
+.activo-modal-close:hover {
+  opacity: 1;
+}
+
+.button-activoP {
+    padding: 5px 15px;
+}
+
+.activo-detalle {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.activo-detalle-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.activo-detalle-item strong {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.activo-detalle-item code,
+.activo-escaneos-lista code {
+  font-family: var(--font-console);
+  font-size: 0.85rem;
+}
+
+.activo-detalle-escaneos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.activo-escaneos-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.activo-modal-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--acc2);
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .activo-modal {
+    max-width: 100%;
+  }
+}
