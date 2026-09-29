@@ -69,3 +69,11 @@ docker compose --env-file recon_back/.env --env-file .env stop
 | Health | http://localhost:8080/actuator/health |
 
 Por defecto, ReconAC se ejecuta como aplicación local y los servicios internos de PostgreSQL, Redis y módulos no se publican.
+
+## Licencia
+
+ReconAC is licensed under the
+[PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/).
+
+Copyright © 2026 Estefanía Villarreal.
+Commercial use is not permitted without prior written permission.
