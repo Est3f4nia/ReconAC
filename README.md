@@ -36,39 +36,41 @@ Ejecuta escaneos sobre objetivos, identifica hosts, puertos abiertos, servicios,
 
 ### Requisitos
 
-- Docker Desktop en modo Linux containers.
-- Docker Compose 2.20 o superior.
+- Docker Desktop con contenedores Linux en Windows/macOS, o Docker Engine en Linux.
+- Docker Compose 2.24.4 o superior y un navegador.
 
-Desde la raíz del repositorio:
+Desde la raíz del repositorio, en PowerShell:
+
+```powershell
+.\start-reconac.ps1
+.\stop-reconac.ps1
+```
+
+En Linux/macOS:
 
 ```sh
-cp .env.example .env
-
-# !!! Completar recon_back/.env
-
-# Validar configuración
-docker compose --env-file recon_back/.env --env-file .env config --quiet
-
-# Primer arranque
-docker compose --env-file recon_back/.env --env-file .env up -d --build --wait --wait-timeout 300
-
-# Arranques posteriores
-docker compose --env-file recon_back/.env --env-file .env up -d --wait
-
-# Detener
-docker compose --env-file recon_back/.env --env-file .env stop
+sh ./start-reconac.sh
+sh ./stop-reconac.sh
 ```
+
+El primer inicio crea `.env` raíz y genera los secretos requeridos. **Si ya usabas
+ReconAC, migrá primero las credenciales y claves originales a ese archivo**.
+`recon_back/.env.example` queda exclusivamente para ejecución nativa.
+
+La parada conserva la base de datos. Consultá [la guía de despliegue local](DEPLOYMENT.md)
+para migración, requisitos, diagnóstico y limitaciones de Nmap por sistema operativo.
 
 ## Acceso
 
-| Recurso | Dirección |
+| Recurso | Dirección predeterminada |
 | --- | --- |
 | Aplicación | http://localhost:3000 |
-| API | http://localhost:8080/api |
+| API | http://localhost:3000/api |
 | Swagger UI | http://localhost:3000/swagger-ui/index.html |
-| Health | http://localhost:8080/actuator/health |
 
-Por defecto, ReconAC se ejecuta como aplicación local y los servicios internos de PostgreSQL, Redis y módulos no se publican.
+Solo el frontend publica un puerto, ligado a `127.0.0.1`. Nginx redirige `/api` al
+backend y mantiene bloqueadas las rutas internas. Los healthchecks se ejecutan dentro
+de los contenedores. `FRONTEND_PORT` permite cambiar el puerto local.
 
 ## Licencia
 
