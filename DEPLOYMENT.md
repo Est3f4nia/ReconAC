@@ -107,7 +107,7 @@ docker compose --env-file .env -f compose.yaml -p reconac ps
 docker compose --env-file .env -f compose.yaml -p reconac logs --tail 100
 ```
 
-## Verificacion
+## Verificación
 
 Los tests del inicializador se pueden ejecutar en desarrollo con Python 3.12:
 
