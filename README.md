@@ -32,12 +32,14 @@ Ejecuta escaneos sobre objetivos, identifica hosts, puertos abiertos, servicios,
 
 > En la V1, el motor Python mantiene trabajos y logs en memoria y utiliza un único worker. La arquitectura permite extender los módulos, pero el motor actual requiere modificaciones para escalamiento horizontal.
 
-## Ejecución
+## Instalación
 
 ### Requisitos
 
 - Docker Desktop con contenedores Linux en Windows/macOS, o Docker Engine en Linux.
 - Docker Compose 2.24.4 o superior y un navegador.
+
+### Ejecución
 
 Desde la raíz del repositorio, en PowerShell:
 
@@ -53,8 +55,7 @@ sh ./start-reconac.sh
 sh ./stop-reconac.sh
 ```
 
-El primer inicio crea `.env` raíz y genera los secretos requeridos. **Si ya usabas
-ReconAC, migrá primero las credenciales y claves originales a ese archivo**.
+El primer inicio crea `.env` raíz y genera los secretos requeridos.
 `recon_back/.env.example` queda exclusivamente para ejecución nativa.
 
 La parada conserva los contenedores y la base de datos. Consultá [la guía de despliegue local](DEPLOYMENT.md)
