@@ -109,6 +109,15 @@ Los tests del inicializador se pueden ejecutar en desarrollo con Python 3.12:
 python -m unittest discover -s scripts -p "test_*.py"
 ```
 
+Para comprobar la precedencia de `.env` y la restauracion de variables en PowerShell:
+
+```powershell
+.\scripts\test-deployment.ps1
+```
+
+Esta prueba usa Compose real para validar una configuracion temporal y simula los
+comandos que requieren el motor; no levanta servicios ni lee el `.env` del usuario.
+
 Probar en cada SO: iniciar sesion, renovar sesion, escribir con CSRF, consultar datos,
 acceder a Swagger, escanear un equipo propio y detener/iniciar conservando datos y claves
 NVD. Docker Desktop y la red de contenedores pueden modificar la visibilidad ARP/MAC y

@@ -20,8 +20,13 @@ $names = @('DB_NAME','DB_USER','DB_PASSWD','JWT_SECRET','NVD_ENCRYPTION_KEY','SE
 $saved = @{}
 try {
     foreach ($name in $names) {
-        $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
-        [Environment]::SetEnvironmentVariable($name, $null, 'Process')
+        $saved[$name] = @{
+            Exists = [Environment]::GetEnvironmentVariables('Process').Contains($name)
+            Value = [Environment]::GetEnvironmentVariable($name, 'Process')
+        }
+        # En PowerShell reciente, SetEnvironmentVariable($null) puede crear un valor
+        # vacio. Compose le da prioridad sobre .env; quitar la entrada por completo.
+        Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
     }
     $composeArgs = @('compose', '--project-name', 'reconac', '--project-directory', $root, '--env-file', "$root/.env", '-f', "$root/compose.yaml")
     if ($Action -eq 'start') {
@@ -42,5 +47,11 @@ try {
         Write-Host 'ReconAC detenido. PostgreSQL conserva su volumen y .env no cambia.'
     }
 } finally {
-    foreach ($name in $saved.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') }
+    foreach ($name in $saved.Keys) {
+        if ($saved[$name].Exists) {
+            [Environment]::SetEnvironmentVariable($name, $saved[$name].Value, 'Process')
+        } else {
+            Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
+        }
+    }
 }
