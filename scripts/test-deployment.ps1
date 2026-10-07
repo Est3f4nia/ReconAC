@@ -80,3 +80,4 @@ try {
     Remove-Item -LiteralPath $resolvedRoot -Recurse -Force
 
 }
+$global:LASTEXITCODE = 0

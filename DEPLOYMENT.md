@@ -57,6 +57,10 @@ Si estaban en `recon_back/.env`, copiarlos a la raiz; Compose ya no lee ese arch
 
 Conservar `.env` junto con los backups de PostgreSQL, especialmente la clave NVD.
 Cambiar `DB_PASSWD` en Compose no modifica la contraseña de una base ya inicializada.
+Cambiar `DB_USER` tampoco crea un usuario dentro de un volumen existente: recuperar
+el usuario y la contraseña con los que se inicializo esa base. El healthcheck de
+PostgreSQL prueba una conexion TCP autenticada y una consulta, para impedir que el
+backend arranque si esas credenciales no funcionan.
 Si existe el volumen `reconac_postgres_data` y faltan secretos, el inicio falla sin
 escribir `.env`. Si faltan secretos y existe `recon_back/.env`, tambien se bloquea
 para pedir la migracion. Si usabas otro nombre de proyecto/volumen, recuperar esa
