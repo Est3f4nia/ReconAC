@@ -34,9 +34,9 @@ if [ "$ACTION" = start ]; then
     ADDRESS=$(docker "$@" port frontend 80)
     echo "ReconAC iniciado: http://$ADDRESS"
 elif [ "$ACTION" = stop ]; then
-    [ -f "$ROOT/.env" ] || { echo 'Restaurar .env antes de bajar Compose; stop no genera secretos.' >&2; exit 1; }
-    docker "$@" down --timeout 40
-    echo 'ReconAC detenido. PostgreSQL conserva su volumen y .env no cambia.'
+    [ -f "$ROOT/.env" ] || { echo 'Restaurar .env antes de detener Compose; stop no genera secretos.' >&2; exit 1; }
+    docker "$@" stop --timeout 40
+    echo 'ReconAC detenido. Contenedores, volumen de PostgreSQL y .env conservados.'
 else
     echo 'Accion desconocida.' >&2
     exit 1

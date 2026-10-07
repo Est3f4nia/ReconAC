@@ -57,7 +57,7 @@ El primer inicio crea `.env` raíz y genera los secretos requeridos. **Si ya usa
 ReconAC, migrá primero las credenciales y claves originales a ese archivo**.
 `recon_back/.env.example` queda exclusivamente para ejecución nativa.
 
-La parada conserva la base de datos. Consultá [la guía de despliegue local](DEPLOYMENT.md)
+La parada conserva los contenedores y la base de datos. Consultá [la guía de despliegue local](DEPLOYMENT.md)
 para migración, requisitos, diagnóstico y limitaciones de Nmap por sistema operativo.
 
 ## Acceso
