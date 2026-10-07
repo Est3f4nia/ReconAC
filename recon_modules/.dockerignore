@@ -9,3 +9,17 @@ __pycache__
 *.pyc
 results
 outputs
+**/.env
+**/.env.*
+**/.git
+**/.idea
+**/.vscode
+env
+**/*.pyc
+**/*.pyo
+.pytest_cache
+.mypy_cache
+.coverage
+htmlcov
+**/*.log
+*.zip

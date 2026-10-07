@@ -5,3 +5,11 @@
 node_modules
 dist
 .vite
+**/.env
+**/.env.*
+**/.git
+**/.idea
+**/.vscode
+coverage
+**/*.log
+*.zip
