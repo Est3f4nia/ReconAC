@@ -42,9 +42,9 @@ try {
         $address = Invoke-Docker ($composeArgs + @('port', 'frontend', '80'))
         Write-Host "ReconAC iniciado: http://$(($address | Out-String).Trim())"
     } else {
-        if (-not (Test-Path "$root/.env")) { throw 'Falta .env. Restaurarlo antes de bajar Compose; stop no genera secretos.' }
-        Invoke-Docker ($composeArgs + @('down', '--timeout', '40'))
-        Write-Host 'ReconAC detenido. PostgreSQL conserva su volumen y .env no cambia.'
+        if (-not (Test-Path "$root/.env")) { throw 'Falta .env. Restaurarlo antes de detener Compose; stop no genera secretos.' }
+        Invoke-Docker ($composeArgs + @('stop', '--timeout', '40'))
+        Write-Host 'ReconAC detenido. Contenedores, volumen de PostgreSQL y .env conservados.'
     }
 } finally {
     foreach ($name in $saved.Keys) {

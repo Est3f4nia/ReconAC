@@ -92,8 +92,10 @@ no tienen puertos publicados. El healthcheck del backend permanece dentro del co
 sh ./stop-reconac.sh
 ```
 
-La parada ejecuta `down` sin `--volumes`: conserva PostgreSQL y `.env`. Requiere
-que `.env` siga disponible y valido. Redis conserva su comportamiento de cache sin
+La parada ejecuta `stop`: conserva los contenedores, PostgreSQL y `.env`. Requiere
+que `.env` siga disponible y valido. Al iniciar de nuevo, `up --build` reutiliza los
+contenedores y solo los recrea si cambia su configuracion o imagen.
+Redis conserva su comportamiento de cache sin
 persistencia. `restart: on-failure:3` limita reintentos de procesos que terminan con
 error y no arranca la herramienta al reiniciar Docker; un healthcheck fallido no
 reinicia por si solo un proceso vivo.
