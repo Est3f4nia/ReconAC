@@ -1,6 +1,6 @@
 # ReconAC
 
-Aplicación para **automatizar tareas de reconocimiento activo** en auditorías de seguridad.
+Aplicación para **automatizar el análisis de vulnerabilidades** en auditorías de seguridad.
 
 Ejecuta escaneos sobre objetivos, identifica hosts, puertos abiertos, servicios, productos y versiones y **enriquece los resultados con información de vulnerabilidades** para facilitar su análisis, priorización y contextualización en materia de seguridad.
 
